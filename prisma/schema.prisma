@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id                String   @id @default(cuid())
+  firstName         String
+  lastName          String
+  phone             String   @unique
+  referralCode      String   @unique
+  referredByCode    String?
+  points            Int      @default(0)
+  basePointsAwarded Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  predictions       Prediction[]
+  smsLogs           SmsLog[]
+  pointTransactions PointTransaction[]
+  referralsMade     Referral[]         @relation("Referrer")
+  referredRecord    Referral?          @relation("Referred")
+
+  @@index([points])
+  @@index([createdAt])
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  nameFa      String
+  nameEn      String
+  code        String   @unique
+  flagUrl     String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  homeMatches Match[] @relation("HomeTeam")
+  awayMatches Match[] @relation("AwayTeam")
+}
+
+model Match {
+  id                String            @id @default(cuid())
+  homeTeamId        String
+  awayTeamId        String
+  startTime         DateTime
+  status            MatchStatus       @default(SCHEDULED)
+  predictionMode    PredictionMode    @default(REGULAR_TIME_90)
+  correctPrediction PredictionChoice?
+  settledAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  homeTeam    Team         @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam    Team         @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  predictions Prediction[]
+
+  @@index([startTime])
+  @@index([status])
+}
+
+model Prediction {
+  id            String           @id @default(cuid())
+  userId        String
+  matchId       String
+  prediction    PredictionChoice
+  isCorrect     Boolean?
+  pointsAwarded Int              @default(0)
+  settledAt     DateTime?
+  createdAt     DateTime         @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  match Match @relation(fields: [matchId], references: [id])
+
+  @@unique([userId, matchId])
+  @@index([matchId])
+  @@index([userId])
+}
+
+model Referral {
+  id             String   @id @default(cuid())
+  referrerUserId String
+  referredUserId String   @unique
+  referralCode   String
+  pointsAwarded  Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  referrer User @relation("Referrer", fields: [referrerUserId], references: [id])
+  referred User @relation("Referred", fields: [referredUserId], references: [id])
+
+  @@index([referralCode])
+}
+
+model PointRule {
+  id          String       @id @default(cuid())
+  key         PointRuleKey @unique
+  label       String
+  points      Int
+  active      Boolean      @default(true)
+  description String?      @db.Text
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model PointTransaction {
+  id           String               @id @default(cuid())
+  userId       String
+  type         PointTransactionType
+  points       Int
+  reason       String?              @db.Text
+  matchId      String?
+  predictionId String?
+  referralId   String?
+  createdAt    DateTime             @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model SmsLog {
+  id               String    @id @default(cuid())
+  userId           String?
+  phone            String
+  message          String    @db.Text
+  provider         String?
+  providerResponse String?   @db.Text
+  status           SmsStatus @default(PENDING)
+  createdAt        DateTime  @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([phone])
+  @@index([status])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+}
+
+model CampaignSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum MatchStatus {
+  SCHEDULED
+  ACTIVE
+  LOCKED
+  FINISHED
+  CANCELLED
+}
+
+enum PredictionMode {
+  REGULAR_TIME_90
+  FINAL_QUALIFIER
+}
+
+enum PredictionChoice {
+  HOME_WIN
+  DRAW
+  AWAY_WIN
+}
+
+enum SmsStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum PointRuleKey {
+  BASE_REGISTRATION
+  CORRECT_PREDICTION
+  WRONG_PREDICTION
+  REFERRAL_SUCCESS
+  CANCELLED_MATCH
+}
+
+enum PointTransactionType {
+  BASE_REGISTRATION
+  CORRECT_PREDICTION
+  WRONG_PREDICTION
+  REFERRAL_SUCCESS
+  ADMIN_ADJUSTMENT
+  RESETTLEMENT
+}
