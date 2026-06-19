@@ -7,3 +7,12 @@ node_modules
 # build/cache
 .next/
 tsconfig.tsbuildinfo
+
+# local AI/editor agent configs
+.claude/
+.cline/
+.clinerules/
+.codex/
+.continue/
+.cursor/
+.github/
