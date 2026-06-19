@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #10111f;
+  --card-bg: rgba(255, 255, 255, 0.06);
+  --card-border: rgba(255, 255, 255, 0.12);
+  --primary: #14e0bd;
+  --secondary: #4365ff;
+  --text-main: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.65);
+  --danger: #ff4d6d;
+  --warning: #ffd166;
+  --success: #12d6a3;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --font-sans: var(--font-vazirmatn), system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-main);
+  font-family: var(--font-vazirmatn), system-ui, sans-serif;
+  min-height: 100dvh;
+}
+
+.glass-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 22px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.glow-selected {
+  box-shadow: 0 0 20px rgba(20, 224, 189, 0.4), 0 0 40px rgba(67, 101, 255, 0.2);
+  border-color: var(--primary) !important;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
