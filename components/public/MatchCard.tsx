@@ -48,7 +48,14 @@ export function MatchCard({ match, selected, onSelect, index }: Props) {
           )}
         >
           <div className="relative h-12 w-16 overflow-hidden rounded-lg">
-            <Image src={match.homeTeam.flagUrl} alt={match.homeTeam.nameFa} fill className="object-cover" />
+            <Image
+              src={match.homeTeam.flagUrl}
+              alt={match.homeTeam.nameFa}
+              fill
+              sizes="(max-width: 430px) 64px, 64px"
+              priority={index === 0}
+              className="object-cover"
+            />
           </div>
           <span className="text-sm font-medium">{match.homeTeam.nameFa}</span>
           <span className="text-xs text-white/50">{match.homeTeam.code}</span>
@@ -65,7 +72,14 @@ export function MatchCard({ match, selected, onSelect, index }: Props) {
           )}
         >
           <div className="relative h-12 w-16 overflow-hidden rounded-lg">
-            <Image src={match.awayTeam.flagUrl} alt={match.awayTeam.nameFa} fill className="object-cover" />
+            <Image
+              src={match.awayTeam.flagUrl}
+              alt={match.awayTeam.nameFa}
+              fill
+              sizes="(max-width: 430px) 64px, 64px"
+              priority={index === 0}
+              className="object-cover"
+            />
           </div>
           <span className="text-sm font-medium">{match.awayTeam.nameFa}</span>
           <span className="text-xs text-white/50">{match.awayTeam.code}</span>
