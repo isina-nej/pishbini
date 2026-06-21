@@ -41,6 +41,7 @@ export default function HomePage() {
   }, []);
 
   const handleSelect = (matchId: string, choice: PredictionChoice) => {
+    if (confirmed) return;
     setPredictions((prev) => {
       const next = { ...prev, [matchId]: choice };
       const list: StoredPrediction[] = Object.entries(next).map(([id, prediction]) => ({
@@ -53,9 +54,14 @@ export default function HomePage() {
   };
 
   const selectedCount = Object.keys(predictions).length;
+  const [confirmed, setConfirmed] = useState(false);
 
   const handleContinue = () => {
     if (selectedCount === 0) return;
+    if (!confirmed) {
+      setConfirmed(true);
+      return;
+    }
     router.push("/submit");
   };
 
@@ -88,6 +94,7 @@ export default function HomePage() {
           selected={predictions[match.id]}
           onSelect={(choice) => handleSelect(match.id, choice)}
           index={i}
+          confirmed={confirmed}
         />
       ))}
 
@@ -101,7 +108,7 @@ export default function HomePage() {
             transition={{ duration: 2, repeat: Infinity }}
             className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-4 font-bold text-[#10111f] shadow-lg shadow-primary/20"
           >
-            ثبت پیش‌بینی ({selectedCount})
+            {confirmed ? "تایید و ادامه" : `ثبت پیش‌بینی (${selectedCount})`}
           </motion.button>
         </div>
       )}
