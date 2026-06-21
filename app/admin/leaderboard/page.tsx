@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
+import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { AdminInput } from "@/components/admin/ui/AdminInput";
+import { AdminCard, AdminCardHeader } from "@/components/admin/ui/AdminCard";
+import { AdminBadge } from "@/components/admin/ui/AdminBadge";
+import { AdminLoading } from "@/components/admin/ui/AdminLoading";
+import { Download, Snowflake, Trophy } from "lucide-react";
 
 type Entry = {
   rank: number;
@@ -16,6 +23,7 @@ export default function AdminLeaderboardPage() {
   const [users, setUsers] = useState<Entry[]>([]);
   const [frozen, setFrozen] = useState(false);
   const [winnerId, setWinnerId] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const load = () =>
     fetch("/api/admin/leaderboard")
@@ -24,7 +32,8 @@ export default function AdminLeaderboardPage() {
         setUsers(d.users ?? []);
         setFrozen(d.campaignFrozen ?? false);
         setWinnerId(d.prizeWinnerUserId ?? "");
-      });
+      })
+      .finally(() => setLoading(false));
 
   useEffect(() => {
     load();
@@ -53,61 +62,102 @@ export default function AdminLeaderboardPage() {
 
   return (
     <AdminLayout>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">جدول امتیازات</h1>
-        <a href="/api/admin/leaderboard/export" className="rounded-lg bg-secondary px-4 py-2 text-sm">
-          خروجی CSV
-        </a>
-      </div>
+      <AdminPageHeader
+        title="جدول امتیازات"
+        description="رتبه‌بندی شرکت‌کنندگان و مدیریت پایان کمپین"
+        actions={
+          <>
+            <AdminBadge tone={frozen ? "danger" : "success"}>
+              {frozen ? "کمپین فریز شده" : "کمپین فعال"}
+            </AdminBadge>
+            <a href="/api/admin/leaderboard/export">
+              <AdminButton variant="secondary" size="sm">
+                <Download className="size-3.5" />
+                CSV
+              </AdminButton>
+            </a>
+          </>
+        }
+      />
 
-      <div className="mb-6 flex flex-wrap gap-3">
-        <button
-          type="button"
+      <div className="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-4">
+        <AdminButton
+          variant={frozen ? "danger" : "outline"}
+          size="sm"
           onClick={handleFreeze}
-          className={`rounded-lg px-4 py-2 text-sm font-bold ${frozen ? "bg-danger/20 text-danger" : "bg-warning/20 text-warning"}`}
         >
-          {frozen ? "کمپین فریز شده — لغو فریز" : "فریز کمپین"}
-        </button>
-        <input
-          value={winnerId}
-          onChange={(e) => setWinnerId(e.target.value)}
-          placeholder="شناسه برنده"
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm"
-          dir="ltr"
-        />
-        <button type="button" onClick={handleMarkWinner} className="rounded-lg bg-primary px-4 py-2 text-sm text-[#10111f]">
-          ثبت برنده
-        </button>
+          <Snowflake className="size-3.5" />
+          {frozen ? "لغو فریز" : "فریز کمپین"}
+        </AdminButton>
+        <div className="flex flex-1 flex-wrap items-end gap-2">
+          <div className="min-w-[200px] flex-1">
+            <label className="mb-1 block text-xs text-[var(--admin-text-muted)]">شناسه برنده</label>
+            <AdminInput
+              value={winnerId}
+              onChange={(e) => setWinnerId(e.target.value)}
+              placeholder="user-id"
+              dir="ltr"
+            />
+          </div>
+          <AdminButton size="sm" onClick={handleMarkWinner}>
+            <Trophy className="size-3.5" />
+            ثبت برنده
+          </AdminButton>
+        </div>
       </div>
 
-      <p className="mb-4 text-xs text-white/50">
-        جایزه نهایی به شرکت‌کننده‌ای تعلق می‌گیرد که در پایان کمپین بیشترین امتیاز را داشته باشد.
-      </p>
-
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-white/10 text-white/50">
-            <th className="p-2">رتبه</th>
-            <th className="p-2">نام</th>
-            <th className="p-2">موبایل</th>
-            <th className="p-2">امتیاز</th>
-            <th className="p-2">درست</th>
-            <th className="p-2">شناسه</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((u) => (
-            <tr key={u.userId} className="border-b border-white/5">
-              <td className="p-2">{u.rank}</td>
-              <td className="p-2">{u.fullName}</td>
-              <td className="p-2" dir="ltr">{u.maskedPhone}</td>
-              <td className="p-2">{u.points.toLocaleString("fa-IR")}</td>
-              <td className="p-2">{u.correctPredictions}</td>
-              <td className="p-2 text-xs" dir="ltr">{u.userId}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <AdminCard>
+        <AdminCardHeader
+          title="رتبه‌بندی"
+          description="مرتب‌سازی: امتیاز ↓، پیش‌بینی درست ↓، تاریخ ثبت ↑"
+        />
+        {loading ? (
+          <AdminLoading />
+        ) : (
+          <div className="admin-table-wrap border-0">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>رتبه</th>
+                  <th>نام</th>
+                  <th>موبایل</th>
+                  <th>امتیاز</th>
+                  <th>درست</th>
+                  <th>شناسه</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.userId}>
+                    <td>
+                      <span
+                        className={`inline-flex size-7 items-center justify-center rounded-lg text-xs font-bold ${
+                          u.rank <= 3
+                            ? "bg-[var(--admin-primary-soft)] text-[var(--admin-primary)]"
+                            : "bg-[var(--admin-surface-elevated)] text-[var(--admin-text-muted)]"
+                        }`}
+                      >
+                        {u.rank}
+                      </span>
+                    </td>
+                    <td className="font-medium">{u.fullName}</td>
+                    <td dir="ltr" className="font-mono text-xs text-[var(--admin-text-muted)]">
+                      {u.maskedPhone}
+                    </td>
+                    <td className="font-bold tabular-nums text-[var(--admin-primary)]">
+                      {u.points.toLocaleString("fa-IR")}
+                    </td>
+                    <td className="tabular-nums">{u.correctPredictions}</td>
+                    <td dir="ltr" className="max-w-[120px] truncate text-[10px] text-[var(--admin-text-subtle)]">
+                      {u.userId}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </AdminCard>
     </AdminLayout>
   );
 }

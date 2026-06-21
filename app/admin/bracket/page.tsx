@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminMetricCard, AdminSection } from "@/components/admin/AdminMetricCard";
+import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
+import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { AdminCard, AdminCardBody, AdminCardHeader } from "@/components/admin/ui/AdminCard";
+import { AdminToggle } from "@/components/admin/ui/AdminToggle";
+import { AdminLoading } from "@/components/admin/ui/AdminLoading";
+import { GitBranch, AlertCircle, CheckCircle2, Upload } from "lucide-react";
 
 type Config = {
   enabled: boolean;
@@ -59,86 +66,91 @@ export default function AdminBracketPage() {
     load();
   };
 
-  if (loading) return <AdminLayout><p>بارگذاری...</p></AdminLayout>;
+  if (loading) {
+    return (
+      <AdminLayout>
+        <AdminLoading />
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
-      <h1 className="mb-6 text-2xl font-bold">مدیریت جدول حذفی</h1>
+      <AdminPageHeader
+        title="مدیریت جدول حذفی"
+        description="تنظیم، اعتبارسنجی و انتشار جدول knockout"
+        actions={
+          <div className="flex gap-2">
+            <AdminButton variant="outline" size="sm" onClick={validate}>
+              <CheckCircle2 className="size-3.5" />
+              اعتبارسنجی
+            </AdminButton>
+            <AdminButton size="sm" onClick={publish}>
+              <Upload className="size-3.5" />
+              انتشار جدول
+            </AdminButton>
+          </div>
+        }
+      />
 
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
-        <div className="glass-card p-4">
-          <p className="text-xs text-white/50">مسابقات</p>
-          <p className="text-2xl font-bold text-primary">{matchCount}</p>
+      <AdminSection title="آمار">
+        <div className="grid grid-cols-3 gap-3 lg:gap-4">
+          <AdminMetricCard label="مسابقات" value={matchCount} icon={GitBranch} accent="primary" />
+          <AdminMetricCard label="ثبت نهایی" value={submissionCount} accent="success" />
+          <AdminMetricCard
+            label="خطاها"
+            value={errors.length}
+            icon={AlertCircle}
+            accent={errors.length > 0 ? "danger" : "success"}
+          />
         </div>
-        <div className="glass-card p-4">
-          <p className="text-xs text-white/50">ثبت نهایی</p>
-          <p className="text-2xl font-bold text-primary">{submissionCount}</p>
-        </div>
-        <div className="glass-card p-4">
-          <p className="text-xs text-white/50">خطاهای اعتبارسنجی</p>
-          <p className="text-2xl font-bold text-primary">{errors.length}</p>
-        </div>
-      </div>
+      </AdminSection>
 
       {config && (
-        <div className="glass-card mb-6 space-y-3 p-4">
-          <label className="flex items-center justify-between">
-            <span>فعال</span>
-            <input
-              type="checkbox"
+        <AdminCard className="mb-6">
+          <AdminCardHeader title="تنظیمات" description="وضعیت دسترسی عمومی به جدول حذفی" />
+          <AdminCardBody className="space-y-3">
+            <AdminToggle
+              label="فعال"
+              description="جدول حذفی در سیستم فعال باشد"
               checked={config.enabled}
-              onChange={(e) => patch({ enabled: e.target.checked })}
+              onChange={(v) => patch({ enabled: v })}
             />
-          </label>
-          <label className="flex items-center justify-between">
-            <span>منتشر شده</span>
-            <input
-              type="checkbox"
+            <AdminToggle
+              label="منتشر شده"
+              description="کاربران بتوانند جدول را ببینند"
               checked={config.published}
-              onChange={(e) => patch({ published: e.target.checked })}
+              onChange={(v) => patch({ published: v })}
             />
-          </label>
-          <label className="flex items-center justify-between">
-            <span>ثبت باز</span>
-            <input
-              type="checkbox"
+            <AdminToggle
+              label="ثبت باز"
+              description="امکان ثبت پیش‌بینی جدول"
               checked={config.submissionOpen}
-              onChange={(e) => patch({ submissionOpen: e.target.checked })}
+              onChange={(v) => patch({ submissionOpen: v })}
             />
-          </label>
-        </div>
+          </AdminCardBody>
+        </AdminCard>
       )}
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={validate}
-          className="rounded-lg border border-white/10 px-4 py-2 text-sm"
-        >
-          اعتبارسنجی
-        </button>
-        <button
-          type="button"
-          onClick={publish}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-[#10111f]"
-        >
-          انتشار جدول
-        </button>
-      </div>
 
       {errors.length > 0 && (
-        <div className="mt-6 space-y-2">
-          <h2 className="font-bold text-danger">خطاها</h2>
-          {errors.map((e, i) => (
-            <p key={i} className="text-sm text-white/70">
-              {e.message}
-            </p>
-          ))}
-        </div>
+        <AdminCard className="border-[var(--admin-danger)]/30">
+          <AdminCardHeader title="خطاهای اعتبارسنجی" />
+          <AdminCardBody className="space-y-2">
+            {errors.map((e, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-2 rounded-lg bg-[var(--admin-danger-soft)] px-3 py-2 text-sm text-[var(--admin-danger)]"
+              >
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                {e.message}
+              </div>
+            ))}
+          </AdminCardBody>
+        </AdminCard>
       )}
 
-      <p className="mt-6 text-xs text-white/50">
-        برای مقداردهی اولیه: npm run db:seed
+      <p className="mt-4 text-xs text-[var(--admin-text-subtle)]">
+        مقداردهی اولیه: <code dir="ltr">npm run db:seed</code>
       </p>
     </AdminLayout>
   );

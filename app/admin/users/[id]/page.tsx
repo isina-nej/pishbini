@@ -2,8 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
+import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { AdminCard, AdminCardBody, AdminCardHeader } from "@/components/admin/ui/AdminCard";
+import { AdminBadge } from "@/components/admin/ui/AdminBadge";
+import { AdminLoading } from "@/components/admin/ui/AdminLoading";
+import { AdminMetricCard } from "@/components/admin/AdminMetricCard";
 import { formatPersianDateTime } from "@/lib/dates";
+import { ArrowRight } from "lucide-react";
 
 export default function AdminUserDetailPage() {
   const params = useParams();
@@ -16,7 +24,13 @@ export default function AdminUserDetailPage() {
       .then((d) => setUser(d.user));
   }, [id]);
 
-  if (!user) return <AdminLayout><p>بارگذاری...</p></AdminLayout>;
+  if (!user) {
+    return (
+      <AdminLayout>
+        <AdminLoading />
+      </AdminLayout>
+    );
+  }
 
   const u = user as {
     firstName: string;
@@ -36,45 +50,122 @@ export default function AdminUserDetailPage() {
     referralsMade: Array<{ referred: { firstName: string; lastName: string } }>;
   };
 
+  const correctCount = u.predictions.filter((p) => p.isCorrect === true).length;
+
   return (
     <AdminLayout>
-      <h1 className="mb-2 text-2xl font-bold">{u.firstName} {u.lastName}</h1>
-      <p className="mb-6 text-sm text-white/50" dir="ltr">{u.phone} — کد: {u.referralCode} — امتیاز: {u.points}</p>
+      <AdminPageHeader
+        title={`${u.firstName} ${u.lastName}`}
+        description={`کد دعوت: ${u.referralCode}`}
+        actions={
+          <Link href="/admin/users">
+            <AdminButton variant="outline" size="sm">
+              <ArrowRight className="size-3.5" />
+              بازگشت
+            </AdminButton>
+          </Link>
+        }
+      />
 
-      <section className="mb-6">
-        <h2 className="mb-2 font-bold">پیش‌بینی‌ها</h2>
-        {u.predictions.map((p, i) => (
-          <div key={i} className="glass-card mb-2 p-3 text-sm">
-            {p.match.homeTeam.nameFa} vs {p.match.awayTeam.nameFa} — {p.prediction}
-            {p.isCorrect !== null && ` — ${p.isCorrect ? "درست" : "نادرست"} (${p.pointsAwarded})`}
-          </div>
-        ))}
-      </section>
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <AdminMetricCard label="امتیاز" value={u.points} accent="primary" />
+        <AdminMetricCard label="پیش‌بینی‌ها" value={u.predictions.length} />
+        <AdminMetricCard label="درست" value={correctCount} accent="success" />
+        <AdminMetricCard label="دعوت‌ها" value={u.referralsMade.length} accent="secondary" />
+      </div>
 
-      <section className="mb-6">
-        <h2 className="mb-2 font-bold">تراکنش‌های امتیاز</h2>
-        {u.pointTransactions.map((t, i) => (
-          <div key={i} className="mb-1 text-sm text-white/70">
-            {t.type}: {t.points} — {t.reason} — {formatPersianDateTime(t.createdAt)}
-          </div>
-        ))}
-      </section>
+      <div className="mb-4 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface)] p-4 text-sm">
+        <p dir="ltr" className="font-mono text-[var(--admin-text-muted)]">{u.phone}</p>
+        {u.referredByCode && (
+          <p className="mt-1 text-[var(--admin-text-subtle)]">
+            دعوت‌شده با کد: <span dir="ltr">{u.referredByCode}</span>
+          </p>
+        )}
+      </div>
 
-      <section className="mb-6">
-        <h2 className="mb-2 font-bold">پیامک‌ها</h2>
-        {u.smsLogs.map((s, i) => (
-          <div key={i} className="mb-1 text-sm text-white/70">
-            {s.status} — {formatPersianDateTime(s.createdAt)}
-          </div>
-        ))}
-      </section>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AdminCard>
+          <AdminCardHeader title="پیش‌بینی‌ها" />
+          <AdminCardBody className="max-h-80 space-y-2 overflow-y-auto">
+            {u.predictions.length === 0 ? (
+              <p className="text-sm text-[var(--admin-text-muted)]">بدون پیش‌بینی</p>
+            ) : (
+              u.predictions.map((p, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-elevated)] p-3 text-sm"
+                >
+                  <p className="font-medium">
+                    {p.match.homeTeam.nameFa} vs {p.match.awayTeam.nameFa}
+                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-[var(--admin-text-muted)]">{p.prediction}</span>
+                    {p.isCorrect !== null && (
+                      <AdminBadge tone={p.isCorrect ? "success" : "danger"}>
+                        {p.isCorrect ? `+${p.pointsAwarded}` : p.pointsAwarded}
+                      </AdminBadge>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </AdminCardBody>
+        </AdminCard>
 
-      <section>
-        <h2 className="mb-2 font-bold">دعوت‌ها ({u.referralsMade.length})</h2>
-        {u.referralsMade.map((r, i) => (
-          <div key={i} className="text-sm">{r.referred.firstName} {r.referred.lastName}</div>
-        ))}
-      </section>
+        <AdminCard>
+          <AdminCardHeader title="تراکنش‌های امتیاز" />
+          <AdminCardBody className="max-h-80 space-y-2 overflow-y-auto">
+            {u.pointTransactions.map((t, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-lg border border-[var(--admin-border)] px-3 py-2 text-sm"
+              >
+                <div>
+                  <p className="text-xs text-[var(--admin-text-subtle)]" dir="ltr">{t.type}</p>
+                  <p className="text-[var(--admin-text-muted)]">{t.reason}</p>
+                </div>
+                <span
+                  className={`font-bold tabular-nums ${
+                    t.points >= 0 ? "text-[var(--admin-success)]" : "text-[var(--admin-danger)]"
+                  }`}
+                >
+                  {t.points > 0 ? "+" : ""}
+                  {t.points}
+                </span>
+              </div>
+            ))}
+          </AdminCardBody>
+        </AdminCard>
+
+        <AdminCard>
+          <AdminCardHeader title={`دعوت‌ها (${u.referralsMade.length})`} />
+          <AdminCardBody className="space-y-2">
+            {u.referralsMade.length === 0 ? (
+              <p className="text-sm text-[var(--admin-text-muted)]">بدون دعوت</p>
+            ) : (
+              u.referralsMade.map((r, i) => (
+                <p key={i} className="text-sm">
+                  {r.referred.firstName} {r.referred.lastName}
+                </p>
+              ))
+            )}
+          </AdminCardBody>
+        </AdminCard>
+
+        <AdminCard>
+          <AdminCardHeader title="پیامک‌ها" />
+          <AdminCardBody className="max-h-60 space-y-2 overflow-y-auto">
+            {u.smsLogs.map((s, i) => (
+              <div key={i} className="flex items-center justify-between text-sm">
+                <AdminBadge tone={s.status === "SENT" ? "success" : "danger"}>{s.status}</AdminBadge>
+                <span className="text-xs text-[var(--admin-text-subtle)]">
+                  {formatPersianDateTime(s.createdAt)}
+                </span>
+              </div>
+            ))}
+          </AdminCardBody>
+        </AdminCard>
+      </div>
     </AdminLayout>
   );
 }

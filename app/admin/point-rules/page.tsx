@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
+import { AdminCard, AdminCardBody, AdminCardHeader } from "@/components/admin/ui/AdminCard";
+import { AdminBadge } from "@/components/admin/ui/AdminBadge";
+import { AdminInput } from "@/components/admin/ui/AdminInput";
+import { AdminLoading } from "@/components/admin/ui/AdminLoading";
 
 type Rule = {
   id: string;
@@ -14,11 +19,13 @@ type Rule = {
 
 export default function AdminPointRulesPage() {
   const [rules, setRules] = useState<Rule[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const load = () =>
     fetch("/api/admin/point-rules")
       .then((r) => r.json())
-      .then((d) => setRules(d.rules ?? []));
+      .then((d) => setRules(d.rules ?? []))
+      .finally(() => setLoading(false));
 
   useEffect(() => {
     load();
@@ -35,27 +42,47 @@ export default function AdminPointRulesPage() {
 
   return (
     <AdminLayout>
-      <h1 className="mb-6 text-2xl font-bold">قوانین امتیاز</h1>
-      <div className="space-y-4">
-        {rules.map((rule) => (
-          <div key={rule.id} className="glass-card flex items-center justify-between p-4">
-            <div>
-              <p className="font-medium">{rule.label}</p>
-              <p className="text-xs text-white/50">{rule.key} — {rule.description}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                defaultValue={rule.points}
-                onBlur={(e) => handleUpdate(rule.id, Number(e.target.value))}
-                className="w-24 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-center"
-                dir="ltr"
-              />
-              <span className="text-sm text-white/50">امتیاز</span>
-            </div>
-          </div>
-        ))}
-      </div>
+      <AdminPageHeader
+        title="قوانین امتیاز"
+        description="مقادیر امتیاز از این جدول خوانده می‌شوند — تغییرات بلافاصله اعمال می‌شود"
+      />
+
+      {loading ? (
+        <AdminLoading />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {rules.map((rule) => (
+            <AdminCard key={rule.id}>
+              <AdminCardBody>
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold">{rule.label}</p>
+                    <p className="mt-0.5 text-xs text-[var(--admin-text-subtle)]" dir="ltr">
+                      {rule.key}
+                    </p>
+                  </div>
+                  <AdminBadge tone={rule.active ? "success" : "default"}>
+                    {rule.active ? "فعال" : "غیرفعال"}
+                  </AdminBadge>
+                </div>
+                {rule.description && (
+                  <p className="mb-4 text-sm text-[var(--admin-text-muted)]">{rule.description}</p>
+                )}
+                <div className="flex items-center gap-3 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-elevated)] p-3">
+                  <AdminInput
+                    type="number"
+                    defaultValue={rule.points}
+                    onBlur={(e) => handleUpdate(rule.id, Number(e.target.value))}
+                    className="w-28 text-center font-bold"
+                    dir="ltr"
+                  />
+                  <span className="text-sm text-[var(--admin-text-muted)]">امتیاز</span>
+                </div>
+              </AdminCardBody>
+            </AdminCard>
+          ))}
+        </div>
+      )}
     </AdminLayout>
   );
 }

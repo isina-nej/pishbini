@@ -2,8 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
+import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { AdminCard, AdminCardBody, AdminCardHeader } from "@/components/admin/ui/AdminCard";
+import { AdminStatusBadge } from "@/components/admin/ui/AdminBadge";
+import { AdminLoading } from "@/components/admin/ui/AdminLoading";
 import { AdminSettlementModal } from "@/components/admin/AdminSettlementModal";
+import { ArrowRight, Gavel } from "lucide-react";
 
 export default function AdminMatchDetailPage() {
   const params = useParams();
@@ -20,7 +27,13 @@ export default function AdminMatchDetailPage() {
     load();
   }, [id]);
 
-  if (!match) return <AdminLayout><p>بارگذاری...</p></AdminLayout>;
+  if (!match) {
+    return (
+      <AdminLayout>
+        <AdminLoading />
+      </AdminLayout>
+    );
+  }
 
   const m = match as {
     homeTeam: { nameFa: string };
@@ -36,29 +49,75 @@ export default function AdminMatchDetailPage() {
 
   return (
     <AdminLayout>
-      <h1 className="mb-4 text-2xl font-bold">
-        {m.homeTeam.nameFa} vs {m.awayTeam.nameFa}
-      </h1>
-      <p className="mb-4 text-sm text-white/50">وضعیت: {m.status}</p>
+      <AdminPageHeader
+        title={`${m.homeTeam.nameFa} vs ${m.awayTeam.nameFa}`}
+        description="جزئیات بازی و پیش‌بینی‌ها"
+        actions={
+          <>
+            <AdminStatusBadge status={m.status} />
+            {!m.settledAt && (
+              <AdminButton size="sm" onClick={() => setShowSettle(true)}>
+                <Gavel className="size-3.5" />
+                ثبت نتیجه
+              </AdminButton>
+            )}
+            <Link href="/admin/matches">
+              <AdminButton variant="outline" size="sm">
+                <ArrowRight className="size-3.5" />
+                بازگشت
+              </AdminButton>
+            </Link>
+          </>
+        }
+      />
 
-      {!m.settledAt && (
-        <button
-          type="button"
-          onClick={() => setShowSettle(true)}
-          className="mb-6 rounded-lg bg-primary px-4 py-2 font-bold text-[#10111f]"
-        >
-          ثبت نتیجه و تسویه
-        </button>
+      {m.settledAt && (
+        <div className="mb-4 rounded-xl bg-[var(--admin-success-soft)] px-4 py-3 text-sm text-[var(--admin-success)]">
+          این بازی تسویه شده است
+        </div>
       )}
 
-      <h2 className="mb-2 font-bold">پیش‌بینی‌ها ({m.predictions.length})</h2>
-      <div className="space-y-2">
-        {m.predictions.map((p) => (
-          <div key={p.id} className="glass-card p-3 text-sm">
-            {p.user.firstName} {p.user.lastName} — {p.user.phone} — {p.prediction}
+      <AdminCard>
+        <AdminCardHeader
+          title={`پیش‌بینی‌ها (${m.predictions.length.toLocaleString("fa-IR")})`}
+        />
+        {m.predictions.length === 0 ? (
+          <AdminCardBody>
+            <p className="text-center text-sm text-[var(--admin-text-muted)]">
+              پیش‌بینی‌ای ثبت نشده
+            </p>
+          </AdminCardBody>
+        ) : (
+          <div className="admin-table-wrap border-0">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>کاربر</th>
+                  <th>موبایل</th>
+                  <th>پیش‌بینی</th>
+                </tr>
+              </thead>
+              <tbody>
+                {m.predictions.map((p) => (
+                  <tr key={p.id}>
+                    <td className="font-medium">
+                      {p.user.firstName} {p.user.lastName}
+                    </td>
+                    <td dir="ltr" className="font-mono text-xs text-[var(--admin-text-muted)]">
+                      {p.user.phone}
+                    </td>
+                    <td>
+                      <span className="rounded-md bg-[var(--admin-surface-elevated)] px-2 py-0.5 text-xs">
+                        {p.prediction}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
-      </div>
+        )}
+      </AdminCard>
 
       {showSettle && (
         <AdminSettlementModal

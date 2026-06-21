@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
+import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { AdminInput, AdminSelect, AdminLabel } from "@/components/admin/ui/AdminInput";
+import { AdminCard, AdminCardBody, AdminCardHeader } from "@/components/admin/ui/AdminCard";
+import { AdminStatusBadge } from "@/components/admin/ui/AdminBadge";
+import { AdminLoading } from "@/components/admin/ui/AdminLoading";
 import { formatPersianDateTime } from "@/lib/dates";
+import { Eye, Trash2 } from "lucide-react";
 
 type Team = { id: string; nameFa: string; code: string };
 type Match = {
@@ -18,6 +25,7 @@ type Match = {
 export default function AdminMatchesPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     homeTeamId: "",
     awayTeamId: "",
@@ -34,6 +42,7 @@ export default function AdminMatchesPage() {
     const tData = await tRes.json();
     setMatches(mData.matches ?? []);
     setTeams(tData.teams ?? []);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -64,76 +73,121 @@ export default function AdminMatchesPage() {
 
   return (
     <AdminLayout>
-      <h1 className="mb-6 text-2xl font-bold">مدیریت بازی‌ها</h1>
+      <AdminPageHeader
+        title="مدیریت بازی‌ها"
+        description={`${matches.length.toLocaleString("fa-IR")} بازی ثبت شده`}
+      />
 
-      <form onSubmit={handleCreate} className="glass-card mb-8 grid gap-3 p-4 md:grid-cols-2">
-        <select
-          value={form.homeTeamId}
-          onChange={(e) => setForm({ ...form, homeTeamId: e.target.value })}
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2"
-          required
-        >
-          <option value="">تیم میزبان</option>
-          {teams.map((t) => (
-            <option key={t.id} value={t.id}>{t.nameFa}</option>
-          ))}
-        </select>
-        <select
-          value={form.awayTeamId}
-          onChange={(e) => setForm({ ...form, awayTeamId: e.target.value })}
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2"
-          required
-        >
-          <option value="">تیم میهمان</option>
-          {teams.map((t) => (
-            <option key={t.id} value={t.id}>{t.nameFa}</option>
-          ))}
-        </select>
-        <input
-          type="datetime-local"
-          value={form.startTime}
-          onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2"
-          required
-        />
-        <select
-          value={form.status}
-          onChange={(e) => setForm({ ...form, status: e.target.value })}
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2"
-        >
-          <option value="SCHEDULED">SCHEDULED</option>
-          <option value="ACTIVE">ACTIVE</option>
-          <option value="LOCKED">LOCKED</option>
-          <option value="FINISHED">FINISHED</option>
-          <option value="CANCELLED">CANCELLED</option>
-        </select>
-        <button type="submit" className="rounded-lg bg-primary py-2 font-bold text-[#10111f] md:col-span-2">
-          افزودن بازی
-        </button>
-      </form>
-
-      <div className="space-y-2">
-        {matches.map((m) => (
-          <div key={m.id} className="glass-card flex items-center justify-between p-4">
+      <AdminCard className="mb-6">
+        <AdminCardHeader title="افزودن بازی جدید" description="زمان شروع و وضعیت را تنظیم کنید" />
+        <AdminCardBody>
+          <form onSubmit={handleCreate} className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             <div>
-              <p className="font-medium">
-                {m.homeTeam.nameFa} vs {m.awayTeam.nameFa}
-              </p>
-              <p className="text-xs text-white/50">
-                {formatPersianDateTime(m.startTime)} — {m.status} — {m._count.predictions} پیش‌بینی
-              </p>
+              <AdminLabel>تیم میزبان</AdminLabel>
+              <AdminSelect
+                value={form.homeTeamId}
+                onChange={(e) => setForm({ ...form, homeTeamId: e.target.value })}
+                required
+              >
+                <option value="">انتخاب...</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>{t.nameFa}</option>
+                ))}
+              </AdminSelect>
             </div>
-            <div className="flex gap-2">
-              <Link href={`/admin/matches/${m.id}`} className="text-sm text-secondary">
-                جزئیات
-              </Link>
-              <button type="button" onClick={() => handleDelete(m.id)} className="text-sm text-danger">
-                حذف
-              </button>
+            <div>
+              <AdminLabel>تیم میهمان</AdminLabel>
+              <AdminSelect
+                value={form.awayTeamId}
+                onChange={(e) => setForm({ ...form, awayTeamId: e.target.value })}
+                required
+              >
+                <option value="">انتخاب...</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>{t.nameFa}</option>
+                ))}
+              </AdminSelect>
             </div>
+            <div>
+              <AdminLabel>زمان شروع</AdminLabel>
+              <AdminInput
+                type="datetime-local"
+                value={form.startTime}
+                onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                dir="ltr"
+                required
+              />
+            </div>
+            <div>
+              <AdminLabel>وضعیت</AdminLabel>
+              <AdminSelect
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
+              >
+                <option value="SCHEDULED">SCHEDULED</option>
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="LOCKED">LOCKED</option>
+                <option value="FINISHED">FINISHED</option>
+                <option value="CANCELLED">CANCELLED</option>
+              </AdminSelect>
+            </div>
+            <div className="md:col-span-2 lg:col-span-4">
+              <AdminButton type="submit">افزودن بازی</AdminButton>
+            </div>
+          </form>
+        </AdminCardBody>
+      </AdminCard>
+
+      <AdminCard>
+        <AdminCardHeader title="لیست بازی‌ها" />
+        {loading ? (
+          <AdminLoading />
+        ) : (
+          <div className="admin-table-wrap border-0">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>مسابقه</th>
+                  <th>زمان</th>
+                  <th>وضعیت</th>
+                  <th>پیش‌بینی</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {matches.map((m) => (
+                  <tr key={m.id}>
+                    <td className="font-medium">
+                      {m.homeTeam.nameFa}
+                      <span className="mx-1.5 text-[var(--admin-text-subtle)]">vs</span>
+                      {m.awayTeam.nameFa}
+                    </td>
+                    <td className="text-xs text-[var(--admin-text-muted)]">
+                      {formatPersianDateTime(m.startTime)}
+                    </td>
+                    <td>
+                      <AdminStatusBadge status={m.status} />
+                    </td>
+                    <td className="tabular-nums">{m._count.predictions.toLocaleString("fa-IR")}</td>
+                    <td>
+                      <div className="flex justify-end gap-1">
+                        <Link href={`/admin/matches/${m.id}`}>
+                          <AdminButton variant="ghost" size="sm">
+                            <Eye className="size-3.5" />
+                          </AdminButton>
+                        </Link>
+                        <AdminButton variant="ghost" size="sm" onClick={() => handleDelete(m.id)}>
+                          <Trash2 className="size-3.5 text-[var(--admin-danger)]" />
+                        </AdminButton>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
-      </div>
+        )}
+      </AdminCard>
     </AdminLayout>
   );
 }
