@@ -21,7 +21,9 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body className={`${vazirmatn.variable} antialiased`}>
-        <div className="mx-auto min-h-dvh w-full max-w-[430px]">{children}</div>
+        <div className="mx-auto min-h-dvh w-full max-w-[430px] [&:has(.bracket-root)]:max-w-none">
+          {children}
+        </div>
       </body>
     </html>
   );

@@ -23,6 +23,7 @@ Mobile-first RTL Persian prediction web app for the Pishro Sarmaye World Cup cam
 | referral-system | Referral codes and rewards |
 | sms-system | SMS abstraction and logging |
 | leaderboard | Public and admin leaderboards |
+| knockout-bracket | Knockout bracket prediction (/bracket) |
 | deployment | VPS deployment guide |
 
 ## Critical Rules

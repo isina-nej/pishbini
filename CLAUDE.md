@@ -34,6 +34,15 @@ Next.js App Router handles both UI and API. MySQL via Prisma.
 7. SMS failure must not fail registration.
 8. Settlement is idempotent — reject double-settle.
 
+## Knockout Bracket (separate from live matches)
+
+- Bracket uses its own models (`BracketMatch`, `BracketPick`, `BracketSubmission`) — never extend live `Match`/`Prediction`.
+- One bracket submission per user (by phone); picks must form a valid full tree.
+- Champion must match the final match winner in picks.
+- Draft stored client-side: `world-cup-bracket-draft-v1` (localStorage).
+- Admin must validate and publish before public access.
+- Routes: `/bracket`, `/bracket/submit`, `/bracket/success`; admin at `/admin/bracket`.
+
 ## Directory Conventions
 
 - `app/` — routes and API handlers

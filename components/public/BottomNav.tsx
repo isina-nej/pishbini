@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Trophy, Home } from "lucide-react";
+import { Trophy, Home, GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/", label: "پیش‌بینی", icon: Home },
+  { href: "/bracket", label: "جدول حذفی", icon: GitBranch },
   { href: "/leaderboard", label: "جدول امتیازات", icon: Trophy },
 ];
 

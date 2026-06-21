@@ -10,6 +10,7 @@ import {
   Shield,
   Star,
   LogOut,
+  GitBranch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ const links = [
   { href: "/admin", label: "داشبورد", icon: LayoutDashboard },
   { href: "/admin/teams", label: "تیم‌ها", icon: Shield },
   { href: "/admin/matches", label: "بازی‌ها", icon: Calendar },
+  { href: "/admin/bracket", label: "جدول حذفی", icon: GitBranch },
   { href: "/admin/users", label: "شرکت‌کنندگان", icon: Users },
   { href: "/admin/point-rules", label: "قوانین امتیاز", icon: Star },
   { href: "/admin/leaderboard", label: "جدول امتیازات", icon: Trophy },

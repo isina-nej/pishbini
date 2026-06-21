@@ -1,0 +1,50 @@
+.bracket-root {
+  --bracket-bg: #090d1a;
+  --bracket-surface: #12182a;
+  --bracket-surface-elevated: #182139;
+  --bracket-border: rgba(255, 255, 255, 0.1);
+  --bracket-border-active: #24d8b4;
+  --bracket-primary: #24d8b4;
+  --bracket-secondary: #596cff;
+  --bracket-accent: #9b7cff;
+  --bracket-text: #ffffff;
+  --bracket-text-muted: rgba(255, 255, 255, 0.58);
+  --bracket-loser: rgba(255, 255, 255, 0.32);
+  --bracket-champion: #f4c95d;
+
+  background: var(--bracket-bg);
+  color: var(--bracket-text);
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+}
+
+.bracket-scroll {
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.bracket-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.bracket-column {
+  width: min(84vw, 340px);
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .bracket-column {
+    width: min(320px, 28vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bracket-scroll {
+    scroll-behavior: auto;
+  }
+}

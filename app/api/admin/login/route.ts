@@ -21,7 +21,11 @@ export async function POST(request: Request) {
     }
 
     await setAdminSessionCookie();
-    await writeAuditLog("ADMIN_LOGIN");
+    try {
+      await writeAuditLog("ADMIN_LOGIN");
+    } catch (err) {
+      console.error("Failed to write admin login audit log:", err);
+    }
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "خطا در ورود" }, { status: 500 });

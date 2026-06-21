@@ -24,6 +24,8 @@ model User {
   pointTransactions PointTransaction[]
   referralsMade     Referral[]         @relation("Referrer")
   referredRecord    Referral?          @relation("Referred")
+  bracketPicks      BracketPick[]
+  bracketSubmission BracketSubmission?
 
   @@index([points])
   @@index([createdAt])
@@ -41,6 +43,10 @@ model Team {
 
   homeMatches Match[] @relation("HomeTeam")
   awayMatches Match[] @relation("AwayTeam")
+  bracketHomeMatches BracketMatch[] @relation("BracketHomeTeam")
+  bracketAwayMatches BracketMatch[] @relation("BracketAwayTeam")
+  bracketPicks       BracketPick[]  @relation("BracketPickWinner")
+  bracketSubmissions BracketSubmission[] @relation("BracketChampion")
 }
 
 model Match {
@@ -155,6 +161,69 @@ model CampaignSetting {
   value     String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model BracketMatch {
+  id                String       @id @default(cuid())
+  stage             BracketStage
+  position          Int
+  homeTeamId        String?
+  awayTeamId        String?
+  homeSourceMatchId String?
+  awaySourceMatchId String?
+  nextMatchId       String?
+  nextMatchSlot     BracketSlot?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  homeTeam     Team?         @relation("BracketHomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam     Team?         @relation("BracketAwayTeam", fields: [awayTeamId], references: [id])
+  homeSource   BracketMatch? @relation("HomeFeeder", fields: [homeSourceMatchId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  awaySource   BracketMatch? @relation("AwayFeeder", fields: [awaySourceMatchId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  fedHome      BracketMatch[] @relation("HomeFeeder")
+  fedAway      BracketMatch[] @relation("AwayFeeder")
+  picks        BracketPick[]
+
+  @@unique([stage, position])
+  @@index([stage])
+}
+
+model BracketPick {
+  id             String   @id @default(cuid())
+  userId         String
+  bracketMatchId String
+  winnerTeamId   String
+  createdAt      DateTime @default(now())
+
+  user       User         @relation(fields: [userId], references: [id])
+  match      BracketMatch @relation(fields: [bracketMatchId], references: [id])
+  winnerTeam Team         @relation("BracketPickWinner", fields: [winnerTeamId], references: [id])
+
+  @@unique([userId, bracketMatchId])
+  @@index([userId])
+}
+
+model BracketSubmission {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  championTeamId String
+  submittedAt    DateTime @default(now())
+
+  user         User @relation(fields: [userId], references: [id])
+  championTeam Team @relation("BracketChampion", fields: [championTeamId], references: [id])
+}
+
+enum BracketStage {
+  ROUND_OF_32
+  ROUND_OF_16
+  QUARTER_FINAL
+  SEMI_FINAL
+  FINAL
+}
+
+enum BracketSlot {
+  HOME
+  AWAY
 }
 
 enum MatchStatus {

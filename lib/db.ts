@@ -7,13 +7,17 @@ const globalForPrisma = globalThis as unknown as {
 
 function parseDatabaseUrl(url: string) {
   const parsed = new URL(url);
+  const host = parsed.hostname === "localhost" ? "127.0.0.1" : parsed.hostname;
+
   return {
-    host: parsed.hostname,
+    host,
     port: parsed.port ? Number(parsed.port) : 3306,
     user: decodeURIComponent(parsed.username),
     password: decodeURIComponent(parsed.password),
     database: parsed.pathname.replace(/^\//, ""),
-    connectionLimit: 5,
+    connectionLimit: 10,
+    connectTimeout: 10_000,
+    acquireTimeout: 10_000,
   };
 }
 

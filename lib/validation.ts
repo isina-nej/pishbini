@@ -72,6 +72,24 @@ export const markWinnerSchema = z.object({
   userId: z.string().min(1),
 });
 
+export const bracketSubmitSchema = z.object({
+  firstName: nameSchema,
+  lastName: nameSchema,
+  phone: phoneInputSchema,
+  referralCode: z.string().nullable().optional(),
+  picks: z.record(z.string(), z.string()).refine((p) => Object.keys(p).length > 0, {
+    message: "پیش‌بینی‌ها الزامی است",
+  }),
+  championTeamId: z.string().min(1),
+});
+
+export const bracketSettingsSchema = z.object({
+  enabled: z.boolean().optional(),
+  published: z.boolean().optional(),
+  submissionOpen: z.boolean().optional(),
+});
+
 export type SubmitInput = z.infer<typeof submitSchema>;
+export type BracketSubmitInput = z.infer<typeof bracketSubmitSchema>;
 export type TeamInput = z.infer<typeof teamSchema>;
 export type MatchInput = z.infer<typeof matchSchema>;

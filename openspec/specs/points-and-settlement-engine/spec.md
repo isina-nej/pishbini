@@ -22,7 +22,7 @@ Second settle attempt rejected.
 
 ## Acceptance Criteria
 
-- Seed defaults: +200, +1000, -100, +500, 0
+- Seed defaults: +200 (registration), +10 (correct), +3 (wrong), +30 (referral), 0 (cancelled)
 - Rule edits affect future settlements only
 - Historical pointsAwarded unchanged after rule edit
 - Settlement summary returned
