@@ -4,17 +4,13 @@ import { toPhoneE164 } from "@/lib/phone";
 import { getReferralLink } from "@/lib/utils";
 
 const SMS_TEMPLATE = `پیش‌بینی شما در کمپین جام جهانی پیشرو سرمایه ثبت شد.
-کد دعوت اختصاصی شما: {{REFERRAL_CODE}}
 با دعوت دوستانتان امتیاز بیشتری بگیرید:
 {{REFERRAL_LINK}}`;
 
 type SendResult = { success: boolean; provider: string; providerResponse?: string };
 
 function buildMessage(referralCode: string): string {
-  return SMS_TEMPLATE.replace("{{REFERRAL_CODE}}", referralCode).replace(
-    "{{REFERRAL_LINK}}",
-    getReferralLink(referralCode)
-  );
+  return SMS_TEMPLATE.replace("{{REFERRAL_LINK}}", getReferralLink(referralCode));
 }
 
 function getSmsService(): "mock" | "modirpayamak" | "melipayamak" {
@@ -103,10 +99,9 @@ async function sendPatternMessage(
   }
 }
 
-/** Confirmation after submit — IPPanel pattern with referral_code + link */
+/** Confirmation after submit — IPPanel pattern with referral link only (param: link) */
 export async function sendConfirmationViaPattern(
   phone: string,
-  referralCode: string,
   referralLink: string
 ): Promise<SendResult> {
   const patternCode = getIppanelConfirmPatternCode();
@@ -118,10 +113,7 @@ export async function sendConfirmationViaPattern(
     };
   }
 
-  return sendPatternMessage(phone, patternCode, {
-    referral_code: referralCode,
-    link: referralLink,
-  });
+  return sendPatternMessage(phone, patternCode, { link: referralLink });
 }
 
 /** OTP — IPPanel Edge Pattern API (text lives in IPPanel panel, param: code) */
@@ -296,7 +288,7 @@ export async function sendConfirmationSms(
   });
 
   try {
-    const result = await sendConfirmationViaPattern(phone, referralCode, referralLink);
+    const result = await sendConfirmationViaPattern(phone, referralLink);
     await prisma.smsLog.update({
       where: { id: log.id },
       data: {

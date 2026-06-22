@@ -7,6 +7,7 @@ import confetti from "canvas-confetti";
 import { ReferralCard } from "@/components/public/ReferralCard";
 import { BottomNav } from "@/components/public/BottomNav";
 import { PageAccessProvider } from "@/components/public/PageAccessProvider";
+import { ReferralBanner } from "@/components/public/ReferralBanner";
 
 type SuccessData = {
   referralCode: string;
@@ -45,6 +46,7 @@ export default function SuccessPage() {
   return (
     <PageAccessProvider>
     <div className="pb-24 pt-10">
+      <ReferralBanner />
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

@@ -299,7 +299,7 @@ openssl rand -base64 32
 | `NODE_ENV` | ✅ | `production` — کوکی ادمین با HTTPS کار می‌کند |
 | `SMS_SERVICE` | ✅ | `mock` \| `modirpayamak` \| `melipayamak` — پیامک تأیید ثبت‌نام |
 | `SMS_PROVIDER` | — | alias قدیمی `SMS_SERVICE` |
-| `IPPANEL_*` | — | OTP (`IPPANEL_PATTERN_CODE`, param: `code`) و تأیید ثبت (`IPPANEL_CONFIRM_PATTERN_CODE`, params: `referral_code`, `link`) |
+| `IPPANEL_*` | — | OTP (`IPPANEL_PATTERN_CODE`, param: `code`) و تأیید ثبت (`IPPANEL_CONFIRM_PATTERN_CODE`, param: `link`) |
 | `RATE_LIMIT_ENABLED` | ✅ | `true` |
 
 ### ⛔ اشتباه رایج
@@ -729,7 +729,7 @@ NODE_OPTIONS="--max-old-space-size=2048" npm run build
 - **توسعه:** `SMS_SERVICE=mock` — فقط console + `SmsLog`؛ ثبت‌نام fail نمی‌شود.
 - **production:** `SMS_SERVICE=melipayamak` یا `modirpayamak` + credentialهای مربوط در `.env`.
 - **OTP (IPPanel Pattern):** `IPPANEL_API_KEY` + `IPPANEL_PATTERN_CODE` — Authorization بدون `Bearer`.
-- **تأیید ثبت (IPPanel Pattern):** `IPPANEL_CONFIRM_PATTERN_CODE` — params: `referral_code`, `link`.
+- **تأیید ثبت (IPPanel Pattern):** `IPPANEL_CONFIRM_PATTERN_CODE` — param: `link` (لینک دعوت کامل).
 - **fallback متن آزاد:** `SMS_SERVICE=melipayamak` یا `modirpayamak` اگر Pattern تأیید تنظیم نشده باشد.
 - خطاها در جدول `SmsLog` و پنل ادمین → کاربران قابل مشاهده‌اند.
 

@@ -1,10 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { PageId } from "@/lib/page-access.shared";
+import type { PageId } from "@/lib/page-access";
 import { BottomNav } from "./BottomNav";
 import { PageAccessGuard } from "./PageAccessGuard";
 import { PageAccessProvider } from "./PageAccessProvider";
+import { ReferralBanner } from "./ReferralBanner";
 
 export function PublicPageShell({
   pageId,
@@ -17,7 +18,10 @@ export function PublicPageShell({
 }) {
   return (
     <PageAccessProvider>
-      <PageAccessGuard pageId={pageId}>{children}</PageAccessGuard>
+      <PageAccessGuard pageId={pageId}>
+        <ReferralBanner />
+        {children}
+      </PageAccessGuard>
       {showNav && <BottomNav />}
     </PageAccessProvider>
   );

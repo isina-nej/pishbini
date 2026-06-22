@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { verifyOtp } from "@/lib/otp-service";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { REFERRAL_COOKIE_NAME, resolveReferralCode } from "@/lib/referral";
 import { processSubmission } from "@/lib/submit-service";
 import { submitSchema } from "@/lib/validation";
 
@@ -33,12 +34,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: otp.error ?? "کد تأیید نامعتبر است." }, { status: 400 });
     }
 
-    const result = await processSubmission(parsed.data);
+    const cookieStore = await cookies();
+    const referralFromCookie = cookieStore.get(REFERRAL_COOKIE_NAME)?.value;
+    const referralCode = resolveReferralCode(parsed.data.referralCode, referralFromCookie);
+
+    const result = await processSubmission({
+      ...parsed.data,
+      referralCode,
+    });
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    const cookieStore = await cookies();
     cookieStore.set(PARTICIPANT_COOKIE, result.data.referralCode, {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",

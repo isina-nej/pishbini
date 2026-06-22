@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { processBracketSubmission } from "@/lib/bracket/submit-service";
+import { REFERRAL_COOKIE_NAME, resolveReferralCode } from "@/lib/referral";
 import { bracketSubmitSchema } from "@/lib/validation";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
@@ -27,12 +28,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await processBracketSubmission(parsed.data);
+    const cookieStore = await cookies();
+    const referralFromCookie = cookieStore.get(REFERRAL_COOKIE_NAME)?.value;
+    const referralCode = resolveReferralCode(parsed.data.referralCode, referralFromCookie);
+
+    const result = await processBracketSubmission({
+      ...parsed.data,
+      referralCode,
+    });
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    const cookieStore = await cookies();
     cookieStore.set(PARTICIPANT_COOKIE, result.data.referralCode, {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",

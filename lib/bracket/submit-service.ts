@@ -14,7 +14,7 @@ import { isCampaignFrozen } from "@/lib/campaign";
 import { maskPhone } from "@/lib/masking";
 import { normalizePhone } from "@/lib/phone";
 import { getActivePointRule } from "@/lib/points";
-import { generateReferralCode } from "@/lib/referral";
+import { generateReferralCode, normalizeReferralCode } from "@/lib/referral";
 import { awardReferralIfEligible } from "@/lib/referral-reward";
 import { sendConfirmationSms } from "@/lib/sms";
 import { getReferralLink } from "@/lib/utils";
@@ -121,7 +121,7 @@ export async function processBracketSubmission(
     };
   }
 
-  const referralCodeInput = input.referralCode?.trim().toUpperCase() || null;
+  const referralCodeInput = normalizeReferralCode(input.referralCode ?? "");
 
   try {
     const result = await prisma.$transaction(async (tx) => {

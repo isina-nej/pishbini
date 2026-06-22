@@ -3,7 +3,7 @@ import { isCampaignFrozen } from "@/lib/campaign";
 import { isMatchLocked } from "@/lib/matches";
 import { maskPhone } from "@/lib/masking";
 import { normalizePhone } from "@/lib/phone";
-import { generateReferralCode } from "@/lib/referral";
+import { generateReferralCode, normalizeReferralCode } from "@/lib/referral";
 import { awardReferralIfEligible } from "@/lib/referral-reward";
 import { sendConfirmationSms } from "@/lib/sms";
 import { computeUserScore, loadActivePointRulesMap } from "@/lib/user-score";
@@ -52,7 +52,7 @@ export async function processSubmission(
     }
   }
 
-  const referralCodeInput = input.referralCode?.trim().toUpperCase() || null;
+  const referralCodeInput = normalizeReferralCode(input.referralCode ?? "");
 
   try {
     const { user, newPredictionsCount } = await prisma.$transaction(async (tx) => {
