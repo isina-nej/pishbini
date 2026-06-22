@@ -28,6 +28,11 @@ export async function createAndSendOtp(phone: string): Promise<{ success: boolea
   const sms = await sendOtpViaPattern(normalized, code);
   if (!sms.success) {
     console.error("[OTP] SMS failed:", sms.providerResponse);
+    await prisma.otp.delete({ where: { phone: normalized } }).catch(() => {});
+    return {
+      success: false,
+      error: "ارسال پیامک با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
+    };
   }
 
   return { success: true };
