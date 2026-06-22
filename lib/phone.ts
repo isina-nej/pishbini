@@ -19,3 +19,10 @@ export function normalizePhone(input: string): string | null {
 export function isValidIranianMobile(input: string): boolean {
   return normalizePhone(input) !== null;
 }
+
+/** `09XXXXXXXXX` → `+989XXXXXXXXX` for IPPanel / international APIs */
+export function toPhoneE164(phone: string): string | null {
+  const normalized = normalizePhone(phone);
+  if (!normalized) return null;
+  return `+98${normalized.slice(1)}`;
+}

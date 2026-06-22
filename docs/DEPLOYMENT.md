@@ -258,9 +258,24 @@ NEXT_PUBLIC_APP_URL="https://wc.pishrosarmaye.com"
 ADMIN_PASSWORD="رمز-قوی-پنل-ادمین"
 ADMIN_SESSION_SECRET="خروجی-openssl-rand-زیر"
 
+SMS_SERVICE="mock"
 SMS_PROVIDER="mock"
-SMS_API_KEY=""
-SMS_SENDER=""
+
+# ModirPayamak
+SMS_USERNAME=""
+SMS_PASSWORD=""
+SMS_FROM="pishro"
+SMS_API_URL="https://sms.modirpayamak.com"
+
+# Melipayamak
+MELIPAYAMAK_USERNAME=""
+MELIPAYAMAK_API_KEY=""
+MELIPAYAMAK_SENDER=""
+
+# IPPanel Pattern (OTP — optional)
+IPPANEL_API_KEY=""
+IPPANEL_FROM_NUMBER="+983000505"
+IPPANEL_PATTERN_CODE="ppaissmzfp67m2i"
 
 RATE_LIMIT_ENABLED="true"
 NODE_ENV="production"
@@ -281,7 +296,9 @@ openssl rand -base64 32
 | `ADMIN_PASSWORD` | ✅ | فقط رمز — یوزرنیم ندارد |
 | `ADMIN_SESSION_SECRET` | ✅ | حداقل ۳۲ کاراکتر تصادفی |
 | `NODE_ENV` | ✅ | `production` — کوکی ادمین با HTTPS کار می‌کند |
-| `SMS_PROVIDER` | ✅ | فعلاً `mock` |
+| `SMS_SERVICE` | ✅ | `mock` \| `modirpayamak` \| `melipayamak` — پیامک تأیید ثبت‌نام |
+| `SMS_PROVIDER` | — | alias قدیمی `SMS_SERVICE` |
+| `IPPANEL_*` | — | فقط OTP Pattern (در صورت نیاز) |
 | `RATE_LIMIT_ENABLED` | ✅ | `true` |
 
 ### ⛔ اشتباه رایج
@@ -708,7 +725,10 @@ NODE_OPTIONS="--max-old-space-size=2048" npm run build
 
 ### SMS ارسال نمی‌شود
 
-`SMS_PROVIDER=mock` — فقط لاگ/DB. ثبت‌نام نباید fail شود.
+- **توسعه:** `SMS_SERVICE=mock` — فقط console + `SmsLog`؛ ثبت‌نام fail نمی‌شود.
+- **production:** `SMS_SERVICE=melipayamak` یا `modirpayamak` + credentialهای مربوط در `.env`.
+- **OTP (IPPanel Pattern):** `IPPANEL_API_KEY` + `IPPANEL_PATTERN_CODE` — Authorization بدون `Bearer`.
+- خطاها در جدول `SmsLog` و پنل ادمین → کاربران قابل مشاهده‌اند.
 
 ---
 
