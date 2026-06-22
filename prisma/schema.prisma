@@ -19,6 +19,7 @@ model User {
   wrongCount        Int      @default(0)
   referralCount     Int      @default(0)
   basePointsAwarded Boolean  @default(false)
+  hidden            Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -161,12 +162,22 @@ model SmsLog {
 }
 
 model AdminAuditLog {
-  id         String   @id @default(cuid())
-  action     String
-  entityType String?
-  entityId   String?
-  metadata   Json?
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  action      String
+  actorType   String   @default("ADMIN")
+  actorUserId String?
+  actorLabel  String?
+  entityType  String?
+  entityId    String?
+  summary     String?  @db.Text
+  ip          String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([action])
+  @@index([actorType])
+  @@index([actorUserId])
+  @@index([createdAt])
 }
 
 model CampaignSetting {

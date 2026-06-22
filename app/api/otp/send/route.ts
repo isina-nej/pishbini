@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { writeAuditLog } from "@/lib/audit";
+import { maskPhone } from "@/lib/masking";
 import { createAndSendOtp } from "@/lib/otp-service";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { normalizePhone } from "@/lib/phone";
@@ -38,6 +40,13 @@ export async function POST(request: Request) {
     if (!result.success) {
       return NextResponse.json({ error: result.error ?? "خطا در ارسال کد" }, { status: 400 });
     }
+
+    writeAuditLog("USER_OTP_REQUEST", undefined, undefined, { phone }, {
+      actorType: "USER",
+      actorLabel: maskPhone(phone),
+      ip,
+      summary: `درخواست کد تأیید برای ${maskPhone(phone)}`,
+    }).catch(console.error);
 
     return NextResponse.json({ success: true, message: "کد تأیید ارسال شد." });
   } catch {

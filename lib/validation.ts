@@ -79,6 +79,13 @@ export const markWinnerSchema = z.object({
   userId: z.string().min(1),
 });
 
+export const adminUserUpdateSchema = z.object({
+  firstName: nameSchema.optional(),
+  lastName: nameSchema.optional(),
+  phone: phoneInputSchema.optional(),
+  hidden: z.boolean().optional(),
+});
+
 export const pageAccessItemSchema = z.object({
   enabled: z.boolean(),
   message: z.string().trim().max(500),

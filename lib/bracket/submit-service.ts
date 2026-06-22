@@ -113,6 +113,13 @@ export async function processBracketSubmission(
     where: { phone },
     include: { bracketSubmission: true },
   });
+  if (existingByPhone?.hidden) {
+    return {
+      success: false,
+      error: "حساب شما غیرفعال شده است.",
+      status: 403,
+    };
+  }
   if (existingByPhone?.bracketSubmission) {
     return {
       success: false,
@@ -212,6 +219,16 @@ export async function processBracketSubmission(
     });
 
     sendConfirmationSms(result.id, result.phone, result.referralCode).catch(console.error);
+
+    const { logUserActivity } = await import("@/lib/audit");
+    logUserActivity("USER_BRACKET_SUBMIT", {
+      userId: result.id,
+      phone: result.phone,
+      firstName: result.firstName,
+      lastName: result.lastName,
+      summary: `ثبت پیش‌بینی جدول حذفی`,
+      metadata: { championTeamId: input.championTeamId },
+    }).catch(console.error);
 
     return {
       success: true,

@@ -7,8 +7,9 @@ import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { AdminInput } from "@/components/admin/ui/AdminInput";
 import { AdminCard, AdminCardHeader } from "@/components/admin/ui/AdminCard";
+import { AdminBadge } from "@/components/admin/ui/AdminBadge";
 import { AdminLoading } from "@/components/admin/ui/AdminLoading";
-import { Download, Search, Eye } from "lucide-react";
+import { Download, Search, Eye, EyeOff, UserRound } from "lucide-react";
 
 type User = {
   id: string;
@@ -20,6 +21,7 @@ type User = {
   totalPredictions: number;
   correctPredictions: number;
   referralCount: number;
+  hidden: boolean;
   createdAt: string;
 };
 
@@ -40,6 +42,15 @@ export default function AdminUsersPage() {
   useEffect(() => {
     load();
   }, []);
+
+  const toggleHide = async (u: User) => {
+    await fetch(`/api/admin/users/${u.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hidden: !u.hidden }),
+    });
+    load(q);
+  };
 
   return (
     <AdminLayout>
@@ -81,6 +92,7 @@ export default function AdminUsersPage() {
                 <tr>
                   <th>نام</th>
                   <th>موبایل</th>
+                  <th>وضعیت</th>
                   <th>امتیاز</th>
                   <th>پیش‌بینی</th>
                   <th>درست</th>
@@ -90,12 +102,19 @@ export default function AdminUsersPage() {
               </thead>
               <tbody>
                 {users.map((u) => (
-                  <tr key={u.id}>
+                  <tr key={u.id} className={u.hidden ? "opacity-60" : undefined}>
                     <td className="font-medium">
                       {u.firstName} {u.lastName}
                     </td>
                     <td dir="ltr" className="font-mono text-xs text-[var(--admin-text-muted)]">
                       {u.phone}
+                    </td>
+                    <td>
+                      {u.hidden ? (
+                        <AdminBadge tone="warning">مخفی</AdminBadge>
+                      ) : (
+                        <AdminBadge tone="success">فعال</AdminBadge>
+                      )}
                     </td>
                     <td className="font-bold tabular-nums text-[var(--admin-primary)]">
                       {u.points.toLocaleString("fa-IR")}
@@ -104,11 +123,25 @@ export default function AdminUsersPage() {
                     <td className="tabular-nums">{u.correctPredictions}</td>
                     <td className="tabular-nums">{u.referralCount}</td>
                     <td>
-                      <Link href={`/admin/users/${u.id}`}>
-                        <AdminButton variant="ghost" size="sm">
-                          <Eye className="size-3.5" />
+                      <div className="flex gap-1">
+                        <AdminButton
+                          variant="ghost"
+                          size="sm"
+                          title={u.hidden ? "نمایش" : "مخفی"}
+                          onClick={() => toggleHide(u)}
+                        >
+                          {u.hidden ? (
+                            <Eye className="size-3.5" />
+                          ) : (
+                            <EyeOff className="size-3.5" />
+                          )}
                         </AdminButton>
-                      </Link>
+                        <Link href={`/admin/users/${u.id}`}>
+                          <AdminButton variant="ghost" size="sm" title="جزئیات">
+                            <UserRound className="size-3.5" />
+                          </AdminButton>
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}

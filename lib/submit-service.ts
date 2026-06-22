@@ -54,8 +54,17 @@ export async function processSubmission(
 
   const referralCodeInput = normalizeReferralCode(input.referralCode ?? "");
 
+  const existingUser = await prisma.user.findUnique({ where: { phone } });
+  if (existingUser?.hidden) {
+    return {
+      success: false,
+      error: "حساب شما غیرفعال شده است. امکان ثبت پیش‌بینی وجود ندارد.",
+      status: 403,
+    };
+  }
+
   try {
-    const { user, newPredictionsCount } = await prisma.$transaction(async (tx) => {
+    const { user, newPredictionsCount, isNewUser } = await prisma.$transaction(async (tx) => {
       let user = await tx.user.findUnique({ where: { phone } });
       const isNewUser = !user;
 
@@ -120,8 +129,28 @@ export async function processSubmission(
       }
 
       const updatedUser = await tx.user.findUniqueOrThrow({ where: { id: user.id } });
-      return { user: updatedUser, newPredictionsCount: newPredictions.length };
+      return { user: updatedUser, newPredictionsCount: newPredictions.length, isNewUser };
     });
+
+    const { logUserActivity } = await import("@/lib/audit");
+    if (isNewUser) {
+      logUserActivity("USER_REGISTER", {
+        userId: user.id,
+        phone: user.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        summary: `ثبت‌نام کاربر جدید: ${user.firstName} ${user.lastName}`,
+        metadata: { referralCode: user.referralCode, referredByCode: user.referredByCode },
+      }).catch(console.error);
+    }
+    logUserActivity("USER_SUBMIT", {
+      userId: user.id,
+      phone: user.phone,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      summary: `ثبت ${newPredictionsCount.toLocaleString("fa-IR")} پیش‌بینی جدید`,
+      metadata: { newPredictionsCount },
+    }).catch(console.error);
 
     sendConfirmationSms(user.id, user.phone, user.referralCode).catch(console.error);
 

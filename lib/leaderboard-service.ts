@@ -58,6 +58,7 @@ function sortEntries(
 export async function getLeaderboardData(limit = 10): Promise<LeaderboardEntry[]> {
   const [users, rules] = await Promise.all([
     prisma.user.findMany({
+      where: { hidden: false },
       select: {
         id: true,
         firstName: true,
@@ -96,6 +97,7 @@ export async function getUserRankByReferralCode(
 ): Promise<LeaderboardEntry | null> {
   const [users, rules] = await Promise.all([
     prisma.user.findMany({
+      where: { hidden: false },
       select: {
         id: true,
         firstName: true,

@@ -46,6 +46,7 @@ export async function GET(request: Request) {
         correctPredictions: u.correctCount,
         wrongPredictions: u.wrongCount,
         referralCount: u.referralCount,
+        hidden: u.hidden,
         createdAt: u.createdAt.toISOString(),
       };
     });
