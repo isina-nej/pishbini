@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 import { TeamFlag } from "@/components/public/TeamFlag";
 import { BracketStage } from "@/generated/prisma";
 import { BracketMatchCard } from "./BracketMatchCard";
@@ -138,11 +140,24 @@ export function BracketPageClient() {
     router.push("/bracket/submit");
   };
 
+  const backLink = (
+    <Link
+      href="/leaderboard"
+      className="mb-3 inline-flex items-center gap-1 text-xs text-[var(--bracket-text-muted)] transition-colors hover:text-[var(--bracket-primary)]"
+    >
+      <ChevronRight className="size-4" />
+      بازگشت به جدول امتیازات
+    </Link>
+  );
+
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 p-6">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--bracket-primary)] border-t-transparent" />
-        <p className="text-sm text-[var(--bracket-text-muted)]">در حال آماده‌سازی جدول حذفی...</p>
+      <div className="p-6">
+        {backLink}
+        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--bracket-primary)] border-t-transparent" />
+          <p className="text-sm text-[var(--bracket-text-muted)]">در حال آماده‌سازی جدول حذفی...</p>
+        </div>
       </div>
     );
   }
@@ -150,6 +165,7 @@ export function BracketPageClient() {
   if (error || !tree) {
     return (
       <div className="p-6 text-center">
+        {backLink}
         <p className="text-[var(--bracket-text-muted)]">
           {error ?? "جدول مرحله حذفی هنوز منتشر نشده است."}
         </p>
@@ -160,6 +176,7 @@ export function BracketPageClient() {
   if (!meta.submissionOpen) {
     return (
       <div className="p-6 text-center">
+        {backLink}
         <p className="text-[var(--bracket-text-muted)]">
           مهلت ثبت پیش‌بینی جدول حذفی به پایان رسیده است.
         </p>
@@ -172,6 +189,7 @@ export function BracketPageClient() {
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-[var(--bracket-border)] bg-[var(--bracket-bg)]/95 px-4 py-3 backdrop-blur-md">
+        {backLink}
         <div className="flex items-start justify-between gap-2">
           <div>
             <h1 className="text-lg font-bold">مسیر قهرمانی را پیش‌بینی کنید</h1>

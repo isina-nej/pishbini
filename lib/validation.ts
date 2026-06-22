@@ -79,6 +79,17 @@ export const markWinnerSchema = z.object({
   userId: z.string().min(1),
 });
 
+export const pageAccessItemSchema = z.object({
+  enabled: z.boolean(),
+  message: z.string().trim().max(500),
+});
+
+export const pageAccessSchema = z.object({
+  predictions: pageAccessItemSchema,
+  bracket: pageAccessItemSchema,
+  leaderboard: pageAccessItemSchema,
+});
+
 export const bracketSubmitSchema = z.object({
   firstName: nameSchema,
   lastName: nameSchema,

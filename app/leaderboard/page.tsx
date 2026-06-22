@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { BottomNav } from "@/components/public/BottomNav";
+import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { ErrorState } from "@/components/public/ErrorState";
 import { LeaderboardCard, type LeaderboardUser } from "@/components/public/LeaderboardCard";
 import { LoadingState } from "@/components/public/LoadingState";
@@ -26,6 +26,7 @@ export default function LeaderboardPage() {
   }, []);
 
   return (
+    <PublicPageShell pageId="leaderboard">
     <div className="pb-24 pt-6">
       <motion.header
         initial={{ opacity: 0, y: -20 }}
@@ -53,7 +54,7 @@ export default function LeaderboardPage() {
           <LeaderboardCard key={`${user.rank}-${user.maskedPhone}`} user={user} index={i} />
         ))}
 
-      <BottomNav />
     </div>
+    </PublicPageShell>
   );
 }

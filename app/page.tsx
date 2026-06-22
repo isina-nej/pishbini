@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { PredictionChoice } from "@/generated/prisma";
-import { BottomNav } from "@/components/public/BottomNav";
+import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { EmptyState } from "@/components/public/EmptyState";
 import { ErrorState } from "@/components/public/ErrorState";
 import { LoadingState } from "@/components/public/LoadingState";
@@ -57,6 +57,7 @@ export default function HomePage() {
   const selectedCount = Object.keys(predictions).length;
 
   return (
+    <PublicPageShell pageId="predictions">
     <div className="pb-28 pt-6">
       <motion.header
         initial={{ opacity: 0, y: -20 }}
@@ -113,7 +114,7 @@ export default function HomePage() {
         }}
       />
 
-      <BottomNav />
     </div>
+    </PublicPageShell>
   );
 }

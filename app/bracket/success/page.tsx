@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ReferralCard } from "@/components/public/ReferralCard";
 import { BottomNav } from "@/components/public/BottomNav";
+import { PageAccessProvider } from "@/components/public/PageAccessProvider";
 
 type SuccessData = {
   firstName: string;
@@ -32,6 +33,7 @@ export default function BracketSuccessPage() {
   if (!data) return null;
 
   return (
+    <PageAccessProvider>
     <div className="bracket-root pb-24 pt-10">
       <div className="px-4 text-center">
         <p className="text-lg font-bold text-[var(--bracket-primary)]">
@@ -56,5 +58,6 @@ export default function BracketSuccessPage() {
 
       <BottomNav />
     </div>
+    </PageAccessProvider>
   );
 }
