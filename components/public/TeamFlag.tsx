@@ -45,9 +45,10 @@ export function TeamFlag({
       alt={alt}
       loading={loading}
       decoding="async"
+      draggable={false}
       onError={() => setFailed(true)}
       className={cn(
-        "object-cover",
+        "object-cover object-center",
         fill ? "absolute inset-0 h-full w-full" : "h-full w-full",
         className
       )}
@@ -55,7 +56,11 @@ export function TeamFlag({
   );
 
   if (fill) {
-    return <span className="relative block h-full w-full overflow-hidden">{img}</span>;
+    return (
+      <span className="relative block h-full w-full overflow-hidden [transform:translateZ(0)]">
+        {img}
+      </span>
+    );
   }
 
   return img;

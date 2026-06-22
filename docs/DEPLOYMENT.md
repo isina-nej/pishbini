@@ -34,9 +34,9 @@ npm ci
 # 3) دیتابیس
 npx prisma migrate deploy
 # اگر سرور قدیمی db push زده: migrate جدید skip می‌شود
-npm run db:seed             # فقط deploy اول — flagUrl را به /flags/{code}.png به‌روز می‌کند
+npm run db:seed             # فقط deploy اول — flagUrl را به /flags/{code}.svg به‌روز می‌کند
 
-# 3b) پرچم‌ها (اگر public/flags در git نیست)
+# 3b) پرچم‌ها (SVG از flag-icons — اگر public/flags در git نیست)
 npm run flags:download
 
 # 4) build و اجرا
@@ -232,7 +232,7 @@ npm ci
 **به‌روزرسانی پرچم‌ها:** بعد از pull، پوشه `public/flags/` از git می‌آید؛ `npm run flags:download` فقط اگر فایل‌ها نبودند. برای `flagUrl` در DB روی سرور production **seed کامل نزنید** — کافی است:
 
 ```bash
-mysql -u wcuser -p worldcup_prediction -e "UPDATE Team SET flagUrl = CONCAT('/flags/', LOWER(code), '.png');"
+mysql -u wcuser -p worldcup_prediction -e "UPDATE Team SET flagUrl = CONCAT('/flags/', LOWER(code), '.svg');"
 ```
 
 `npm run db:seed` فقط برای deploy اول یا محیط تست است (براکت را reset می‌کند).
