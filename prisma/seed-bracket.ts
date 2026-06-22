@@ -15,6 +15,15 @@ export async function seedBracket(prisma: PrismaClient) {
 
   await prisma.bracketPick.deleteMany();
   await prisma.bracketSubmission.deleteMany();
+  // Clear self-referential FKs before delete (MySQL NoAction on homeSource/awaySource)
+  await prisma.bracketMatch.updateMany({
+    data: {
+      homeSourceMatchId: null,
+      awaySourceMatchId: null,
+      nextMatchId: null,
+      nextMatchSlot: null,
+    },
+  });
   await prisma.bracketMatch.deleteMany();
 
   const r32Ids: string[] = [];

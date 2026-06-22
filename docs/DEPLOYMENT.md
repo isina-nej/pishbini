@@ -216,6 +216,27 @@ cd /opt/pishbini
 git pull origin main
 ```
 
+اگر `git pull` خطای **local changes would be overwritten** داد (معمولاً `ecosystem.config.cjs` / `package.json`):
+
+```bash
+cd /opt/pishbini
+git stash push -m "server-local" -- ecosystem.config.cjs package.json package-lock.json
+git pull origin main
+# اگر بعد از pull پورت 3001 در ecosystem.config.cjs نیست:
+# nano ecosystem.config.cjs  → PORT: 3001
+npm ci
+```
+
+`git stash` تغییرات محلی را موقتاً کنار می‌گذارد؛ نسخه repo معمولاً همان PORT 3001 را دارد.
+
+**به‌روزرسانی پرچم‌ها:** بعد از pull، پوشه `public/flags/` از git می‌آید؛ `npm run flags:download` فقط اگر فایل‌ها نبودند. برای `flagUrl` در DB روی سرور production **seed کامل نزنید** — کافی است:
+
+```bash
+mysql -u wcuser -p worldcup_prediction -e "UPDATE Team SET flagUrl = CONCAT('/flags/', LOWER(code), '.png');"
+```
+
+`npm run db:seed` فقط برای deploy اول یا محیط تست است (براکت را reset می‌کند).
+
 ---
 
 ## 7. فایل `.env`
