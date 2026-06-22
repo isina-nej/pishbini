@@ -13,6 +13,8 @@ export async function GET() {
       phone: u.maskedPhone,
       points: u.points,
       correctPredictions: u.correctPredictions,
+      wrongPredictions: u.wrongPredictions,
+      referralCount: u.referralCount,
     }));
     const csv = toCsv(rows);
     return new Response(csv, {

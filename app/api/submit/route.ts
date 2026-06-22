@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { verifyOtp } from "@/lib/otp-service";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { processSubmission } from "@/lib/submit-service";
 import { submitSchema } from "@/lib/validation";
@@ -25,6 +26,11 @@ export async function POST(request: Request) {
         { error: parsed.error.issues[0]?.message ?? "داده نامعتبر" },
         { status: 400 }
       );
+    }
+
+    const otp = await verifyOtp(parsed.data.phone, parsed.data.code);
+    if (!otp.valid) {
+      return NextResponse.json({ error: otp.error ?? "کد تأیید نامعتبر است." }, { status: 400 });
     }
 
     const result = await processSubmission(parsed.data);

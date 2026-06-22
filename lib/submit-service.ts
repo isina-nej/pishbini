@@ -1,17 +1,12 @@
-import {
-  PointRuleKey,
-  PointTransactionType,
-  Prisma,
-} from "@/generated/prisma";
 import { prisma } from "@/lib/db";
 import { isCampaignFrozen } from "@/lib/campaign";
 import { isMatchLocked } from "@/lib/matches";
 import { maskPhone } from "@/lib/masking";
 import { normalizePhone } from "@/lib/phone";
-import { getActivePointRule } from "@/lib/points";
 import { generateReferralCode } from "@/lib/referral";
 import { awardReferralIfEligible } from "@/lib/referral-reward";
 import { sendConfirmationSms } from "@/lib/sms";
+import { computeUserScore, loadActivePointRulesMap } from "@/lib/user-score";
 import type { SubmitInput } from "@/lib/validation";
 import { getReferralLink } from "@/lib/utils";
 
@@ -19,9 +14,10 @@ export type SubmitResult = {
   firstName: string;
   lastName: string;
   phone: string;
-  points: number;
   referralCode: string;
   referralLink: string;
+  computedScore: number;
+  newPredictionsCount: number;
 };
 
 export async function processSubmission(
@@ -59,7 +55,7 @@ export async function processSubmission(
   const referralCodeInput = input.referralCode?.trim().toUpperCase() || null;
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const { user, newPredictionsCount } = await prisma.$transaction(async (tx) => {
       let user = await tx.user.findUnique({ where: { phone } });
       const isNewUser = !user;
 
@@ -80,6 +76,15 @@ export async function processSubmission(
             phone,
             referralCode: code,
             referredByCode: referralCodeInput,
+            basePointsAwarded: true,
+          },
+        });
+      } else {
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            firstName: input.firstName.trim(),
+            lastName: input.lastName.trim(),
           },
         });
       }
@@ -92,7 +97,7 @@ export async function processSubmission(
       const newPredictions = input.predictions.filter((p) => !existingMatchIds.has(p.matchId));
 
       if (newPredictions.length === 0) {
-        throw new SubmitError("شما قبلاً برای این بازی‌ها پیش‌بینی ثبت کرده‌اید.", 400);
+        throw new SubmitError("همه پیش‌بینی‌های انتخاب‌شده قبلاً ثبت شده‌اند.", 400);
       }
 
       for (const p of newPredictions) {
@@ -101,25 +106,6 @@ export async function processSubmission(
             userId: user!.id,
             matchId: p.matchId,
             prediction: p.prediction,
-          },
-        });
-      }
-
-      if (isNewUser && !user.basePointsAwarded) {
-        const baseRule = await getActivePointRuleInTx(tx, PointRuleKey.BASE_REGISTRATION);
-        await tx.user.update({
-          where: { id: user.id },
-          data: {
-            points: { increment: baseRule.points },
-            basePointsAwarded: true,
-          },
-        });
-        await tx.pointTransaction.create({
-          data: {
-            userId: user.id,
-            type: PointTransactionType.BASE_REGISTRATION,
-            points: baseRule.points,
-            reason: "امتیاز ثبت‌نام",
           },
         });
       }
@@ -134,20 +120,32 @@ export async function processSubmission(
       }
 
       const updatedUser = await tx.user.findUniqueOrThrow({ where: { id: user.id } });
-      return updatedUser;
+      return { user: updatedUser, newPredictionsCount: newPredictions.length };
     });
 
-    sendConfirmationSms(result.id, result.phone, result.referralCode).catch(console.error);
+    sendConfirmationSms(user.id, user.phone, user.referralCode).catch(console.error);
+
+    const rules = await loadActivePointRulesMap();
+    const computedScore = computeUserScore(
+      {
+        basePointsAwarded: user.basePointsAwarded,
+        correctCount: user.correctCount,
+        wrongCount: user.wrongCount,
+        referralCount: user.referralCount,
+      },
+      rules
+    );
 
     return {
       success: true,
       data: {
-        firstName: result.firstName,
-        lastName: result.lastName,
-        phone: maskPhone(result.phone),
-        points: result.points,
-        referralCode: result.referralCode,
-        referralLink: getReferralLink(result.referralCode),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: maskPhone(user.phone),
+        referralCode: user.referralCode,
+        referralLink: getReferralLink(user.referralCode),
+        computedScore,
+        newPredictionsCount,
       },
     };
   } catch (err) {
@@ -165,13 +163,4 @@ class SubmitError extends Error {
   ) {
     super(message);
   }
-}
-
-async function getActivePointRuleInTx(
-  tx: Prisma.TransactionClient,
-  key: PointRuleKey
-) {
-  const rule = await tx.pointRule.findFirst({ where: { key, active: true } });
-  if (!rule) throw new Error(`Point rule not found: ${key}`);
-  return rule;
 }

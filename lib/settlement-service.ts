@@ -1,7 +1,6 @@
 import {
   MatchStatus,
   PointRuleKey,
-  PointTransactionType,
   PredictionChoice,
 } from "@/generated/prisma";
 import { prisma } from "@/lib/db";
@@ -51,27 +50,16 @@ export async function settleMatch(
         where: { id: pred.id },
         data: {
           isCorrect,
-          pointsAwarded: points,
+          pointsAwarded: 0,
           settledAt: now,
         },
       });
 
       await tx.user.update({
         where: { id: pred.userId },
-        data: { points: { increment: points } },
-      });
-
-      await tx.pointTransaction.create({
-        data: {
-          userId: pred.userId,
-          type: isCorrect
-            ? PointTransactionType.CORRECT_PREDICTION
-            : PointTransactionType.WRONG_PREDICTION,
-          points,
-          reason: isCorrect ? "پیش‌بینی درست" : "پیش‌بینی نادرست",
-          matchId,
-          predictionId: pred.id,
-        },
+        data: isCorrect
+          ? { correctCount: { increment: 1 } }
+          : { wrongCount: { increment: 1 } },
       });
 
       if (isCorrect) {

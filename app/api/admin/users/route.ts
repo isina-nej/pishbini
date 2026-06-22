@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@/generated/prisma";
 import { adminUnauthorizedResponse, requireAdmin } from "@/lib/auth-admin";
-import { toCsv } from "@/lib/csv";
 import { prisma } from "@/lib/db";
+import { computeUserScore, loadActivePointRulesMap } from "@/lib/user-score";
+import { getReferralLink } from "@/lib/utils";
 
 export async function GET(request: Request) {
   try {
@@ -12,52 +12,66 @@ export async function GET(request: Request) {
     const minPoints = searchParams.get("minPoints");
     const maxPoints = searchParams.get("maxPoints");
 
-    const where: Prisma.UserWhereInput = {};
-    if (q) {
-      where.OR = [
-        { firstName: { contains: q } },
-        { lastName: { contains: q } },
-        { phone: { contains: q } },
-        { referralCode: { contains: q.toUpperCase() } },
-      ];
-    }
-    if (minPoints || maxPoints) {
-      where.points = {};
-      if (minPoints) where.points.gte = Number(minPoints);
-      if (maxPoints) where.points.lte = Number(maxPoints);
-    }
-
-    const users = await prisma.user.findMany({
-      where,
-      include: {
-        _count: {
-          select: {
-            predictions: true,
-            referralsMade: true,
-          },
+    const [users, rules] = await Promise.all([
+      prisma.user.findMany({
+        include: {
+          _count: { select: { predictions: true } },
         },
-        predictions: { select: { isCorrect: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 200,
+        orderBy: { createdAt: "desc" },
+        take: 500,
+      }),
+      loadActivePointRulesMap(),
+    ]);
+
+    let result = users.map((u) => {
+      const computedScore = computeUserScore(
+        {
+          basePointsAwarded: u.basePointsAwarded,
+          correctCount: u.correctCount,
+          wrongCount: u.wrongCount,
+          referralCount: u.referralCount,
+        },
+        rules
+      );
+      return {
+        id: u.id,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        phone: u.phone,
+        referralCode: u.referralCode,
+        referralLink: getReferralLink(u.referralCode),
+        referredByCode: u.referredByCode,
+        points: computedScore,
+        totalPredictions: u._count.predictions,
+        correctPredictions: u.correctCount,
+        wrongPredictions: u.wrongCount,
+        referralCount: u.referralCount,
+        createdAt: u.createdAt.toISOString(),
+      };
     });
 
-    const result = users.map((u) => ({
-      id: u.id,
-      firstName: u.firstName,
-      lastName: u.lastName,
-      phone: u.phone,
-      referralCode: u.referralCode,
-      referredByCode: u.referredByCode,
-      points: u.points,
-      totalPredictions: u._count.predictions,
-      correctPredictions: u.predictions.filter((p) => p.isCorrect === true).length,
-      wrongPredictions: u.predictions.filter((p) => p.isCorrect === false).length,
-      referralCount: u._count.referralsMade,
-      createdAt: u.createdAt.toISOString(),
-    }));
+    if (q) {
+      result = result.filter(
+        (u) =>
+          u.firstName.includes(q) ||
+          u.lastName.includes(q) ||
+          u.phone.includes(q) ||
+          u.referralCode.includes(q.toUpperCase())
+      );
+    }
 
-    return NextResponse.json({ users: result });
+    if (minPoints) {
+      const min = Number(minPoints);
+      result = result.filter((u) => u.points >= min);
+    }
+    if (maxPoints) {
+      const max = Number(maxPoints);
+      result = result.filter((u) => u.points <= max);
+    }
+
+    result.sort((a, b) => b.points - a.points);
+
+    return NextResponse.json({ users: result.slice(0, 200) });
   } catch {
     return adminUnauthorizedResponse();
   }

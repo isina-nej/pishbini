@@ -23,6 +23,8 @@ export async function GET() {
           maskedPhone: rank.maskedPhone,
           points: rank.points,
           correctPredictions: rank.correctPredictions,
+          wrongPredictions: rank.wrongPredictions,
+          referralCount: rank.referralCount,
         };
       }
     }

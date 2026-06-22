@@ -43,19 +43,19 @@ function getIppanelConfig() {
   return { apiKey, baseUrl, fromNumber, patternCode };
 }
 
-/** OTP — IPPanel Edge Pattern API (text lives in IPPanel panel, param: code) */
-export async function sendOtpViaPattern(
-  phone: string,
-  code: string
-): Promise<SendResult> {
-  const { apiKey, baseUrl, fromNumber, patternCode } = getIppanelConfig();
+function getIppanelConfirmPatternCode(): string | undefined {
+  return process.env.IPPANEL_CONFIRM_PATTERN_CODE;
+}
 
-  if (!apiKey || !patternCode) {
-    return {
-      success: false,
-      provider: "ippanel",
-      providerResponse: "missing_env:IPPANEL_API_KEY or IPPANEL_PATTERN_CODE",
-    };
+async function sendPatternMessage(
+  phone: string,
+  patternCode: string,
+  params: Record<string, string>
+): Promise<SendResult> {
+  const { apiKey, baseUrl, fromNumber } = getIppanelConfig();
+
+  if (!apiKey) {
+    return { success: false, provider: "ippanel", providerResponse: "missing_env:IPPANEL_API_KEY" };
   }
 
   const phoneE164 = toPhoneE164(phone);
@@ -68,7 +68,7 @@ export async function sendOtpViaPattern(
     from_number: fromNumber,
     code: patternCode,
     recipients: [phoneE164],
-    params: { code },
+    params,
   };
 
   try {
@@ -101,6 +101,45 @@ export async function sendOtpViaPattern(
       providerResponse: err instanceof Error ? err.message : "unknown_error",
     };
   }
+}
+
+/** Confirmation after submit — IPPanel pattern with referral_code + link */
+export async function sendConfirmationViaPattern(
+  phone: string,
+  referralCode: string,
+  referralLink: string
+): Promise<SendResult> {
+  const patternCode = getIppanelConfirmPatternCode();
+  if (!patternCode) {
+    return {
+      success: false,
+      provider: "ippanel",
+      providerResponse: "missing_env:IPPANEL_CONFIRM_PATTERN_CODE",
+    };
+  }
+
+  return sendPatternMessage(phone, patternCode, {
+    referral_code: referralCode,
+    link: referralLink,
+  });
+}
+
+/** OTP — IPPanel Edge Pattern API (text lives in IPPanel panel, param: code) */
+export async function sendOtpViaPattern(
+  phone: string,
+  code: string
+): Promise<SendResult> {
+  const { patternCode } = getIppanelConfig();
+
+  if (!patternCode) {
+    return {
+      success: false,
+      provider: "ippanel",
+      providerResponse: "missing_env:IPPANEL_PATTERN_CODE",
+    };
+  }
+
+  return sendPatternMessage(phone, patternCode, { code });
 }
 
 async function sendViaModirPayamak(phone: string, message: string): Promise<SendResult> {
@@ -243,21 +282,21 @@ export async function sendConfirmationSms(
   phone: string,
   referralCode: string
 ): Promise<void> {
+  const referralLink = getReferralLink(referralCode);
   const message = buildMessage(referralCode);
-  const service = getSmsService();
 
   const log = await prisma.smsLog.create({
     data: {
       userId,
       phone,
       message,
-      provider: service,
+      provider: "ippanel",
       status: SmsStatus.PENDING,
     },
   });
 
   try {
-    const result = await sendSms(phone, message);
+    const result = await sendConfirmationViaPattern(phone, referralCode, referralLink);
     await prisma.smsLog.update({
       where: { id: log.id },
       data: {

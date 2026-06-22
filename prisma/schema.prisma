@@ -15,6 +15,9 @@ model User {
   referralCode      String   @unique
   referredByCode    String?
   points            Int      @default(0)
+  correctCount      Int      @default(0)
+  wrongCount        Int      @default(0)
+  referralCount     Int      @default(0)
   basePointsAwarded Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -128,6 +131,17 @@ model PointTransaction {
   @@index([userId])
   @@index([type])
   @@index([createdAt])
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@index([expiresAt])
 }
 
 model SmsLog {

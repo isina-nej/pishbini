@@ -38,7 +38,6 @@ export default async function AdminDashboardPage() {
     totalReferrals,
     smsSent,
     smsFailed,
-    topUser,
     availableMatches,
     lockedMatches,
     finishedMatches,
@@ -51,12 +50,15 @@ export default async function AdminDashboardPage() {
     prisma.referral.count(),
     prisma.smsLog.count({ where: { status: SmsStatus.SENT } }),
     prisma.smsLog.count({ where: { status: SmsStatus.FAILED } }),
-    prisma.user.findFirst({ orderBy: { points: "desc" } }),
     prisma.match.count({ where: availableMatchWhere(now) }),
     prisma.match.count({ where: { status: MatchStatus.LOCKED } }),
     prisma.match.count({ where: { status: MatchStatus.FINISHED } }),
     prisma.match.count({ where: { status: MatchStatus.CANCELLED } }),
   ]);
+
+  const { getLeaderboardData } = await import("@/lib/leaderboard-service");
+  const leaderboardTop = await getLeaderboardData(1);
+  const topUserEntry = leaderboardTop[0] ?? null;
 
   const quickLinks = [
     { href: "/admin/matches", label: "مدیریت بازی‌ها" },
@@ -98,18 +100,16 @@ export default async function AdminDashboardPage() {
               <Trophy className="size-5 text-[var(--admin-warning)]" />
               <h3 className="font-semibold">برترین کاربر</h3>
             </div>
-            {topUser ? (
+            {topUserEntry ? (
               <div className="flex items-center justify-between rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-elevated)] p-4">
                 <div>
-                  <p className="font-bold">
-                    {topUser.firstName} {topUser.lastName}
-                  </p>
+                  <p className="font-bold">{topUserEntry.fullName}</p>
                   <p className="text-xs text-[var(--admin-text-muted)]" dir="ltr">
-                    {topUser.referralCode}
+                    {topUserEntry.maskedPhone}
                   </p>
                 </div>
                 <p className="text-2xl font-bold tabular-nums text-[var(--admin-primary)]">
-                  {topUser.points.toLocaleString("fa-IR")}
+                  {topUserEntry.points.toLocaleString("fa-IR")}
                 </p>
               </div>
             ) : (

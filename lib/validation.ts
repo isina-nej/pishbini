@@ -25,10 +25,17 @@ export const predictionItemSchema = z.object({
   prediction: predictionChoiceSchema,
 });
 
+export const otpSendSchema = z.object({
+  phone: phoneInputSchema,
+  firstName: nameSchema.optional(),
+  lastName: nameSchema.optional(),
+});
+
 export const submitSchema = z.object({
   firstName: nameSchema,
   lastName: nameSchema,
   phone: phoneInputSchema,
+  code: z.string().regex(/^\d{4}$/, "کد تأیید باید ۴ رقم باشد"),
   referralCode: z.string().nullable().optional(),
   predictions: z.array(predictionItemSchema).min(1, "حداقل یک پیش‌بینی لازم است"),
 });

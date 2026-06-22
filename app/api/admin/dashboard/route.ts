@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { MatchStatus, SmsStatus } from "@/generated/prisma";
 import { adminUnauthorizedResponse, requireAdmin } from "@/lib/auth-admin";
-import { prisma } from "@/lib/db";
+import { getLeaderboardData } from "@/lib/leaderboard-service";
 import { availableMatchWhere } from "@/lib/matches";
+import { MatchStatus, SmsStatus } from "@/generated/prisma";
+import { prisma } from "@/lib/db";
 
 export async function GET() {
   try {
@@ -17,11 +18,11 @@ export async function GET() {
       totalReferrals,
       smsSent,
       smsFailed,
-      topUser,
       availableMatches,
       lockedMatches,
       finishedMatches,
       cancelledMatches,
+      leaderboardTop,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.prediction.count(),
@@ -30,12 +31,14 @@ export async function GET() {
       prisma.referral.count(),
       prisma.smsLog.count({ where: { status: SmsStatus.SENT } }),
       prisma.smsLog.count({ where: { status: SmsStatus.FAILED } }),
-      prisma.user.findFirst({ orderBy: { points: "desc" } }),
       prisma.match.count({ where: availableMatchWhere(now) }),
       prisma.match.count({ where: { status: MatchStatus.LOCKED } }),
       prisma.match.count({ where: { status: MatchStatus.FINISHED } }),
       prisma.match.count({ where: { status: MatchStatus.CANCELLED } }),
+      getLeaderboardData(1),
     ]);
+
+    const topUser = leaderboardTop[0] ?? null;
 
     return NextResponse.json({
       totalUsers,
@@ -46,7 +49,7 @@ export async function GET() {
       totalSmsSent: smsSent,
       totalSmsFailed: smsFailed,
       currentTopUser: topUser
-        ? { name: `${topUser.firstName} ${topUser.lastName}`, points: topUser.points }
+        ? { name: topUser.fullName, points: topUser.points }
         : null,
       totalCampaignParticipants: totalUsers,
       availableMatches,

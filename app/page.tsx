@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/public/EmptyState";
 import { ErrorState } from "@/components/public/ErrorState";
 import { LoadingState } from "@/components/public/LoadingState";
 import { MatchCard, type MatchData } from "@/components/public/MatchCard";
+import { SubmitOtpModal } from "@/components/public/SubmitOtpModal";
 import {
   getStoredPredictions,
   setStoredPredictions,
@@ -21,6 +22,7 @@ export default function HomePage() {
   const [predictions, setPredictions] = useState<Record<string, PredictionChoice>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     const stored = getStoredPredictions();
@@ -41,7 +43,6 @@ export default function HomePage() {
   }, []);
 
   const handleSelect = (matchId: string, choice: PredictionChoice) => {
-    if (confirmed) return;
     setPredictions((prev) => {
       const next = { ...prev, [matchId]: choice };
       const list: StoredPrediction[] = Object.entries(next).map(([id, prediction]) => ({
@@ -54,16 +55,6 @@ export default function HomePage() {
   };
 
   const selectedCount = Object.keys(predictions).length;
-  const [confirmed, setConfirmed] = useState(false);
-
-  const handleContinue = () => {
-    if (selectedCount === 0) return;
-    if (!confirmed) {
-      setConfirmed(true);
-      return;
-    }
-    router.push("/submit");
-  };
 
   return (
     <div className="pb-28 pt-6">
@@ -94,7 +85,7 @@ export default function HomePage() {
           selected={predictions[match.id]}
           onSelect={(choice) => handleSelect(match.id, choice)}
           index={i}
-          confirmed={confirmed}
+          confirmed={false}
         />
       ))}
 
@@ -102,16 +93,25 @@ export default function HomePage() {
         <div className="fixed bottom-16 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2 px-4">
           <motion.button
             type="button"
-            onClick={handleContinue}
+            onClick={() => setModalOpen(true)}
             whileTap={{ scale: 0.97 }}
             animate={{ scale: [1, 1.02, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
             className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-4 font-bold text-[#10111f] shadow-lg shadow-primary/20"
           >
-            {confirmed ? "تایید و ادامه" : `ثبت پیش‌بینی (${selectedCount})`}
+            ثبت پیش‌بینی ({selectedCount.toLocaleString("fa-IR")})
           </motion.button>
         </div>
       )}
+
+      <SubmitOtpModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSuccess={(data) => {
+          sessionStorage.setItem("wc_success", JSON.stringify(data));
+          router.push("/success");
+        }}
+      />
 
       <BottomNav />
     </div>

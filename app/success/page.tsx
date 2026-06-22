@@ -11,7 +11,8 @@ type SuccessData = {
   referralCode: string;
   referralLink: string;
   firstName: string;
-  points: number;
+  computedScore: number;
+  newPredictionsCount: number;
 };
 
 export default function SuccessPage() {
@@ -52,7 +53,11 @@ export default function SuccessPage() {
         </div>
         <h1 className="text-xl font-bold text-success">پیش‌بینی شما با موفقیت ثبت شد.</h1>
         <p className="mt-2 text-sm text-white/65">
-          {data.firstName} عزیز، امتیاز شما: {data.points.toLocaleString("fa-IR")}
+          {data.firstName} عزیز، {data.newPredictionsCount.toLocaleString("fa-IR")} پیش‌بینی جدید
+          ثبت شد.
+        </p>
+        <p className="mt-1 text-sm text-primary">
+          امتیاز فعلی: {data.computedScore.toLocaleString("fa-IR")}
         </p>
       </motion.div>
 

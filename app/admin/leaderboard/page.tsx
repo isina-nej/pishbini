@@ -16,6 +16,8 @@ type Entry = {
   maskedPhone: string;
   points: number;
   correctPredictions: number;
+  wrongPredictions: number;
+  referralCount: number;
   userId: string;
 };
 
@@ -123,6 +125,8 @@ export default function AdminLeaderboardPage() {
                   <th>موبایل</th>
                   <th>امتیاز</th>
                   <th>درست</th>
+                  <th>غلط</th>
+                  <th>دعوت</th>
                   <th>شناسه</th>
                 </tr>
               </thead>
@@ -148,6 +152,8 @@ export default function AdminLeaderboardPage() {
                       {u.points.toLocaleString("fa-IR")}
                     </td>
                     <td className="tabular-nums">{u.correctPredictions}</td>
+                    <td className="tabular-nums">{u.wrongPredictions}</td>
+                    <td className="tabular-nums">{u.referralCount}</td>
                     <td dir="ltr" className="max-w-[120px] truncate text-[10px] text-[var(--admin-text-subtle)]">
                       {u.userId}
                     </td>

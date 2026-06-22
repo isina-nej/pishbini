@@ -1,4 +1,4 @@
-import { PointRuleKey, PointTransactionType, Prisma } from "@/generated/prisma";
+import { PointRuleKey, Prisma } from "@/generated/prisma";
 import { maskPhone } from "@/lib/masking";
 
 async function getActivePointRuleInTx(tx: Prisma.TransactionClient, key: PointRuleKey) {
@@ -7,7 +7,7 @@ async function getActivePointRuleInTx(tx: Prisma.TransactionClient, key: PointRu
   return rule;
 }
 
-/** Award referral points when a new user registers with a valid referral code. */
+/** Award referral when a new user registers with a valid referral code. */
 export async function awardReferralIfEligible(
   tx: Prisma.TransactionClient,
   opts: {
@@ -31,7 +31,7 @@ export async function awardReferralIfEligible(
   if (existingReferral) return;
 
   const referralRule = await getActivePointRuleInTx(tx, PointRuleKey.REFERRAL_SUCCESS);
-  const referral = await tx.referral.create({
+  await tx.referral.create({
     data: {
       referrerUserId: referrer.id,
       referredUserId: userId,
@@ -41,15 +41,6 @@ export async function awardReferralIfEligible(
   });
   await tx.user.update({
     where: { id: referrer.id },
-    data: { points: { increment: referralRule.points } },
-  });
-  await tx.pointTransaction.create({
-    data: {
-      userId: referrer.id,
-      type: PointTransactionType.REFERRAL_SUCCESS,
-      points: referralRule.points,
-      reason: `دعوت کاربر ${maskPhone(phone)}`,
-      referralId: referral.id,
-    },
+    data: { referralCount: { increment: 1 } },
   });
 }

@@ -39,6 +39,8 @@ export default function AdminUserDetailPage() {
     referralCode: string;
     referredByCode: string | null;
     points: number;
+    correctCount: number;
+    wrongCount: number;
     predictions: Array<{
       prediction: string;
       isCorrect: boolean | null;
@@ -50,7 +52,8 @@ export default function AdminUserDetailPage() {
     referralsMade: Array<{ referred: { firstName: string; lastName: string } }>;
   };
 
-  const correctCount = u.predictions.filter((p) => p.isCorrect === true).length;
+  const correctCount = u.correctCount;
+  const wrongCount = u.wrongCount;
 
   return (
     <AdminLayout>
@@ -67,10 +70,11 @@ export default function AdminUserDetailPage() {
         }
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <AdminMetricCard label="امتیاز" value={u.points} accent="primary" />
         <AdminMetricCard label="پیش‌بینی‌ها" value={u.predictions.length} />
         <AdminMetricCard label="درست" value={correctCount} accent="success" />
+        <AdminMetricCard label="غلط" value={wrongCount} accent="danger" />
         <AdminMetricCard label="دعوت‌ها" value={u.referralsMade.length} accent="secondary" />
       </div>
 
