@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminUnauthorizedResponse, requireAdmin } from "@/lib/auth-admin";
+import { handleAdminRouteError } from "@/lib/admin-route";
 import { prisma } from "@/lib/db";
 import { matchSchema } from "@/lib/validation";
 
@@ -45,8 +46,8 @@ export async function PATCH(request: Request, { params }: Params) {
       include: { homeTeam: true, awayTeam: true },
     });
     return NextResponse.json({ match });
-  } catch {
-    return NextResponse.json({ error: "خطا در ویرایش بازی" }, { status: 500 });
+  } catch (err) {
+    return handleAdminRouteError(err, "خطا در ویرایش بازی");
   }
 }
 
@@ -63,7 +64,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     }
     await prisma.match.delete({ where: { id } });
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "خطا در حذف بازی" }, { status: 500 });
+  } catch (err) {
+    return handleAdminRouteError(err, "خطا در حذف بازی");
   }
 }

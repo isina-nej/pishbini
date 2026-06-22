@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminUnauthorizedResponse, requireAdmin } from "@/lib/auth-admin";
+import { handleAdminRouteError } from "@/lib/admin-route";
 import { prisma } from "@/lib/db";
 import { matchSchema } from "@/lib/validation";
 
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
       include: { homeTeam: true, awayTeam: true },
     });
     return NextResponse.json({ match }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "خطا در ایجاد بازی" }, { status: 500 });
+  } catch (err) {
+    return handleAdminRouteError(err, "خطا در ایجاد بازی");
   }
 }

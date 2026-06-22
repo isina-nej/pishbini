@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { adminUnauthorizedResponse, requireAdmin } from "@/lib/auth-admin";
+import { requireAdmin } from "@/lib/auth-admin";
+import { handleAdminRouteError } from "@/lib/admin-route";
 import { prisma } from "@/lib/db";
 import { teamSchema } from "@/lib/validation";
 
@@ -16,8 +17,8 @@ export async function PATCH(request: Request, { params }: Params) {
     }
     const team = await prisma.team.update({ where: { id }, data: parsed.data });
     return NextResponse.json({ team });
-  } catch {
-    return NextResponse.json({ error: "خطا در ویرایش تیم" }, { status: 500 });
+  } catch (err) {
+    return handleAdminRouteError(err, "خطا در ویرایش تیم");
   }
 }
 
@@ -36,7 +37,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     }
     await prisma.team.delete({ where: { id } });
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "خطا در حذف تیم" }, { status: 500 });
+  } catch (err) {
+    return handleAdminRouteError(err, "خطا در حذف تیم");
   }
 }

@@ -43,8 +43,12 @@ export function BracketPageClient() {
 
   useEffect(() => {
     fetch("/api/bracket")
-      .then((r) => r.json())
-      .then((data: ApiResponse) => {
+      .then(async (r) => {
+        const data = (await r.json()) as ApiResponse & { error?: string };
+        if (!r.ok || data.error) {
+          setError(data.error ?? "خطا در بارگذاری جدول حذفی");
+          return;
+        }
         if (data.invalid) {
           setError("اطلاعات جدول حذفی کامل نیست. لطفاً بعداً دوباره تلاش کنید.");
           return;

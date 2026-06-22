@@ -24,15 +24,18 @@ export default function SuccessPage() {
       router.replace("/");
       return;
     }
-    const parsed = JSON.parse(raw) as SuccessData;
-    setData(parsed);
-
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ["#14e0bd", "#4365ff", "#ffffff"],
-    });
+    try {
+      const parsed = JSON.parse(raw) as SuccessData;
+      setData(parsed);
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#14e0bd", "#4365ff", "#ffffff"],
+      });
+    } catch {
+      router.replace("/");
+    }
   }, [router]);
 
   if (!data) return null;

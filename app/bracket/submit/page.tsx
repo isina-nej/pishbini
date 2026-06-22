@@ -21,8 +21,12 @@ export default function BracketSubmitPage() {
       router.replace("/bracket");
       return;
     }
-    setPicks(JSON.parse(rawPicks));
-    setChampionTeamId(champion);
+    try {
+      setPicks(JSON.parse(rawPicks));
+      setChampionTeamId(champion);
+    } catch {
+      router.replace("/bracket");
+    }
   }, [router]);
 
   const handleSubmit = async (data: SubmitFormData) => {

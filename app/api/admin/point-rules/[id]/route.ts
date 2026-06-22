@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { adminUnauthorizedResponse, requireAdmin } from "@/lib/auth-admin";
+import { requireAdmin } from "@/lib/auth-admin";
+import { handleAdminRouteError } from "@/lib/admin-route";
 import { writeAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/db";
 import { pointRuleUpdateSchema } from "@/lib/validation";
@@ -18,7 +19,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const rule = await prisma.pointRule.update({ where: { id }, data: parsed.data });
     await writeAuditLog("POINT_RULE_UPDATE", "PointRule", id, parsed.data);
     return NextResponse.json({ rule });
-  } catch {
-    return NextResponse.json({ error: "خطا در ویرایش قانون امتیاز" }, { status: 500 });
+  } catch (err) {
+    return handleAdminRouteError(err, "خطا در ویرایش قانون امتیاز");
   }
 }

@@ -14,6 +14,8 @@ import { maskPhone } from "@/lib/masking";
 import { normalizePhone } from "@/lib/phone";
 import { getActivePointRule } from "@/lib/points";
 import { generateReferralCode } from "@/lib/referral";
+import { awardReferralIfEligible } from "@/lib/referral-reward";
+import { sendConfirmationSms } from "@/lib/sms";
 import { getReferralLink } from "@/lib/utils";
 
 export type BracketSubmitInput = {
@@ -31,6 +33,7 @@ export type BracketSubmitResult = {
   phone: string;
   championTeamId: string;
   referralCode: string;
+  referralLink: string;
 };
 
 export async function loadBracketTree(): Promise<BracketTree | null> {
@@ -117,6 +120,8 @@ export async function processBracketSubmission(
     };
   }
 
+  const referralCodeInput = input.referralCode?.trim().toUpperCase() || null;
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       let user = await tx.user.findUnique({
@@ -127,6 +132,8 @@ export async function processBracketSubmission(
       if (user?.bracketSubmission) {
         throw new BracketSubmitError("شما قبلاً پیش‌بینی جدول حذفی ثبت کرده‌اید.", 409);
       }
+
+      const isNewUser = !user;
 
       if (!user) {
         let code = generateReferralCode();
@@ -142,7 +149,7 @@ export async function processBracketSubmission(
               lastName: input.lastName.trim(),
               phone,
               referralCode: code,
-              referredByCode: input.referralCode?.trim().toUpperCase() || null,
+              referredByCode: referralCodeInput,
             },
           })),
           bracketSubmission: null,
@@ -168,6 +175,13 @@ export async function processBracketSubmission(
           /* point rule optional for bracket-only users */
         }
       }
+
+      await awardReferralIfEligible(tx, {
+        isNewUser,
+        userId: user.id,
+        phone,
+        referralCodeInput,
+      });
 
       await tx.bracketSubmission.create({
         data: {
@@ -196,6 +210,8 @@ export async function processBracketSubmission(
       return user!;
     });
 
+    sendConfirmationSms(result.id, result.phone, result.referralCode).catch(console.error);
+
     return {
       success: true,
       data: {
@@ -204,6 +220,7 @@ export async function processBracketSubmission(
         phone: maskPhone(result.phone),
         championTeamId: input.championTeamId,
         referralCode: result.referralCode,
+        referralLink: getReferralLink(result.referralCode),
       },
     };
   } catch (err) {

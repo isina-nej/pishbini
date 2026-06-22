@@ -1,346 +1,348 @@
 # راهنمای کامل استقرار — پیش‌بینی جام جهانی (pishbini)
 
-این سند گام‌به‌گام راه‌اندازی پروژه **pishbini** روی یک سرور لینوکس (Ubuntu) را توضیح می‌دهد.
+راه‌اندازی گام‌به‌گام پروژه **pishbini** روی Ubuntu (تست‌شده روی 24.04 LTS).
 
-**دامنه پیشنهادی:** `wc.pishrosarmaye.com`  
-**پشته:** Next.js 16 · MySQL 8 · Nginx · PM2 · Certbot
+| مورد | مقدار |
+|------|--------|
+| دامنه | `wc.pishrosarmaye.com` |
+| پشته | Next.js 16 · Prisma 7 · MySQL 8 · Nginx · PM2 |
+| مسیر پیشنهادی روی سرور | `/opt/pishbini` |
+| پورت پیش‌فرض اپ | `3000` (اگر اشغال بود → `3001`) |
+
+---
+
+## ⚠️ نکات قبل از شروع
+
+1. **pishbini با pishro فرق دارد.** اگر روی همان سرور پروژه دیگری دارید (مثلاً `/opt/pishro`)، `.env` و دیتابیس جداست — فایل `.env` پروژه دیگر را کپی نکنید.
+2. **قبل از `npx prisma` حتماً `npm ci` بزنید.** وگرنه خطای `prisma: not found` می‌گیرید.
+3. **جدول حذفی (bracket)** — migration `20260622120000_bracket_tables` در repo است؛ با `migrate deploy` اعمال می‌شود.
+4. اگر **swap پر** است (`free -h` → Swap نزدیک ۱۰۰٪)، قبل از `npm run build` swap اضافه کنید (بخش ۳.۳).
+
+---
+
+## خلاصه سریع — ترتیب صحیح دستورات
+
+```bash
+cd /opt/pishbini
+
+# 1) env
+cp .env.example .env && nano .env && chmod 600 .env
+
+# 2) وابستگی‌ها (الزامی قبل از prisma)
+npm ci
+
+# 3) دیتابیس
+npx prisma migrate deploy
+# اگر سرور قدیمی db push زده: migrate جدید skip می‌شود
+npm run db:seed             # فقط deploy اول
+
+# 4) build و اجرا
+npm run build
+pm2 start ecosystem.config.cjs
+pm2 save
+```
+
+بعد Nginx + SSL (بخش ۱۰ و ۱۱).
 
 ---
 
 ## فهرست
 
-1. [معماری و پیش‌نیازها](#1-معماری-و-پیش‌نیازها)
-2. [تنظیم DNS](#2-تنظیم-dns)
+1. [معماری](#1-معماری)
+2. [DNS](#2-dns)
 3. [آماده‌سازی سرور](#3-آماده‌سازی-سرور)
-4. [نصب Node.js، MySQL، Nginx](#4-نصب-nodejsmysqlnginx)
-5. [پیکربندی MySQL](#5-پیکربندی-mysql)
-6. [دریافت کد و نصب وابستگی‌ها](#6-دریافت-کد-و-نصب-وابستگی‌ها)
-7. [متغیرهای محیطی (.env)](#7-متغیرهای-محیطی-env)
-8. [Migration و Seed دیتابیس](#8-migration-و-seed-دیتابیس)
-9. [Build و اجرای Production](#9-build-و-اجرای-production)
-10. [پیکربندی Nginx](#10-پیکربندی-nginx)
-11. [SSL با Certbot](#11-ssl-با-certbot)
-12. [فایروال](#12-فایروال)
-13. [راه‌اندازی اولیه پنل ادمین](#13-راه‌اندازی-اولیه-پنل-ادمین)
-14. [به‌روزرسانی (Redeploy)](#14-به‌روزرسانی-redeploy)
-15. [پشتیبان‌گیری MySQL](#15-پشتیبان‌گیری-mysql)
+4. [نصب Node / MySQL / Nginx](#4-نصب-node--mysql--nginx)
+5. [MySQL — دیتابیس pishbini](#5-mysql--دیتابیس-pishbini)
+6. [دریافت کد](#6-دریافت-کد)
+7. [فایل `.env`](#7-فایل-env)
+8. [نصب npm و Prisma](#8-نصب-npm-و-prisma)
+9. [Migration، db push و Seed](#9-migration-db-push-و-seed)
+10. [Build و PM2](#10-build-و-pm2)
+11. [Nginx و SSL](#11-nginx-و-ssl)
+12. [چند اپ روی یک سرور](#12-چند-اپ-روی-یک-سرور)
+13. [راه‌اندازی ادمین](#13-راه‌اندازی-ادمین)
+14. [Redeploy](#14-redeploy)
+15. [Backup](#15-backup)
 16. [عیب‌یابی](#16-عیب‌یابی)
 17. [چک‌لیست نهایی](#17-چک‌لیست-نهایی)
 
 ---
 
-## 1. معماری و پیش‌نیازها
-
-### معماری Production
+## 1. معماری
 
 ```
-کاربر ──HTTPS──► Nginx (443) ──HTTP──► Next.js (PM2, پورت 3000)
-                                              │
-                                              └──► MySQL (localhost:3306)
+کاربر ──HTTPS──► Nginx :443 ──► Next.js (PM2) :3000 یا :3001
+                                      │
+                                      └── MySQL 127.0.0.1:3306
+                                           └── DB: worldcup_prediction
 ```
 
-- **Nginx** ترافیک HTTPS را دریافت و به اپ Next.js پروکسی می‌کند.
-- **PM2** فرآیند Node.js را مدیریت، ری‌استارت و پایدار نگه می‌دارد.
-- **MySQL** فقط روی `localhost` در دسترس است (از اینترنت مستقیم expose نشود).
-
-### حداقل مشخصات سرور
-
-| مورد | حداقل پیشنهادی |
-|------|----------------|
-| CPU | 1 vCPU |
-| RAM | 2 GB |
-| دیسک | 20 GB SSD |
-| OS | Ubuntu 22.04 LTS یا 24.04 LTS |
-| Node.js | 20 LTS یا 22 LTS |
-| MySQL | 8.0+ (یا MariaDB 10.6+) |
-
-### دسترسی‌های لازم
-
-- SSH به سرور با کاربر دارای `sudo`
-- کنترل DNS دامنه
-- دسترسی به مخزن Git پروژه
+MySQL فقط از localhost — پورت 3306 را به اینترنت باز نکنید.
 
 ---
 
-## 2. تنظیم DNS
+## 2. DNS
 
-در پنل DNS دامنه (`pishrosarmaye.com`) یک رکورد **A** بسازید:
-
-| نوع | نام (Host) | مقدار | TTL |
-|-----|------------|-------|-----|
-| A | `wc` | `IP_PUBLIC_SERVER` | 300 |
-
-نتیجه: `wc.pishrosarmaye.com` → IP سرور
-
-**بررسی (از سیستم خودتان):**
+| نوع | Host | مقدار |
+|-----|------|-------|
+| A | `wc` | IP سرور (مثلاً `178.239.147.136`) |
 
 ```bash
 dig +short wc.pishrosarmaye.com
-# باید IP سرور را برگرداند
 ```
-
-> ⏱ انتشار DNS معمولاً ۵ دقیقه تا ۲۴ ساعت طول می‌کشد. قبل از Certbot مطمئن شوید DNS درست resolve می‌شود.
 
 ---
 
 ## 3. آماده‌سازی سرور
 
-### 3.1 اتصال SSH
+### 3.1 SSH و به‌روزرسانی
 
 ```bash
 ssh root@YOUR_SERVER_IP
-# یا
-ssh ubuntu@YOUR_SERVER_IP
+apt update && apt upgrade -y
+timedatectl set-timezone Asia/Tehran
 ```
 
-### 3.2 به‌روزرسانی سیستم
+### 3.2 Node.js 20 LTS
 
 ```bash
-sudo apt update && sudo apt upgrade -y
-sudo timedatectl set-timezone Asia/Tehran
+node -v   # اگر نبود:
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs build-essential
+node -v && npm -v
 ```
 
-### 3.3 ساخت کاربر deploy (اختیاری ولی توصیه‌شده)
+### 3.3 حافظه و Swap (مهم برای build)
 
 ```bash
-sudo adduser deploy
-sudo usermod -aG sudo deploy
-sudo mkdir -p /var/www
-sudo chown deploy:deploy /var/www
+free -h
 ```
 
-از این به بعد با کاربر `deploy` کار کنید:
+اگر **Swap usage** بالای ۸۰٪ است:
 
 ```bash
-su - deploy
+fallocate -l 2G /swapfile_pishbini
+chmod 600 /swapfile_pishbini
+mkswap /swapfile_pishbini
+swapon /swapfile_pishbini
+echo '/swapfile_pishbini none swap sw 0 0' >> /etc/fstab
+```
+
+`npm run build` روی سرور ۱–۲GB RAM می‌خواهد.
+
+### 3.4 PM2
+
+```bash
+npm install -g pm2
 ```
 
 ---
 
-## 4. نصب Node.js، MySQL، Nginx
+## 4. نصب Node / MySQL / Nginx
 
-### 4.1 Node.js 20 LTS
+### MySQL (اگر از قبل نصب نیست)
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs build-essential
-node -v    # باید v20.x باشد
-npm -v
+apt install -y mysql-server
+systemctl enable mysql && systemctl start mysql
 ```
 
-### 4.2 MySQL Server
+### Nginx + Certbot
 
 ```bash
-sudo apt install -y mysql-server
-sudo systemctl enable mysql
-sudo systemctl start mysql
-sudo systemctl status mysql
-```
-
-امنیت اولیه MySQL (رمز root و حذف کاربران/test):
-
-```bash
-sudo mysql_secure_installation
-```
-
-### 4.3 Nginx
-
-```bash
-sudo apt install -y nginx
-sudo systemctl enable nginx
-sudo systemctl start nginx
-```
-
-### 4.4 Certbot (برای SSL)
-
-```bash
-sudo apt install -y certbot python3-certbot-nginx
-```
-
-### 4.5 PM2 (مدیریت فرآیند Node)
-
-```bash
-sudo npm install -g pm2
+apt install -y nginx certbot python3-certbot-nginx
+systemctl enable nginx
 ```
 
 ---
 
-## 5. پیکربندی MySQL
+## 5. MySQL — دیتابیس pishbini
 
-### 5.1 ساخت دیتابیس و کاربر
+**دیتابیس جدا از پروژه‌های دیگر** (مثلاً `pishro`):
 
 ```bash
-sudo mysql -u root -p
+mysql -u root -p
 ```
-
-در MySQL shell:
 
 ```sql
 CREATE DATABASE worldcup_prediction
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-CREATE USER 'wcuser'@'localhost' IDENTIFIED BY 'یک-رمز-بسیار-قوی-اینجا';
+-- روش الف: کاربر اختصاصی (توصیه‌شده)
+CREATE USER 'wcuser'@'localhost' IDENTIFIED BY 'sina';
 GRANT ALL PRIVILEGES ON worldcup_prediction.* TO 'wcuser'@'localhost';
+
+-- روش ب: استفاده از root موجود (فقط اگر می‌دانید چه می‌کنید)
+-- GRANT ALL ON worldcup_prediction.* TO 'root'@'localhost';
+
 FLUSH PRIVILEGES;
 EXIT;
 ```
 
-### 5.2 تست اتصال
+تست:
 
 ```bash
 mysql -u wcuser -p -h 127.0.0.1 worldcup_prediction -e "SELECT 1;"
 ```
 
-اگر `1` برگشت، اتصال درست است.
-
-### 5.3 نکات مهم MySQL
-
-- charset باید **utf8mb4** باشد (پشتیبانی فارسی و emoji).
-- کاربر فقط از `localhost` — نه `%`.
-- رمز را در `.env` ذخیره کنید، نه در تاریخچه shell.
-
-**فرمت DATABASE_URL:**
+**فرمت `DATABASE_URL`:**
 
 ```
 mysql://wcuser:PASSWORD@127.0.0.1:3306/worldcup_prediction
 ```
 
-> در production از `127.0.0.1` به‌جای `localhost` استفاده کنید تا از مشکلات IPv6 جلوگیری شود.
+> همیشه `127.0.0.1` — نه `localhost` (جلوگیری از مشکل IPv6 و pool timeout).
 
 ---
 
-## 6. دریافت کد و نصب وابستگی‌ها
-
-### 6.1 Clone پروژه
+## 6. دریافت کد
 
 ```bash
-cd /var/www
-git clone <URL_REPO> pishbini
+mkdir -p /opt
+cd /opt
+git clone https://github.com/isina-nej/pishbini.git pishbini
 cd pishbini
-```
-
-مثال:
-
-```bash
-git clone git@github.com:your-org/pishbini.git pishbini
-```
-
-### 6.2 Checkout branch مناسب
-
-```bash
 git checkout main
+```
+
+اگر repo از قبل هست:
+
+```bash
+cd /opt/pishbini
 git pull origin main
 ```
 
-### 6.3 نصب پکیج‌ها
-
-```bash
-npm ci
-# یا اگر package-lock نیست:
-npm install
-```
-
-`postinstall` به‌صورت خودکار `prisma generate` را اجرا می‌کند.
-
 ---
 
-## 7. متغیرهای محیطی (.env)
+## 7. فایل `.env`
 
 ```bash
+cd /opt/pishbini
 cp .env.example .env
 nano .env
+chmod 600 .env
 ```
 
-### 7.1 فایل `.env` Production (نمونه)
+### نمونه Production
 
 ```env
-# ─── Database ───
-DATABASE_URL="mysql://wcuser:YOUR_DB_PASSWORD@127.0.0.1:3306/worldcup_prediction"
+DATABASE_URL="mysql://wcuser:YOUR_PASSWORD@127.0.0.1:3306/worldcup_prediction"
 
-# ─── App URL (باید دقیقاً با دامنه HTTPS یکی باشد) ───
 NEXT_PUBLIC_APP_URL="https://wc.pishrosarmaye.com"
 
-# ─── Admin Auth ───
-ADMIN_PASSWORD="یک-رمز-قوی-برای-پنل-ادمین"
-ADMIN_SESSION_SECRET="حداقل-۳۲-کاراکتر-تصادفی-برای-امضای-کوکی"
+ADMIN_PASSWORD="رمز-قوی-پنل-ادمین"
+ADMIN_SESSION_SECRET="خروجی-openssl-rand-زیر"
 
-# ─── SMS ───
 SMS_PROVIDER="mock"
 SMS_API_KEY=""
 SMS_SENDER=""
 
-# ─── Runtime ───
 RATE_LIMIT_ENABLED="true"
 NODE_ENV="production"
 ```
 
-### 7.2 توضیح هر متغیر
-
-| متغیر | الزامی | توضیح |
-|-------|--------|-------|
-| `DATABASE_URL` | ✅ | اتصال MySQL. فرمت: `mysql://user:pass@host:port/db` |
-| `NEXT_PUBLIC_APP_URL` | ✅ | URL عمومی سایت. برای لینک دعوت (referral) استفاده می‌شود. **حتماً `https://` باشد.** |
-| `ADMIN_PASSWORD` | ✅ | رمز ورود پنل ادمین (`/admin/login`). یوزرنیم ندارد. |
-| `ADMIN_SESSION_SECRET` | ✅ | کلید HMAC برای کوکی session ادمین. حداقل ۳۲ کاراکتر تصادفی. |
-| `SMS_PROVIDER` | ✅ | `mock` برای تست؛ برای SMS واقعی باید provider پیاده‌سازی شود. |
-| `SMS_API_KEY` | ❌ | کلید API سرویس SMS (در حالت mock خالی) |
-| `SMS_SENDER` | ❌ | شماره/خط فرستنده SMS |
-| `RATE_LIMIT_ENABLED` | ✅ | `true` در production |
-| `NODE_ENV` | ✅ | **حتماً `production`** — کوکی ادمین فقط با HTTPS (`secure: true`) کار می‌کند. |
-
-### 7.3 تولید secret امن
+تولید secret:
 
 ```bash
 openssl rand -base64 32
-# خروجی را در ADMIN_SESSION_SECRET بگذارید
 ```
 
-### 7.4 محافظت از `.env`
+### جدول متغیرها
 
-```bash
-chmod 600 .env
+| متغیر | الزامی | توضیح |
+|-------|--------|-------|
+| `DATABASE_URL` | ✅ | اتصال MySQL — دیتابیس `worldcup_prediction` |
+| `NEXT_PUBLIC_APP_URL` | ✅ | `https://wc.pishrosarmaye.com` بدون `/` آخر |
+| `ADMIN_PASSWORD` | ✅ | فقط رمز — یوزرنیم ندارد |
+| `ADMIN_SESSION_SECRET` | ✅ | حداقل ۳۲ کاراکتر تصادفی |
+| `NODE_ENV` | ✅ | `production` — کوکی ادمین با HTTPS کار می‌کند |
+| `SMS_PROVIDER` | ✅ | فعلاً `mock` |
+| `RATE_LIMIT_ENABLED` | ✅ | `true` |
+
+### ⛔ اشتباه رایج
+
+```env
+# ❌ اشتباه — USER و PASSWORD placeholder هستند، نه نام واقعی کاربر:
+DATABASE_URL="mysql://USER:sina@localhost:3306/worldcup_prediction"
+# خطا: P1000 Authentication failed for `USER`
+
+# ✅ درست:
+DATABASE_URL="mysql://wcuser:sina@127.0.0.1:3306/worldcup_prediction"
 ```
 
-هرگز `.env` را commit نکنید.
+```env
+# این‌ها مربوط به pishbini نیستند — استفاده نکنید:
+NEXTAUTH_URL=...
+NEXTAUTH_SECRET=...
+DB_HOST=...          # pishbini فقط DATABASE_URL می‌خواند
+NEXT_PUBLIC_BASE_URL=...
+```
+
+> `NODE_ENV` را **`production`** بگذارید — با `development` کوکی ادمین روی HTTPS درست کار نمی‌کند.
 
 ---
 
-## 8. Migration و Seed دیتابیس
+## 8. نصب npm و Prisma
 
-### 8.1 اعمال Migrationها (روش استاندارد Production)
+**این مرحله قبل از هر دستور prisma الزامی است.**
 
 ```bash
-cd /var/www/pishbini
+cd /opt/pishbini
+npm ci
+```
+
+اگر `package-lock.json` نیست:
+
+```bash
+npm install
+```
+
+بررسی نصب Prisma:
+
+```bash
+ls node_modules/.bin/prisma
+npx prisma --version
+```
+
+`postinstall` خودکار `prisma generate` را اجرا می‌کند.
+
+### خطای `prisma: not found`
+
+یعنی هنوز `npm ci` نزده‌اید یا در مسیر اشتباه هستید:
+
+```bash
+cd /opt/pishbini
+pwd
+ls package.json
+npm ci
+npx prisma --version
+```
+
+---
+
+## 9. Migration، db push و Seed
+
+### 9.1 Migration اصلی
+
+```bash
+cd /opt/pishbini
 npx prisma migrate deploy
 ```
 
-این دستور فقط migrationهای موجود در `prisma/migrations/` را اجرا می‌کند.
+### 9.2 جداول Bracket
 
-### 8.2 جدول حذفی (Bracket)
+Migration `20260622120000_bracket_tables` در repo است و با `migrate deploy` اعمال می‌شود.
 
-اگر migration جدول حذفی (`BracketMatch`, `BracketPick`, ...) هنوز در repo نیست، بعد از `migrate deploy` یک‌بار:
+اگر سرور قبلاً `db push` زده بود، migration جدید بدون مشکل skip یا apply می‌شود.
 
-```bash
-npx prisma db push
-```
-
-> **توصیه برای تیم توسعه:** قبل از deploy نهایی، migration براکت را در dev بسازید (`npx prisma migrate dev`) و commit کنید تا در production فقط `migrate deploy` کافی باشد.
-
-### 8.3 Seed (داده اولیه)
+### 9.3 Seed — فقط بار اول
 
 ```bash
 npm run db:seed
 ```
 
-Seed شامل:
-- قوانین امتیاز (رفرال ۳۰، درست ۱۰، غلط ۳، ...)
-- ۳۲ تیم نمونه
-- چند بازی نمونه
-- درخت ۳۱ مسابقه‌ای جدول حذفی
-- فعال‌سازی و انتشار پیش‌فرض bracket
-
-**خروجی موفق:**
+خروجی موفق:
 
 ```
 Seeding database...
@@ -348,134 +350,97 @@ Bracket seeded: 31 matches
 Seed completed.
 ```
 
-اگر `Skipping bracket seed: need 32 active teams` دیدید، seed را دوباره اجرا کنید (تیم‌ها باید ۳۲ تا active باشند).
+> **هشدار:** اجرای مجدد seed ممکن است داده bracket را reset کند. در redeploy معمولی seed نزنید.
 
-### 8.4 بررسی جداول
+### 9.4 بررسی
 
 ```bash
 mysql -u wcuser -p worldcup_prediction -e "SHOW TABLES;"
+npx prisma migrate status
 ```
 
 ---
 
-## 9. Build و اجرای Production
+## 10. Build و PM2
 
-### 9.1 Build
+### 10.1 بررسی پورت آزاد
 
 ```bash
-cd /var/www/pishbini
+ss -tlnp | grep -E ':3000|:3001'
+pm2 list
+```
+
+اگر پورت 3000 اشغال است (مثلاً توسط `/opt/pishro`)، در `ecosystem.config.cjs` پورت را عوض کنید:
+
+```javascript
+env: {
+  NODE_ENV: "production",
+  PORT: 3001,   // ← تغییر دهید
+},
+```
+
+و در Nginx هم `proxy_pass http://127.0.0.1:3001;` (بخش ۱۱).
+
+### 10.2 Build
+
+```bash
+cd /opt/pishbini
 npm run build
 ```
 
-باید بدون خطا تمام شود. در صورت خطای TypeScript یا Prisma، قبل از ادامه رفع کنید.
+### 10.3 PM2
 
-### 9.2 اجرای تست محلی (اختیاری)
-
-```bash
-npm start
-# در ترمینال دیگر:
-curl -I http://127.0.0.1:3000
-# Ctrl+C برای توقف
-```
-
-### 9.3 PM2 — اجرای دائمی
-
-**روش ساده:**
-
-```bash
-pm2 start npm --name pishbini -- start
-pm2 save
-```
-
-**روش پیشنهادی — فایل ecosystem:**
-
-فایل `ecosystem.config.cjs` در ریشه پروژه:
-
-```javascript
-module.exports = {
-  apps: [
-    {
-      name: "pishbini",
-      cwd: "/var/www/pishbini",
-      script: "npm",
-      args: "start",
-      env: {
-        NODE_ENV: "production",
-        PORT: 3000,
-      },
-      instances: 1,
-      autorestart: true,
-      max_restarts: 10,
-      watch: false,
-      max_memory_restart: "512M",
-    },
-  ],
-};
-```
+فایل `ecosystem.config.cjs` در ریشه پروژه آماده است:
 
 ```bash
 pm2 start ecosystem.config.cjs
 pm2 save
-sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u deploy --hp /home/deploy
+pm2 startup    # دستور خروجی را اجرا کنید
 ```
 
-### 9.4 دستورات مفید PM2
+بررسی:
 
 ```bash
 pm2 status
-pm2 logs pishbini
-pm2 logs pishbini --lines 100
-pm2 restart pishbini
-pm2 stop pishbini
+pm2 logs pishbini --lines 30
+curl -I http://127.0.0.1:3001
+# اگر پورت 3000 است، همان را تست کنید
 ```
 
 ---
 
-## 10. پیکربندی Nginx
+## 11. Nginx و SSL
 
-### 10.1 ساخت فایل سایت
+### 11.0 فایروال — **قبل از Certbot**
+
+اگر UFW فعال است ولی پورت 80/443 باز نیست، Certbot با خطای `Timeout during connect` fail می‌شود.
 
 ```bash
-sudo nano /etc/nginx/sites-available/pishbini
+ufw allow OpenSSH
+ufw allow 'Nginx Full'    # 80 + 443
+ufw status
 ```
 
-محتوا:
+فقط بعد از باز بودن پورت‌ها:
+
+```bash
+dig +short wc.pishrosarmaye.com   # باید IP سرور باشد
+curl -I http://wc.pishrosarmaye.com
+```
+
+### 11.1 Config اولیه (قبل از SSL)
+
+```bash
+nano /etc/nginx/sites-available/pishbini-wc
+```
 
 ```nginx
-# Redirect HTTP → HTTPS (بعد از نصب SSL فعال می‌شود)
 server {
     listen 80;
-    listen [::]:80;
     server_name wc.pishrosarmaye.com;
 
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
-
     location / {
-        return 301 https://$host$request_uri;
-    }
-}
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name wc.pishrosarmaye.com;
-
-    # Certbot این خطوط را اضافه می‌کند — قبل از SSL می‌توانید بلوک 443 را موقتاً حذف کنید
-    # ssl_certificate /etc/letsencrypt/live/wc.pishrosarmaye.com/fullchain.pem;
-    # ssl_certificate_key /etc/letsencrypt/live/wc.pishrosarmaye.com/privkey.pem;
-
-    # امنیت پایه
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-
-    # حداکثر آپلود (در صورت نیاز)
-    client_max_body_size 2M;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3001;   # پورت pishbini در ecosystem.config.cjs
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -483,321 +448,296 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
         proxy_read_timeout 60s;
     }
 }
 ```
 
-### 10.2 فعال‌سازی سایت
-
 ```bash
-sudo ln -sf /etc/nginx/sites-available/pishbini /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t
-sudo systemctl reload nginx
+ln -sf /etc/nginx/sites-available/pishbini-wc /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
 ```
 
-### 10.3 قبل از SSL — config موقت HTTP
-
-اگر هنوز SSL ندارید، موقتاً فقط بلوک port 80 بدون redirect بسازید:
-
-```nginx
-server {
-    listen 80;
-    server_name wc.pishrosarmaye.com;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-بعد از Certbot، config نهایی با HTTPS جایگزین می‌شود.
-
----
-
-## 11. SSL با Certbot
+### 11.2 SSL
 
 ```bash
-sudo mkdir -p /var/www/certbot
-sudo certbot --nginx -d wc.pishrosarmaye.com
+certbot --nginx -d wc.pishrosarmaye.com
 ```
 
-- ایمیل معتبر وارد کنید.
-- Terms را بپذیرید.
-- گزینه redirect HTTP→HTTPS را **Yes** بزنید.
-
-**تمدید خودکار:**
+بعد از موفقیت:
 
 ```bash
-sudo certbot renew --dry-run
+certbot renew --dry-run
 ```
 
-Certbot معمولاً cron/systemd timer نصب می‌کند.
+اگر خطای timeout دیدید:
+1. `ufw status` → 80 و 443 باید ALLOW باشند
+2. DNS باید به IP همین سرور اشاره کند
+3. `nginx -t && systemctl reload nginx`
+4. از بیرون تست: `curl -I http://wc.pishrosarmaye.com`
 
-**بررسی:**
+> گواهی‌های قدیمی `pishrosarmaye.com` جدا از `wc` هستند — برای subdomain جدید فقط `-d wc.pishrosarmaye.com` کافی است.
 
-```bash
-curl -I https://wc.pishrosarmaye.com
-# HTTP/2 200
-```
-
----
-
-## 12. فایروال
+### 11.3 بعد از SSL — به‌روز `.env`
 
 ```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
-sudo ufw enable
-sudo ufw status
-```
+nano /opt/pishbini/.env
+# NODE_ENV=production
+# DATABASE_URL با 127.0.0.1
 
-فقط پورت‌های **22** (SSH)، **80** و **443** (Nginx) باز باشند.  
-MySQL (3306) از بیرون باز **نشود**.
-
----
-
-## 13. راه‌اندازی اولیه پنل ادمین
-
-### 13.1 ورود
-
-1. مرورگر: `https://wc.pishrosarmaye.com/admin/login`
-2. رمز: مقدار `ADMIN_PASSWORD` در `.env`
-3. یوزرنیم **ندارد** — فقط رمز.
-
-### 13.2 کارهای ضروری بعد از deploy
-
-| مرحله | مسیر | کار |
-|-------|------|-----|
-| 1 | `/admin/teams` | تیم‌های واقعی جام جهانی را بررسی/ویرایش کنید |
-| 2 | `/admin/matches` | بازی‌ها را با زمان شروع واقعی بسازید |
-| 3 | `/admin/point-rules` | امتیازها را تأیید کنید (۳۰/۱۰/۳) |
-| 4 | `/admin/bracket` | validate → publish (اگر seed شده باشد published است) |
-| 5 | `/admin` | داشبورد — آمار باید لود شود |
-
-### 13.3 تنظیمات bracket
-
-در `/admin/bracket`:
-- **فعال** — feature روشن
-- **منتشر شده** — کاربران `/bracket` را می‌بینند
-- **ثبت باز** — امکان submit bracket
-
-دکمه **اعتبارسنجی** → **انتشار جدول**
-
-### 13.4 تست سریع جریان کاربر
-
-1. صفحه اصلی `/` — بازی‌های ۲۴ ساعت آینده
-2. پیش‌بینی → `/submit` → `/success`
-3. `/leaderboard` — موبایل mask شده
-4. `/ref/CODE` — ذخیره referral در localStorage
-5. `/bracket` — جدول حذفی
-
----
-
-## 14. به‌روزرسانی (Redeploy)
-
-```bash
-cd /var/www/pishbini
-
-# 1. دریافت آخرین کد
-git pull origin main
-
-# 2. وابستگی‌ها
-npm ci
-
-# 3. migration (اگر schema تغییر کرده)
-npx prisma migrate deploy
-# در صورت نیاز:
-# npx prisma db push
-
-# 4. build
 npm run build
+pm2 restart pishbini --update-env
+```
 
-# 5. restart
+---
+
+## 12. چند اپ روی یک سرور
+
+مثال واقعی: سرور `pishro-vps` با دو پروژه:
+
+| مسیر | دامنه | پورت | دیتابیس |
+|------|--------|------|---------|
+| `/opt/pishro` | `pishrosarmaye.com` | 3000 | `pishro` |
+| `/opt/pishbini` | `wc.pishrosarmaye.com` | 3001 | `worldcup_prediction` |
+
+هر کدام:
+- `.env` جدا
+- `pm2` process جدا (`pishro` و `pishbini`)
+- `server_name` جدا در Nginx
+- `DATABASE_URL` به دیتابیس خودش
+
+```bash
+pm2 list
+# pishro  → 3000
+# pishbini → 3001
+```
+
+---
+
+## 13. راه‌اندازی ادمین
+
+1. `https://wc.pishrosarmaye.com/admin/login`
+2. رمز = `ADMIN_PASSWORD` از `.env`
+3. بعد از ورود:
+
+| مسیر | کار |
+|------|-----|
+| `/admin/teams` | بررسی تیم‌ها |
+| `/admin/matches` | ساخت بازی با زمان واقعی |
+| `/admin/point-rules` | تأیید امتیازها (۳۰ / ۱۰ / ۳) |
+| `/admin/bracket` | validate → publish |
+| `/admin` | بررسی آمار داشبورد |
+
+---
+
+## 14. Redeploy
+
+```bash
+cd /opt/pishbini
+git pull origin main
+npm ci
+npx prisma migrate deploy
+npx prisma db push          # اگر schema عوض شده
+npm run build
 pm2 restart pishbini
-
-# 6. بررسی لاگ
 pm2 logs pishbini --lines 50
 ```
 
-> **نکته:** `npm run db:seed` را در production فقط در deploy اول یا با احتیاط اجرا کنید — ممکن است داده bracket را reset کند.
+`npm run db:seed` فقط در صورت نیاز صریح.
 
 ---
 
-## 15. پشتیبان‌گیری MySQL
+## 15. Backup
 
-### 15.1 Backup دستی
+کاربر `wcuser` معمولاً privilege `PROCESS` ندارد — از `--no-tablespaces` استفاده کنید:
 
 ```bash
+mkdir -p /opt/backups
 mysqldump -u wcuser -p \
   --single-transaction \
-  --routines \
+  --no-tablespaces \
   worldcup_prediction \
-  > ~/backup/worldcup_$(date +%Y%m%d_%H%M).sql
+  > /opt/backups/wc_$(date +%Y%m%d).sql
 ```
 
-### 15.2 Restore
+یا با root:
 
 ```bash
-mysql -u wcuser -p worldcup_prediction < ~/backup/worldcup_YYYYMMDD.sql
+mysqldump -u root -p \
+  --single-transaction \
+  worldcup_prediction \
+  > /opt/backups/wc_$(date +%Y%m%d).sql
 ```
 
-### 15.3 Cron روزانه (اختیاری)
+Restore (نام فایل واقعی را بگذارید — نه `YYYYMMDD`):
 
 ```bash
-crontab -e
-```
-
-```
-0 3 * * * mysqldump -u wcuser -p'PASSWORD' worldcup_prediction | gzip > /home/deploy/backups/wc_$(date +\%Y\%m\%d).sql.gz
+mysql -u wcuser -p worldcup_prediction < /opt/backups/wc_20260622.sql
 ```
 
 ---
 
 ## 16. عیب‌یابی
 
-### ❌ `pool timeout` / اتصال Prisma به MySQL
+### `P1000: Authentication failed` / credentials for `USER`
 
-```
-prisma:error pool timeout: failed to retrieve a connection from pool
-```
-
-**علت‌های رایج:**
-- MySQL خاموش است → `sudo systemctl start mysql`
-- `DATABASE_URL` اشتباه → user/pass/host/db را چک کنید
-- از `127.0.0.1` به‌جای `localhost` استفاده کنید
+`.env` هنوز placeholder دارد. `USER` را با `wcuser` عوض کنید:
 
 ```bash
-sudo systemctl status mysql
-mysql -u wcuser -p -h 127.0.0.1 worldcup_prediction -e "SELECT 1;"
-pm2 restart pishbini
+grep DATABASE_URL .env
+# باید باشد: mysql://wcuser:رمز@127.0.0.1:3306/worldcup_prediction
 ```
 
 ---
 
-### ❌ Nginx 502 Bad Gateway
+### Certbot timeout / TLS error
 
-**علت:** Next.js روی پورت 3000 بالا نیست.
+خطاهای `Timeout during connect` یا `TLS connect error: unexpected eof`:
+
+1. UFW: `ufw allow 'Nginx Full'` قبل از certbot
+2. DNS: `dig +short wc.pishrosarmaye.com` → IP سرور
+3. Nginx: `nginx -t && systemctl reload nginx`
+4. تست HTTP: `curl -I http://wc.pishrosarmaye.com`
+5. سپس: `certbot --nginx -d wc.pishrosarmaye.com`
+
+تا SSL نصب نشود، سایت از بیرون با HTTPS باز نمی‌شود.
+
+---
+
+### `mysqldump: PROCESS privilege`
+
+```bash
+mysqldump -u wcuser -p --single-transaction --no-tablespaces worldcup_prediction > backup.sql
+```
+
+---
+
+### `prisma: not found`
+
+```bash
+cd /opt/pishbini && npm ci && npx prisma --version
+```
+
+---
+
+### `pool timeout` / Prisma به MySQL وصل نمی‌شود
+
+```bash
+systemctl status mysql
+mysql -u wcuser -p -h 127.0.0.1 worldcup_prediction -e "SELECT 1;"
+grep DATABASE_URL .env
+pm2 restart pishbini
+```
+
+- MySQL خاموش؟
+- `DATABASE_URL` اشتباه؟
+- از `127.0.0.1` استفاده کنید نه `localhost`
+
+---
+
+### Nginx 502
 
 ```bash
 pm2 status
+curl -I http://127.0.0.1:3001
 pm2 logs pishbini
-curl http://127.0.0.1:3000
 ```
 
----
-
-### ❌ ورود ادمین کار نمی‌کند / session نگه نمی‌دارد
-
-- `NODE_ENV=production` باشد
-- سایت باید **HTTPS** باشد (کوکی `secure: true`)
-- `ADMIN_SESSION_SECRET` تنظیم شده باشد
-- رمز دقیقاً همان `ADMIN_PASSWORD` باشد
+پورت Nginx با `PORT` در ecosystem یکی باشد (شما: **3001**).
 
 ---
 
-### ❌ لینک دعوت (referral) اشتباه
+### ورود ادمین / session نگه نمی‌دارد
 
-`NEXT_PUBLIC_APP_URL` باید دقیقاً `https://wc.pishrosarmaye.com` باشد — بدون slash آخر.
-
-بعد از تغییر:
-
-```bash
-npm run build
-pm2 restart pishbini
-```
+- `NODE_ENV=production`
+- سایت روی **HTTPS**
+- `ADMIN_SESSION_SECRET` تنظیم شده
+- بعد از تغییر `.env` → `npm run build` + `pm2 restart`
 
 ---
 
-### ❌ `prisma migrate deploy` خطا می‌دهد
+### لینک referral اشتباه
+
+`NEXT_PUBLIC_APP_URL` باید `https://wc.pishrosarmaye.com` باشد → rebuild + restart.
+
+---
+
+### `migrate deploy` خطا / جدول bracket نیست
 
 ```bash
 npx prisma migrate status
+npx prisma db push
+npm run db:seed
 ```
 
-اگر migration pending است، deploy را دوباره اجرا کنید.  
-اگر schema جدید (مثل bracket) migration ندارد:
+---
+
+### build با Out of memory
+
+swap اضافه کنید (بخش ۳.۳) یا موقتاً:
 
 ```bash
-npx prisma db push
+NODE_OPTIONS="--max-old-space-size=2048" npm run build
 ```
 
 ---
 
-### ❌ صفحه ادمین باریک / مثل موبایل
+### SMS ارسال نمی‌شود
 
-مطمین شوید build جدید deploy شده — layout ادمین با کلاس `admin-root` تمام‌عرض است.
-
----
-
-### ❌ SMS ارسال نمی‌شود
-
-در MVP، `SMS_PROVIDER=mock` فقط در لاگ/DB ثبت می‌کند.  
-خطای SMS **نباید** ثبت‌نام را fail کند — در `SmsLog` بررسی کنید.
+`SMS_PROVIDER=mock` — فقط لاگ/DB. ثبت‌نام نباید fail شود.
 
 ---
 
 ## 17. چک‌لیست نهایی
 
 ### زیرساخت
-- [ ] DNS به IP سرور resolve می‌شود
-- [ ] MySQL روشن و دیتابیس ساخته شده
-- [ ] Node.js 20+ نصب است
-- [ ] Nginx فعال و config تست شده (`nginx -t`)
-- [ ] SSL فعال (HTTPS بدون warning)
-- [ ] UFW فقط 22/80/443 باز است
-- [ ] PM2 بعد از reboot خودکار start می‌شود (`pm2 startup`)
+- [ ] DNS → IP سرور
+- [ ] Node 20+ (`node -v`)
+- [ ] MySQL روشن
+- [ ] دیتابیس `worldcup_prediction` ساخته شده
+- [ ] Nginx + SSL
+- [ ] swap کافی برای build
 
-### اپلیکیشن
-- [ ] `.env` production کامل و `chmod 600`
+### Deploy
+- [ ] مسیر `/opt/pishbini`
+- [ ] `.env` جدا از pishro — `chmod 600`
+- [ ] `npm ci` قبل از prisma
+- [ ] `npx prisma migrate deploy`
+- [ ] `npx prisma db push`
+- [ ] `npm run db:seed` (اولین بار)
 - [ ] `npm run build` موفق
-- [ ] `prisma migrate deploy` (و در صورت نیاز `db push`)
-- [ ] `npm run db:seed` (deploy اول)
-- [ ] PM2 process `online`
+- [ ] PM2 `online`
+- [ ] پورت conflict حل شده (3000 یا 3001)
 
 ### عملکرد
 - [ ] `https://wc.pishrosarmaye.com` باز می‌شود
-- [ ] `/admin/login` — ورود با رمز
-- [ ] داشبورد ادمین آمار نشان می‌دهد
-- [ ] CRUD تیم و بازی کار می‌کند
-- [ ] submit پیش‌بینی کار می‌کند
-- [ ] leaderboard موبایل mask شده
-- [ ] `/bracket` بعد از publish کار می‌کند
-- [ ] rate limit روی submit فعال است
-- [ ] CSV export شرکت‌کنندگان دانلود می‌شود
+- [ ] `/admin/login` کار می‌کند
+- [ ] APIها 200 (نه 500)
+- [ ] `/bracket` بعد از publish
 
 ### امنیت
-- [ ] `ADMIN_PASSWORD` قوی و غیر از پیش‌فرض
-- [ ] `ADMIN_SESSION_SECRET` تصادفی ۳۲+ کاراکتر
-- [ ] MySQL از بیرون در دسترس نیست
-- [ ] `.env` در Git commit نشده
+- [ ] `ADMIN_PASSWORD` غیر پیش‌فرض
+- [ ] `ADMIN_SESSION_SECRET` تصادفی
+- [ ] MySQL از بیرون بسته
+- [ ] `.env` commit نشده
 
 ---
 
-## پیوست — ساختار مسیرهای مهم
+## پیوست — مسیرهای اپ
 
 | مسیر | توضیح |
-|------|-------|
-| `/` | صفحه پیش‌بینی بازی‌های زنده |
-| `/submit` | ثبت هویت + پیش‌بینی |
-| `/leaderboard` | جدول امتیازات عمومی |
+|------|--------|
+| `/` | پیش‌بینی بازی‌ها |
 | `/bracket` | جدول حذفی |
-| `/admin` | داشبورد مدیریت |
-| `/admin/login` | ورود مدیر |
+| `/leaderboard` | امتیازات |
+| `/admin` | پنل مدیریت |
 
-## پیوست — مستندات مرتبط
+## مستندات مرتبط
 
-- `docs/MANUAL_TESTS.md` — تست دستی اپ اصلی
-- `docs/BRACKET_MANUAL_TESTS.md` — تست دستی bracket
-- `CLAUDE.md` — قوانین business و معماری
+- `docs/MANUAL_TESTS.md`
+- `docs/BRACKET_MANUAL_TESTS.md`
+- `CLAUDE.md`
 
 ---
 
-**آخرین به‌روزرسانی:** 2026-06-22  
-**نسخه اپ:** Next.js 16 · Prisma 7 · MySQL 8
+**آخرین به‌روزرسانی:** 2026-06-22

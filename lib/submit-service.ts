@@ -10,6 +10,7 @@ import { maskPhone } from "@/lib/masking";
 import { normalizePhone } from "@/lib/phone";
 import { getActivePointRule } from "@/lib/points";
 import { generateReferralCode } from "@/lib/referral";
+import { awardReferralIfEligible } from "@/lib/referral-reward";
 import { sendConfirmationSms } from "@/lib/sms";
 import type { SubmitInput } from "@/lib/validation";
 import { getReferralLink } from "@/lib/utils";
@@ -124,42 +125,12 @@ export async function processSubmission(
       }
 
       if (isNewUser && referralCodeInput) {
-        const referrer = await tx.user.findUnique({
-          where: { referralCode: referralCodeInput },
+        await awardReferralIfEligible(tx, {
+          isNewUser,
+          userId: user.id,
+          phone,
+          referralCodeInput,
         });
-
-        if (referrer && referrer.id !== user.id) {
-          const existingReferral = await tx.referral.findUnique({
-            where: { referredUserId: user.id },
-          });
-
-          if (!existingReferral) {
-            const referralRule = await getActivePointRuleInTx(tx, PointRuleKey.REFERRAL_SUCCESS);
-            await tx.referral.create({
-              data: {
-                referrerUserId: referrer.id,
-                referredUserId: user.id,
-                referralCode: referralCodeInput,
-                pointsAwarded: referralRule.points,
-              },
-            });
-            await tx.user.update({
-              where: { id: referrer.id },
-              data: { points: { increment: referralRule.points } },
-            });
-            await tx.pointTransaction.create({
-              data: {
-                userId: referrer.id,
-                type: PointTransactionType.REFERRAL_SUCCESS,
-                points: referralRule.points,
-                reason: `دعوت کاربر ${maskPhone(phone)}`,
-                referralId: (
-                  await tx.referral.findUnique({ where: { referredUserId: user.id } })
-                )?.id,
-              },
-            });
-          }
-        }
       }
 
       const updatedUser = await tx.user.findUniqueOrThrow({ where: { id: user.id } });
