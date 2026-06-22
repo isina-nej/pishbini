@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Trophy, Home, GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { hrefToPageId } from "@/lib/page-access";
+import { hrefToPageId } from "@/lib/page-access.shared";
 import { usePageAccess } from "./PageAccessProvider";
 
 const links = [

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { PageId } from "@/lib/page-access";
+import type { PageId } from "@/lib/page-access.shared";
 import { BottomNav } from "./BottomNav";
 import { PageAccessGuard } from "./PageAccessGuard";
 import { PageAccessProvider } from "./PageAccessProvider";

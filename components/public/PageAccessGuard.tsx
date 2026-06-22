@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import type { PageId } from "@/lib/page-access";
+import type { PageId } from "@/lib/page-access.shared";
 import { usePageAccess } from "./PageAccessProvider";
 
 export function PageAccessGuard({

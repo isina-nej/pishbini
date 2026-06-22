@@ -13,7 +13,7 @@ import {
   DEFAULT_PAGE_ACCESS,
   type PageAccessSettings,
   type PageId,
-} from "@/lib/page-access";
+} from "@/lib/page-access.shared";
 import { PageNoticeToast } from "./PageNoticeToast";
 
 type PageAccessContextValue = {
