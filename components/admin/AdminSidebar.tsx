@@ -9,6 +9,7 @@ import {
   Calendar,
   Shield,
   Star,
+  Gift,
   LogOut,
   GitBranch,
   ExternalLink,
@@ -24,6 +25,7 @@ const links = [
   { href: "/admin/bracket", label: "جدول حذفی", icon: GitBranch },
   { href: "/admin/users", label: "شرکت‌کنندگان", icon: Users },
   { href: "/admin/point-rules", label: "قوانین امتیاز", icon: Star },
+  { href: "/admin/campaign-info", label: "جوایز و امتیازدهی", icon: Gift },
   { href: "/admin/pages", label: "دسترسی صفحات", icon: PanelTop },
   { href: "/admin/leaderboard", label: "جدول امتیازات", icon: Trophy },
 ];

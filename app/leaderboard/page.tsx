@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
+import { Gift, Trophy, Users } from "lucide-react";
 import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { ErrorState } from "@/components/public/ErrorState";
 import { LeaderboardCard, type LeaderboardUser } from "@/components/public/LeaderboardCard";
+import { LeaderboardPodium } from "@/components/public/LeaderboardPodium";
 import { LoadingState } from "@/components/public/LoadingState";
 
 export default function LeaderboardPage() {
@@ -25,36 +28,94 @@ export default function LeaderboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const rest = users.filter((u) => u.rank > 3);
+
   return (
     <PublicPageShell pageId="leaderboard">
-    <div className="pb-24 pt-6">
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-4 px-4 text-center"
-      >
-        <h1 className="text-2xl font-bold">جدول امتیازات</h1>
-        <p className="mt-2 text-xs text-white/50">
-          در پایان کمپین، جایزه به شرکت‌کننده‌ای تعلق می‌گیرد که بیشترین امتیاز را داشته باشد.
-        </p>
-      </motion.header>
+      <div className="pb-24 pt-4">
+        <motion.header
+          initial={{ opacity: 0, y: -16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative mb-2 px-4 text-center"
+        >
+          <div className="pointer-events-none absolute inset-x-4 top-0 h-24 rounded-full bg-secondary/20 blur-3xl" />
+          <div className="relative">
+            <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400/20 to-secondary/20 ring-1 ring-white/10">
+              <Trophy className="size-7 text-amber-400" />
+            </div>
+            <h1 className="text-2xl font-bold">جدول امتیازات</h1>
+            <p className="mt-2 text-xs text-white/50">
+              رقابت زنده — امتیاز، پیش‌بینی درست و دعوت‌های موفق
+            </p>
+            <Link
+              href="/prizes"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs text-primary"
+            >
+              <Gift className="size-3.5" />
+              جوایز و قوانین امتیازدهی
+            </Link>
+          </div>
+        </motion.header>
 
-      {loading && <LoadingState />}
-      {error && <ErrorState message={error} />}
+        {!loading && users.length > 0 && (
+          <div className="mx-4 mb-4 flex justify-center gap-4 text-center">
+            <MiniStat icon={Users} label="شرکت‌کنندگان" value={users.length} color="text-secondary" />
+            <MiniStat
+              icon={Trophy}
+              label="بیشترین امتیاز"
+              value={users[0]?.points ?? 0}
+              color="text-amber-400"
+            />
+          </div>
+        )}
 
-      {currentUser && !loading && (
-        <div className="mb-4">
-          <p className="mb-2 px-4 text-sm text-primary">رتبه شما</p>
-          <LeaderboardCard user={currentUser} index={0} highlight />
-        </div>
-      )}
+        {loading && <LoadingState />}
+        {error && <ErrorState message={error} />}
 
-      {!loading &&
-        users.map((user, i) => (
-          <LeaderboardCard key={`${user.rank}-${user.maskedPhone}`} user={user} index={i} />
-        ))}
+        {!loading && !error && users.length > 0 && <LeaderboardPodium users={users} />}
 
-    </div>
+        {currentUser && currentUser.rank > 3 && (
+          <div className="mb-3">
+            <p className="mb-2 px-4 text-xs font-medium text-primary">رتبه شما</p>
+            <LeaderboardCard user={currentUser} index={0} highlight />
+          </div>
+        )}
+
+        {!loading && rest.length > 0 && (
+          <p className="mb-2 px-4 text-xs font-medium text-white/40">سایر رتبه‌ها</p>
+        )}
+
+        {!loading &&
+          rest.map((user, i) => (
+            <LeaderboardCard key={`${user.rank}-${user.maskedPhone}`} user={user} index={i} />
+          ))}
+
+        {!loading && users.length === 0 && !error && (
+          <p className="px-4 py-12 text-center text-sm text-white/45">هنوز کسی در جدول نیست</p>
+        )}
+      </div>
     </PublicPageShell>
+  );
+}
+
+function MiniStat({
+  icon: Icon,
+  label,
+  value,
+  color,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: number;
+  color: string;
+}) {
+  return (
+    <div className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2">
+      <p className={`flex items-center justify-center gap-1 text-sm font-bold ${color}`}>
+        <Icon className="size-3.5" />
+        {value.toLocaleString("fa-IR")}
+      </p>
+      <p className="text-[10px] text-white/40">{label}</p>
+    </div>
   );
 }

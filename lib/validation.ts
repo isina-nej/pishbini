@@ -90,6 +90,37 @@ export const pageAccessSchema = z.object({
   leaderboard: pageAccessItemSchema,
 });
 
+const campaignInfoSectionIconSchema = z.enum([
+  "trophy",
+  "target",
+  "users",
+  "star",
+  "gift",
+  "zap",
+  "medal",
+  "calendar",
+]);
+
+export const campaignInfoSectionSchema = z.object({
+  id: z.string().min(1),
+  icon: campaignInfoSectionIconSchema,
+  title: z.string().trim().min(1).max(120),
+  body: z.string().trim().min(1).max(1000),
+});
+
+export const campaignInfoSchema = z.object({
+  published: z.boolean(),
+  heroTitle: z.string().trim().min(1).max(120),
+  heroSubtitle: z.string().trim().min(1).max(500),
+  prizeTitle: z.string().trim().min(1).max(120),
+  prizeDescription: z.string().trim().min(1).max(1000),
+  prizeItems: z.array(z.string().trim().min(1).max(200)).min(1).max(10),
+  scoringTitle: z.string().trim().min(1).max(120),
+  scoringIntro: z.string().trim().min(1).max(500),
+  sections: z.array(campaignInfoSectionSchema).min(1).max(12),
+  footnote: z.string().trim().max(1000),
+});
+
 export const bracketSubmitSchema = z.object({
   firstName: nameSchema,
   lastName: nameSchema,
