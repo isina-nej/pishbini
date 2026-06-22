@@ -1,15 +1,13 @@
 import "dotenv/config";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import {
-  MatchStatus,
   PointRuleKey,
-  PointTransactionType,
   PrismaClient,
   SmsStatus,
 } from "../generated/prisma";
-import { flagUrlForTeam } from "@/lib/team-flag";
 import { generateReferralCode } from "../lib/referral";
 import { seedBracket } from "./seed-bracket";
+import { seedWorldCup2026 } from "./seed-world-cup";
 
 function parseDatabaseUrl(url: string) {
   const parsed = new URL(url);
@@ -73,109 +71,7 @@ async function main() {
     });
   }
 
-  const teams = [
-    {
-      nameFa: "ایران",
-      nameEn: "Iran",
-      code: "IRI",
-      flagUrl: "https://flagcdn.com/w160/ir.png",
-    },
-    {
-      nameFa: "پرتغال",
-      nameEn: "Portugal",
-      code: "POR",
-      flagUrl: "https://flagcdn.com/w160/pt.png",
-    },
-    {
-      nameFa: "آرژانتین",
-      nameEn: "Argentina",
-      code: "ARG",
-      flagUrl: "https://flagcdn.com/w160/ar.png",
-    },
-    {
-      nameFa: "برزیل",
-      nameEn: "Brazil",
-      code: "BRA",
-      flagUrl: "https://flagcdn.com/w160/br.png",
-    },
-    {
-      nameFa: "فرانسه",
-      nameEn: "France",
-      code: "FRA",
-      flagUrl: "https://flagcdn.com/w160/fr.png",
-    },
-    {
-      nameFa: "اسپانیا",
-      nameEn: "Spain",
-      code: "ESP",
-      flagUrl: "https://flagcdn.com/w160/es.png",
-    },
-    { nameFa: "آلمان", nameEn: "Germany", code: "GER", flagUrl: "https://flagcdn.com/w160/de.png" },
-    { nameFa: "انگلیس", nameEn: "England", code: "ENG", flagUrl: "https://flagcdn.com/w160/gb-eng.png" },
-    { nameFa: "بلژیک", nameEn: "Belgium", code: "BEL", flagUrl: "https://flagcdn.com/w160/be.png" },
-    { nameFa: "هلند", nameEn: "Netherlands", code: "NED", flagUrl: "https://flagcdn.com/w160/nl.png" },
-    { nameFa: "کرواسی", nameEn: "Croatia", code: "CRO", flagUrl: "https://flagcdn.com/w160/hr.png" },
-    { nameFa: "مراکش", nameEn: "Morocco", code: "MAR", flagUrl: "https://flagcdn.com/w160/ma.png" },
-    { nameFa: "ژاپن", nameEn: "Japan", code: "JPN", flagUrl: "https://flagcdn.com/w160/jp.png" },
-    { nameFa: "مکزیک", nameEn: "Mexico", code: "MEX", flagUrl: "https://flagcdn.com/w160/mx.png" },
-    { nameFa: "آمریکا", nameEn: "USA", code: "USA", flagUrl: "https://flagcdn.com/w160/us.png" },
-    { nameFa: "اروگوئه", nameEn: "Uruguay", code: "URU", flagUrl: "https://flagcdn.com/w160/uy.png" },
-    { nameFa: "سوئیس", nameEn: "Switzerland", code: "SUI", flagUrl: "https://flagcdn.com/w160/ch.png" },
-    { nameFa: "دانمارک", nameEn: "Denmark", code: "DEN", flagUrl: "https://flagcdn.com/w160/dk.png" },
-    { nameFa: "لهستان", nameEn: "Poland", code: "POL", flagUrl: "https://flagcdn.com/w160/pl.png" },
-    { nameFa: "کره جنوبی", nameEn: "South Korea", code: "KOR", flagUrl: "https://flagcdn.com/w160/kr.png" },
-    { nameFa: "استرالیا", nameEn: "Australia", code: "AUS", flagUrl: "https://flagcdn.com/w160/au.png" },
-    { nameFa: "اکوادور", nameEn: "Ecuador", code: "ECU", flagUrl: "https://flagcdn.com/w160/ec.png" },
-    { nameFa: "سنگال", nameEn: "Senegal", code: "SEN", flagUrl: "https://flagcdn.com/w160/sn.png" },
-    { nameFa: "ولز", nameEn: "Wales", code: "WAL", flagUrl: "https://flagcdn.com/w160/gb-wls.png" },
-    { nameFa: "کامرون", nameEn: "Cameroon", code: "CMR", flagUrl: "https://flagcdn.com/w160/cm.png" },
-    { nameFa: "صربستان", nameEn: "Serbia", code: "SRB", flagUrl: "https://flagcdn.com/w160/rs.png" },
-    { nameFa: "غنا", nameEn: "Ghana", code: "GHA", flagUrl: "https://flagcdn.com/w160/gh.png" },
-    { nameFa: "کاستاریکا", nameEn: "Costa Rica", code: "CRC", flagUrl: "https://flagcdn.com/w160/cr.png" },
-    { nameFa: "تونس", nameEn: "Tunisia", code: "TUN", flagUrl: "https://flagcdn.com/w160/tn.png" },
-    { nameFa: "عربستان", nameEn: "Saudi Arabia", code: "KSA", flagUrl: "https://flagcdn.com/w160/sa.png" },
-    { nameFa: "کانادا", nameEn: "Canada", code: "CAN", flagUrl: "https://flagcdn.com/w160/ca.png" },
-    { nameFa: "ایتالیا", nameEn: "Italy", code: "ITA", flagUrl: "https://flagcdn.com/w160/it.png" },
-  ];
-
-  for (const team of teams) {
-    await prisma.team.upsert({
-      where: { code: team.code },
-      create: { ...team, flagUrl: flagUrlForTeam(team.code), isActive: true },
-      update: { nameFa: team.nameFa, nameEn: team.nameEn, flagUrl: flagUrlForTeam(team.code), isActive: true },
-    });
-  }
-
-  const iran = await prisma.team.findUnique({ where: { code: "IRI" } });
-  const portugal = await prisma.team.findUnique({ where: { code: "POR" } });
-  const argentina = await prisma.team.findUnique({ where: { code: "ARG" } });
-  const brazil = await prisma.team.findUnique({ where: { code: "BRA" } });
-
-  if (iran && portugal && argentina && brazil) {
-    const now = new Date();
-    const in12h = new Date(now.getTime() + 12 * 60 * 60 * 1000);
-    const in20h = new Date(now.getTime() + 20 * 60 * 60 * 1000);
-    const in30h = new Date(now.getTime() + 30 * 60 * 60 * 1000);
-
-    const sampleMatches = [
-      { homeTeamId: iran.id, awayTeamId: portugal.id, startTime: in12h, status: MatchStatus.ACTIVE },
-      { homeTeamId: argentina.id, awayTeamId: brazil.id, startTime: in20h, status: MatchStatus.SCHEDULED },
-      { homeTeamId: portugal.id, awayTeamId: argentina.id, startTime: in30h, status: MatchStatus.SCHEDULED },
-    ];
-
-    for (const m of sampleMatches) {
-      const existing = await prisma.match.findFirst({
-        where: {
-          homeTeamId: m.homeTeamId,
-          awayTeamId: m.awayTeamId,
-          startTime: m.startTime,
-        },
-      });
-      if (!existing) {
-        await prisma.match.create({ data: m });
-      }
-    }
-  }
+  await seedWorldCup2026(prisma);
 
   const existingUser = await prisma.user.findFirst();
   if (!existingUser) {

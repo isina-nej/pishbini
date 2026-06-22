@@ -1,11 +1,15 @@
 import { BracketSlot, BracketStage, PrismaClient } from "../generated/prisma";
 import { BRACKET_SETTING_KEYS } from "../lib/bracket/config";
+import { WC2026_TEAMS } from "../lib/world-cup-2026";
+
+const BRACKET_GROUP_CODES = WC2026_TEAMS.filter((t) =>
+  ["A", "B", "C", "D", "E", "F", "G", "H"].includes(t.group)
+).map((t) => t.code);
 
 export async function seedBracket(prisma: PrismaClient) {
   const teams = await prisma.team.findMany({
-    where: { isActive: true },
+    where: { isActive: true, code: { in: BRACKET_GROUP_CODES } },
     orderBy: { code: "asc" },
-    take: 32,
   });
 
   if (teams.length < 32) {
