@@ -41,7 +41,7 @@ export const teamSchema = z.object({
   nameFa: z.string().min(1),
   nameEn: z.string().min(1),
   code: z.string().min(2).max(5).toUpperCase(),
-  flagUrl: z.string().url(),
+  flagUrl: z.union([z.string().url(), z.string().regex(/^\//)]),
   isActive: z.boolean().optional().default(true),
 });
 

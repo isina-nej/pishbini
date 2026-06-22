@@ -34,7 +34,10 @@ npm ci
 # 3) دیتابیس
 npx prisma migrate deploy
 # اگر سرور قدیمی db push زده: migrate جدید skip می‌شود
-npm run db:seed             # فقط deploy اول
+npm run db:seed             # فقط deploy اول — flagUrl را به /flags/{code}.png به‌روز می‌کند
+
+# 3b) پرچم‌ها (اگر public/flags در git نیست)
+npm run flags:download
 
 # 4) build و اجرا
 npm run build

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PredictionChoice } from "@/generated/prisma";
 import { prisma } from "@/lib/db";
 import { availableMatchWhere } from "@/lib/matches";
+import { withLocalFlag } from "@/lib/team-flag";
 
 function buildStatsMap(
   groups: { matchId: string; prediction: PredictionChoice; _count: { _all: number } }[]
@@ -62,18 +63,18 @@ export async function GET() {
     return NextResponse.json({
       matches: matches.map((m) => ({
         id: m.id,
-        homeTeam: {
+        homeTeam: withLocalFlag({
           nameFa: m.homeTeam.nameFa,
           nameEn: m.homeTeam.nameEn,
           code: m.homeTeam.code,
           flagUrl: m.homeTeam.flagUrl,
-        },
-        awayTeam: {
+        }),
+        awayTeam: withLocalFlag({
           nameFa: m.awayTeam.nameFa,
           nameEn: m.awayTeam.nameEn,
           code: m.awayTeam.code,
           flagUrl: m.awayTeam.flagUrl,
-        },
+        }),
         startTime: m.startTime.toISOString(),
         stats: toPercents(statsMap.get(m.id) ?? { homeWin: 0, draw: 0, awayWin: 0, total: 0 }),
       })),

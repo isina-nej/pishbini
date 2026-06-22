@@ -3,8 +3,9 @@ import {
   PointTransactionType,
   Prisma,
 } from "@/generated/prisma";
-import { prisma } from "@/lib/db";
+import { withLocalFlag } from "@/lib/team-flag";
 import { writeAuditLog } from "@/lib/audit";
+import { prisma } from "@/lib/db";
 import { getBracketConfig } from "@/lib/bracket/config";
 import { validateChampionMatchesFinal, validateFullBracket } from "@/lib/bracket/validation";
 import { matchesInStageOrder, buildMatchMap, resolveMatchTeams } from "@/lib/bracket/progression";
@@ -67,7 +68,7 @@ export async function loadBracketTree(): Promise<BracketTree | null> {
     teams: Object.fromEntries(
       teams.map((t) => [
         t.id,
-        { id: t.id, nameFa: t.nameFa, nameEn: t.nameEn, code: t.code, flagUrl: t.flagUrl },
+        withLocalFlag({ id: t.id, nameFa: t.nameFa, nameEn: t.nameEn, code: t.code, flagUrl: t.flagUrl }),
       ])
     ),
   };

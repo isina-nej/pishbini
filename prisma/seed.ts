@@ -7,6 +7,7 @@ import {
   PrismaClient,
   SmsStatus,
 } from "../generated/prisma";
+import { flagUrlForTeam } from "@/lib/team-flag";
 import { generateReferralCode } from "../lib/referral";
 import { seedBracket } from "./seed-bracket";
 
@@ -140,8 +141,8 @@ async function main() {
   for (const team of teams) {
     await prisma.team.upsert({
       where: { code: team.code },
-      create: { ...team, isActive: true },
-      update: { nameFa: team.nameFa, nameEn: team.nameEn, flagUrl: team.flagUrl, isActive: true },
+      create: { ...team, flagUrl: flagUrlForTeam(team.code), isActive: true },
+      update: { nameFa: team.nameFa, nameEn: team.nameEn, flagUrl: flagUrlForTeam(team.code), isActive: true },
     });
   }
 

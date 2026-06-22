@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { TeamFlag } from "@/components/public/TeamFlag";
 import { BracketStage } from "@/generated/prisma";
 import { BracketMatchCard } from "./BracketMatchCard";
 import { BRACKET_STAGES, STAGE_LABELS, STAGE_TAB_SHORT } from "@/lib/bracket/constants";
@@ -270,12 +270,12 @@ export function BracketPageClient() {
               🏆
             </span>
             <div className="relative h-14 w-20 overflow-hidden rounded-lg">
-              <Image
+              <TeamFlag
                 src={champion.flagUrl}
+                code={champion.code}
                 alt={champion.nameFa}
                 fill
-                sizes="80px"
-                className="object-cover"
+                loading="lazy"
               />
             </div>
             <p className="text-xl font-bold text-[var(--bracket-champion)]">{champion.nameFa}</p>

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "db:seed": "tsx prisma/seed.ts",
+    "flags:download": "tsx scripts/download-flags.ts",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "postinstall": "prisma generate"
@@ -25,6 +26,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.9",
+    "flag-icons": "^7.5.0",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.21.0",
     "mariadb": "^3.5.3",

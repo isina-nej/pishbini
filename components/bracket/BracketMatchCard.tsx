@@ -1,8 +1,8 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import Image from "next/image";
 import { Check } from "lucide-react";
+import { TeamFlag } from "@/components/public/TeamFlag";
 import { cn } from "@/lib/utils";
 import type { BracketTeam } from "@/lib/bracket/types";
 import type { ResolvedMatch } from "@/lib/bracket/types";
@@ -76,14 +76,7 @@ function TeamRow({
       )}
     >
       <div className="relative h-8 w-11 shrink-0 overflow-hidden rounded-md">
-        <Image
-          src={team.flagUrl}
-          alt=""
-          fill
-          sizes="44px"
-          loading="lazy"
-          className="object-cover"
-        />
+        <TeamFlag src={team.flagUrl} code={team.code} alt={team.nameFa} fill loading="lazy" />
       </div>
       <div className="min-w-0 flex-1">
         <p className={cn("truncate text-sm font-medium", selected && "text-[var(--bracket-primary)]")}>

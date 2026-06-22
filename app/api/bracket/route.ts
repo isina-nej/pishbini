@@ -3,6 +3,7 @@ import { getBracketConfig } from "@/lib/bracket/config";
 import { loadBracketTree } from "@/lib/bracket/submit-service";
 import { isGraphValid, validateBracketGraph } from "@/lib/bracket/graph";
 import { prisma } from "@/lib/db";
+import { withLocalFlag } from "@/lib/team-flag";
 
 export async function GET() {
   try {
@@ -49,7 +50,7 @@ export async function GET() {
     const teams = Object.fromEntries(
       allTeams.map((t) => [
         t.id,
-        { id: t.id, nameFa: t.nameFa, nameEn: t.nameEn, code: t.code, flagUrl: t.flagUrl },
+        withLocalFlag({ id: t.id, nameFa: t.nameFa, nameEn: t.nameEn, code: t.code, flagUrl: t.flagUrl }),
       ])
     );
 

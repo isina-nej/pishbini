@@ -1,10 +1,10 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
 import { PredictionChoice } from "@/generated/prisma";
 import { formatPersianDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { TeamFlag } from "@/components/public/TeamFlag";
 
 export type MatchStats = {
   homeWinPercent: number;
@@ -34,27 +34,26 @@ function formatPercent(n: number) {
 }
 
 function FlagBg({
-  flagUrl,
+  code,
   loading,
   dimmed,
   shadow,
 }: {
-  flagUrl: string;
+  code: string;
   loading: "eager" | "lazy";
   dimmed?: boolean;
   shadow?: boolean;
 }) {
   return (
     <>
-      <Image
-        src={flagUrl}
+      <TeamFlag
+        src=""
+        code={code}
         alt=""
-        aria-hidden
         fill
-        sizes="(max-width: 430px) 50vw, 215px"
         loading={loading}
         className={cn(
-          "object-cover transition-opacity duration-500",
+          "transition-opacity duration-500",
           dimmed ? "opacity-[0.06]" : "opacity-20"
         )}
       />
@@ -95,13 +94,11 @@ function StatsPanel({ percent, label }: { percent: number; label: string }) {
 function SelectedTeamPanel({
   nameFa,
   code,
-  flagUrl,
   loading,
   fromLeft,
 }: {
   nameFa: string;
   code: string;
-  flagUrl: string;
   loading: "eager" | "lazy";
   fromLeft?: boolean;
 }) {
@@ -113,17 +110,10 @@ function SelectedTeamPanel({
       transition={{ type: "spring", stiffness: 240, damping: 26 }}
       className="relative flex flex-1 flex-col items-center justify-center overflow-hidden py-5"
     >
-      <FlagBg flagUrl={flagUrl} loading={loading} shadow />
+      <FlagBg code={code} loading={loading} shadow />
       <div className="relative z-10 flex flex-col items-center gap-1.5">
         <div className="relative h-11 w-14 overflow-hidden rounded-lg shadow-lg ring-2 ring-primary/45">
-          <Image
-            src={flagUrl}
-            alt={nameFa}
-            fill
-            sizes="60px"
-            loading={loading}
-            className="object-cover"
-          />
+          <TeamFlag src="" code={code} alt={nameFa} fill loading={loading} />
         </div>
         <span className="text-sm font-semibold">{nameFa}</span>
         <span className="text-[10px] text-white/50">{code}</span>
@@ -179,11 +169,6 @@ export function MatchCard({ match, selected, onSelect, index, confirmed = false 
               code={
                 selected === PredictionChoice.HOME_WIN ? match.homeTeam.code : match.awayTeam.code
               }
-              flagUrl={
-                selected === PredictionChoice.HOME_WIN
-                  ? match.homeTeam.flagUrl
-                  : match.awayTeam.flagUrl
-              }
               loading={flagLoading}
               fromLeft={selected === PredictionChoice.AWAY_WIN}
             />
@@ -200,32 +185,30 @@ export function MatchCard({ match, selected, onSelect, index, confirmed = false 
             >
               <div className="absolute inset-0 flex">
                 <div className="relative flex-1 overflow-hidden">
-                  <FlagBg flagUrl={match.homeTeam.flagUrl} loading={flagLoading} shadow />
+                  <FlagBg code={match.homeTeam.code} loading={flagLoading} shadow />
                 </div>
                 <div className="relative flex-1 overflow-hidden">
-                  <FlagBg flagUrl={match.awayTeam.flagUrl} loading={flagLoading} shadow />
+                  <FlagBg code={match.awayTeam.code} loading={flagLoading} shadow />
                 </div>
               </div>
               <div className="relative z-10 flex items-center gap-3">
                 <div className="relative h-8 w-11 overflow-hidden rounded-md shadow-md ring-1 ring-white/25">
-                  <Image
-                    src={match.homeTeam.flagUrl}
+                  <TeamFlag
+                    src=""
+                    code={match.homeTeam.code}
                     alt={match.homeTeam.nameFa}
                     fill
-                    sizes="44px"
                     loading={flagLoading}
-                    className="object-cover"
                   />
                 </div>
                 <span className="text-sm font-bold">مساوی</span>
                 <div className="relative h-8 w-11 overflow-hidden rounded-md shadow-md ring-1 ring-white/25">
-                  <Image
-                    src={match.awayTeam.flagUrl}
+                  <TeamFlag
+                    src=""
+                    code={match.awayTeam.code}
                     alt={match.awayTeam.nameFa}
                     fill
-                    sizes="44px"
                     loading={flagLoading}
-                    className="object-cover"
                   />
                 </div>
               </div>
@@ -237,7 +220,6 @@ export function MatchCard({ match, selected, onSelect, index, confirmed = false 
 
         {isSelecting && (
           <div className="flex flex-1">
-            {/* RTL: first = right = home */}
             <button
               type="button"
               onClick={() => onSelect(PredictionChoice.HOME_WIN)}
@@ -246,7 +228,7 @@ export function MatchCard({ match, selected, onSelect, index, confirmed = false 
                 selected === PredictionChoice.HOME_WIN && "glow-selected z-10 bg-primary/5"
               )}
             >
-              <FlagBg flagUrl={match.homeTeam.flagUrl} loading={flagLoading} />
+              <FlagBg code={match.homeTeam.code} loading={flagLoading} />
               <div className="relative z-10 flex flex-col items-center gap-1.5">
                 <div
                   className={cn(
@@ -254,13 +236,12 @@ export function MatchCard({ match, selected, onSelect, index, confirmed = false 
                     selected === PredictionChoice.HOME_WIN && "ring-2 ring-primary/60"
                   )}
                 >
-                  <Image
-                    src={match.homeTeam.flagUrl}
+                  <TeamFlag
+                    src=""
+                    code={match.homeTeam.code}
                     alt={match.homeTeam.nameFa}
                     fill
-                    sizes="56px"
                     loading={flagLoading}
-                    className="object-cover"
                   />
                 </div>
                 <span className="text-sm font-semibold">{match.homeTeam.nameFa}</span>
@@ -276,7 +257,7 @@ export function MatchCard({ match, selected, onSelect, index, confirmed = false 
                 selected === PredictionChoice.AWAY_WIN && "glow-selected z-10 bg-primary/5"
               )}
             >
-              <FlagBg flagUrl={match.awayTeam.flagUrl} loading={flagLoading} />
+              <FlagBg code={match.awayTeam.code} loading={flagLoading} />
               <div className="relative z-10 flex flex-col items-center gap-1.5">
                 <div
                   className={cn(
@@ -284,13 +265,12 @@ export function MatchCard({ match, selected, onSelect, index, confirmed = false 
                     selected === PredictionChoice.AWAY_WIN && "ring-2 ring-primary/60"
                   )}
                 >
-                  <Image
-                    src={match.awayTeam.flagUrl}
+                  <TeamFlag
+                    src=""
+                    code={match.awayTeam.code}
                     alt={match.awayTeam.nameFa}
                     fill
-                    sizes="56px"
                     loading={flagLoading}
-                    className="object-cover"
                   />
                 </div>
                 <span className="text-sm font-semibold">{match.awayTeam.nameFa}</span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
+import { TeamFlag } from "@/components/public/TeamFlag";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
@@ -157,13 +157,9 @@ export default function AdminTeamsPage() {
                     <tr key={t.id}>
                       <td>
                         <div className="flex items-center gap-3">
-                          <Image
-                            src={t.flagUrl}
-                            alt=""
-                            width={28}
-                            height={20}
-                            className="rounded-sm object-cover"
-                          />
+                          <div className="relative h-5 w-7 overflow-hidden rounded-sm">
+                            <TeamFlag src={t.flagUrl} code={t.code} alt="" fill loading="lazy" />
+                          </div>
                           <div>
                             <p className="font-medium">{t.nameFa}</p>
                             <p className="text-xs text-[var(--admin-text-subtle)]">{t.nameEn}</p>
