@@ -75,11 +75,20 @@ async function sendPatternMessage(
         Authorization: apiKey,
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(15_000),
     });
 
-    const data = (await response.json()) as {
-      meta?: { status?: boolean; message?: string };
-    };
+    const text = await response.text();
+    let data: { meta?: { status?: boolean; message?: string } };
+    try {
+      data = JSON.parse(text) as typeof data;
+    } catch {
+      return {
+        success: false,
+        provider: "ippanel",
+        providerResponse: `http_${response.status}:non_json`,
+      };
+    }
 
     if (!response.ok || !data.meta?.status) {
       return {
