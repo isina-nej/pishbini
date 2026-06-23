@@ -1,9 +1,12 @@
 import "server-only";
 
 import { getCampaignSetting, setCampaignSetting } from "@/lib/campaign";
+import {
+  DEFAULT_SPLASH_VIDEO_PATH,
+  SPLASH_VIDEO_KEY,
+} from "@/lib/splash-screen.shared";
 
-export const SPLASH_VIDEO_KEY = "SPLASH_VIDEO";
-export const DEFAULT_SPLASH_VIDEO_PATH = "/splash_screen/splash_screen.mp4";
+export { DEFAULT_SPLASH_VIDEO_PATH, SPLASH_VIDEO_KEY } from "@/lib/splash-screen.shared";
 
 export async function getSplashVideoPath(): Promise<string> {
   const value = await getCampaignSetting(SPLASH_VIDEO_KEY);

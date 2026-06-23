@@ -6,7 +6,7 @@ import { AdminPageHeader } from "@/components/admin/ui/AdminPageHeader";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { AdminCard, AdminCardBody, AdminCardHeader } from "@/components/admin/ui/AdminCard";
 import { AdminLoading } from "@/components/admin/ui/AdminLoading";
-import { DEFAULT_SPLASH_VIDEO_PATH } from "@/lib/splash-screen";
+import { DEFAULT_SPLASH_VIDEO_PATH } from "@/lib/splash-screen.shared";
 import { cn } from "@/lib/utils";
 import { RotateCcw, Upload } from "lucide-react";
 

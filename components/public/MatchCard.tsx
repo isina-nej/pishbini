@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { PredictionChoice } from "@/generated/prisma";
 import { formatPersianDateTime } from "@/lib/dates";
@@ -35,6 +36,14 @@ type TeamInfo = { nameFa: string; code: string; flagUrl: string };
 
 const NAME_STRIP_H = "h-[22px]";
 
+function FlagFrame({ children }: { children: ReactNode }) {
+  return (
+    <div className="absolute inset-0 size-full overflow-hidden rounded-2xl ring-1 ring-inset ring-white/15">
+      {children}
+    </div>
+  );
+}
+
 function PureFlag({
   team,
   loading,
@@ -43,14 +52,16 @@ function PureFlag({
   loading: "eager" | "lazy";
 }) {
   return (
-    <TeamFlag
-      src=""
-      code={team.code}
-      alt={team.nameFa}
-      fill
-      loading={loading}
-      className="object-cover object-center"
-    />
+    <FlagFrame>
+      <TeamFlag
+        src=""
+        code={team.code}
+        alt={team.nameFa}
+        fill
+        loading={loading}
+        objectFit="fill"
+      />
+    </FlagFrame>
   );
 }
 
