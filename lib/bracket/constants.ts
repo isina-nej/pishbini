@@ -1,5 +1,12 @@
 import { BracketStage } from "@/generated/prisma";
 
+export const BRACKET_SETTING_KEYS = {
+  ENABLED: "BRACKET_ENABLED",
+  PUBLISHED: "BRACKET_PUBLISHED",
+  SUBMISSION_OPEN: "BRACKET_SUBMISSION_OPEN",
+  VERSION: "BRACKET_VERSION",
+} as const;
+
 export const BRACKET_DRAFT_KEY = "world-cup-bracket-draft-v1";
 export const BRACKET_DRAFT_VERSION = 1;
 export const BRACKET_TOTAL_PICKS = 31;

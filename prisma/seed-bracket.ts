@@ -1,5 +1,5 @@
 import { BracketSlot, BracketStage, PrismaClient } from "../generated/prisma";
-import { BRACKET_SETTING_KEYS } from "../lib/bracket/config";
+import { BRACKET_SETTING_KEYS } from "../lib/bracket/constants";
 import { WC2026_TEAMS } from "../lib/world-cup-2026";
 
 const BRACKET_GROUP_CODES = WC2026_TEAMS.filter((t) =>

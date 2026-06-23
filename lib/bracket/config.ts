@@ -1,24 +1,18 @@
 import { prisma } from "@/lib/db";
-
-const KEYS = {
-  ENABLED: "BRACKET_ENABLED",
-  PUBLISHED: "BRACKET_PUBLISHED",
-  SUBMISSION_OPEN: "BRACKET_SUBMISSION_OPEN",
-  VERSION: "BRACKET_VERSION",
-} as const;
+import { BRACKET_SETTING_KEYS } from "./constants";
 
 export async function getBracketConfig() {
   const settings = await prisma.campaignSetting.findMany({
     where: {
-      key: { in: Object.values(KEYS) },
+      key: { in: Object.values(BRACKET_SETTING_KEYS) },
     },
   });
   const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
   return {
-    enabled: map[KEYS.ENABLED] === "true",
-    published: map[KEYS.PUBLISHED] === "true",
-    submissionOpen: map[KEYS.SUBMISSION_OPEN] !== "false",
-    version: map[KEYS.VERSION] ?? "1",
+    enabled: map[BRACKET_SETTING_KEYS.ENABLED] === "true",
+    published: map[BRACKET_SETTING_KEYS.PUBLISHED] === "true",
+    submissionOpen: map[BRACKET_SETTING_KEYS.SUBMISSION_OPEN] !== "false",
+    version: map[BRACKET_SETTING_KEYS.VERSION] ?? "1",
   };
 }
 
@@ -30,4 +24,4 @@ export async function setBracketSetting(key: string, value: string) {
   });
 }
 
-export { KEYS as BRACKET_SETTING_KEYS };
+export { BRACKET_SETTING_KEYS };
