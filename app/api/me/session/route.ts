@@ -3,13 +3,13 @@ import { prisma } from "@/lib/db";
 import { maskPhone } from "@/lib/masking";
 import {
   meUnauthorizedResponse,
-  resolveUserIdFromCookies,
+  resolveUserIdInRouteHandler,
   MeUserError,
 } from "@/lib/me-user";
 
 export async function GET() {
   try {
-    const userId = await resolveUserIdFromCookies();
+    const userId = await resolveUserIdInRouteHandler();
     if (!userId) {
       return NextResponse.json({ loggedIn: false });
     }

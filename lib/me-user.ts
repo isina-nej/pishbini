@@ -5,12 +5,10 @@ import { normalizeReferralCode } from "@/lib/referral";
 
 export const PARTICIPANT_COOKIE = "wc_participant";
 
+/** Read-only — safe in Server Components and Route Handlers. */
 export async function resolveUserIdFromCookies(): Promise<string | null> {
   const sessionUserId = await getAuthenticatedUserId();
-  if (sessionUserId) {
-    await setUserSessionCookie(sessionUserId);
-    return sessionUserId;
-  }
+  if (sessionUserId) return sessionUserId;
 
   const cookieStore = await cookies();
   const referralCode = cookieStore.get(PARTICIPANT_COOKIE)?.value;
@@ -24,14 +22,25 @@ export async function resolveUserIdFromCookies(): Promise<string | null> {
     select: { id: true },
   });
 
-  if (!user) return null;
+  return user?.id ?? null;
+}
 
-  await setUserSessionCookie(user.id);
-  return user.id;
+/** Route Handlers only — upgrades participant cookie to session and refreshes expiry. */
+export async function resolveUserIdInRouteHandler(): Promise<string | null> {
+  const userId = await resolveUserIdFromCookies();
+  if (!userId) return null;
+  await setUserSessionCookie(userId);
+  return userId;
 }
 
 export async function resolveUserIdOrThrow(): Promise<string> {
   const userId = await resolveUserIdFromCookies();
+  if (!userId) throw new MeUserError();
+  return userId;
+}
+
+export async function resolveUserIdOrThrowInRouteHandler(): Promise<string> {
+  const userId = await resolveUserIdInRouteHandler();
   if (!userId) throw new MeUserError();
   return userId;
 }

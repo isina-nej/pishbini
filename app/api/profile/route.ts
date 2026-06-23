@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getUserProfile } from "@/lib/profile-service";
-import { meUnauthorizedResponse, resolveUserIdFromCookies } from "@/lib/me-user";
+import { meUnauthorizedResponse, resolveUserIdInRouteHandler } from "@/lib/me-user";
 
 export async function GET() {
   try {
-    const userId = await resolveUserIdFromCookies();
+    const userId = await resolveUserIdInRouteHandler();
     if (!userId) return meUnauthorizedResponse();
 
     const profile = await getUserProfile(userId);

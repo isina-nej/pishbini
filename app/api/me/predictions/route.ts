@@ -7,7 +7,7 @@ import {
 import {
   meUnauthorizedResponse,
   resolveUserIdFromCookies,
-  resolveUserIdOrThrow,
+  resolveUserIdOrThrowInRouteHandler,
   MeUserError,
 } from "@/lib/me-user";
 import { predictionChoiceSchema } from "@/lib/validation";
@@ -33,7 +33,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    const userId = await resolveUserIdOrThrow();
+    const userId = await resolveUserIdOrThrowInRouteHandler();
     const body = await request.json();
     const parsed = patchSchema.safeParse(body);
 
