@@ -41,10 +41,10 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { phone },
-      select: { id: true, hidden: true, firstName: true, lastName: true, phone: true },
+      select: { id: true, firstName: true, lastName: true, phone: true },
     });
 
-    if (!user || user.hidden) {
+    if (!user) {
       return NextResponse.json(
         {
           error:
@@ -66,7 +66,8 @@ export async function POST(request: Request) {
     }).catch(console.error);
 
     return NextResponse.json({ success: true, message: "ورود موفق." });
-  } catch {
+  } catch (err) {
+    console.error("[auth/login]", err);
     return NextResponse.json({ error: "خطا در ورود" }, { status: 500 });
   }
 }
