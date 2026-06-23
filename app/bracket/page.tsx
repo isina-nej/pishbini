@@ -1,10 +1,13 @@
+import { Suspense } from "react";
 import { BracketPageClient } from "@/components/bracket/BracketPageClient";
 import { PublicPageShell } from "@/components/public/PublicPageShell";
 
 export default function BracketPage() {
   return (
-    <PublicPageShell pageId="bracket" showNav={false}>
-      <BracketPageClient />
-    </PublicPageShell>
+    <Suspense fallback={<div className="min-h-dvh bg-bg" />}>
+      <PublicPageShell pageId="bracket" showNav={false}>
+        <BracketPageClient />
+      </PublicPageShell>
+    </Suspense>
   );
 }
