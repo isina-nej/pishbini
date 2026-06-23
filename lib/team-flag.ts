@@ -55,6 +55,11 @@ export function flagIsoForTeam(code: string): string {
   return TEAM_FLAG_ISO[code.toUpperCase()] ?? code.toLowerCase();
 }
 
+/** CSS class suffix for flag-icons (`fi fi-{iso}`). */
+export function flagIconClassForTeam(code: string): string {
+  return `fi-${flagIsoForTeam(code)}`;
+}
+
 /** Vector flag assets — sharp at any card size, no CDN dependency. */
 export function localFlagPath(code: string): string {
   return `/flags/${code.toLowerCase()}.svg`;

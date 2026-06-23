@@ -9,6 +9,7 @@
     "lint": "tsc --noEmit",
     "db:seed": "tsx prisma/seed.ts",
     "flags:download": "tsx scripts/download-flags.ts",
+    "verify:home": "node scripts/verify-home.mjs",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "postinstall": "prisma generate"

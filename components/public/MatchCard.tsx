@@ -44,23 +44,10 @@ function FlagFrame({ children }: { children: ReactNode }) {
   );
 }
 
-function PureFlag({
-  team,
-  loading,
-}: {
-  team: TeamInfo;
-  loading: "eager" | "lazy";
-}) {
+function PureFlag({ team }: { team: TeamInfo }) {
   return (
     <FlagFrame>
-      <TeamFlag
-        src=""
-        code={team.code}
-        alt={team.nameFa}
-        fill
-        loading={loading}
-        objectFit="fill"
-      />
+      <TeamFlag code={team.code} alt={team.nameFa} fill fit="stretch" />
     </FlagFrame>
   );
 }
@@ -111,7 +98,6 @@ function SelectableFlag({
   hasTeamPick,
   drawSelected,
   onSelect,
-  loading,
   reduceMotion,
 }: {
   team: TeamInfo;
@@ -119,7 +105,6 @@ function SelectableFlag({
   hasTeamPick: boolean;
   drawSelected: boolean;
   onSelect: () => void;
-  loading: "eager" | "lazy";
   reduceMotion: boolean;
 }) {
   const dimmed = drawSelected || (hasTeamPick && !selected);
@@ -137,7 +122,7 @@ function SelectableFlag({
       className="relative h-full min-w-0 overflow-hidden"
       aria-label={team.nameFa}
     >
-      <PureFlag team={team} loading={loading} />
+      <PureFlag team={team} />
       {dimmed && (
         <ShadowOverlay className={drawSelected ? "bg-black/55" : undefined} />
       )}
@@ -176,12 +161,10 @@ function TeamNameStrip({
 function ConfirmedCard({
   match,
   selected,
-  loading,
   reduceMotion,
 }: {
   match: MatchData;
   selected: PredictionChoice;
-  loading: "eager" | "lazy";
   reduceMotion: boolean;
 }) {
   const isDraw = selected === PredictionChoice.DRAW;
@@ -204,11 +187,11 @@ function ConfirmedCard({
         <div className="relative">
           <div className="relative flex h-[96px]">
             <div className="relative flex-1 overflow-hidden">
-              <PureFlag team={match.homeTeam} loading={loading} />
+              <PureFlag team={match.homeTeam} />
               <ShadowOverlay className="bg-black/55" />
             </div>
             <div className="relative flex-1 overflow-hidden">
-              <PureFlag team={match.awayTeam} loading={loading} />
+              <PureFlag team={match.awayTeam} />
               <ShadowOverlay className="bg-black/55" />
             </div>
             <DrawCenterBadge reduceMotion={!!reduceMotion} />
@@ -235,7 +218,7 @@ function ConfirmedCard({
       ) : winTeam ? (
         <div className="relative">
           <div className="relative h-[96px] overflow-hidden">
-            <PureFlag team={winTeam} loading={loading} />
+            <PureFlag team={winTeam} />
           </div>
           <span
             className={cn(
@@ -270,7 +253,6 @@ export function MatchCard({
   locked = false,
 }: Props) {
   const reduceMotion = useReducedMotion();
-  const flagLoading = index === 0 ? "eager" : "lazy";
 
   const homeSelected = selected === PredictionChoice.HOME_WIN;
   const awaySelected = selected === PredictionChoice.AWAY_WIN;
@@ -305,7 +287,6 @@ export function MatchCard({
             key="confirmed"
             match={match}
             selected={selected}
-            loading={flagLoading}
             reduceMotion={!!reduceMotion}
           />
         ) : (
@@ -325,7 +306,6 @@ export function MatchCard({
                 hasTeamPick={hasTeamPick}
                 drawSelected={drawSelected}
                 onSelect={() => onSelect(PredictionChoice.HOME_WIN)}
-                loading={flagLoading}
                 reduceMotion={!!reduceMotion}
               />
               <SelectableFlag
@@ -334,7 +314,6 @@ export function MatchCard({
                 hasTeamPick={hasTeamPick}
                 drawSelected={drawSelected}
                 onSelect={() => onSelect(PredictionChoice.AWAY_WIN)}
-                loading={flagLoading}
                 reduceMotion={!!reduceMotion}
               />
               <AnimatePresence>

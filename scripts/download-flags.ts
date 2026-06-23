@@ -1,7 +1,13 @@
-import { copyFile, mkdir } from "fs/promises";
+import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { flagIsoForTeam } from "../lib/team-flag";
 import { WC2026_TEAMS } from "../lib/world-cup-2026";
+
+/** Allow CSS background-size to stretch flags in wide match-card slots. */
+function stretchableFlagSvg(raw: string): string {
+  if (raw.includes("preserveAspectRatio")) return raw;
+  return raw.replace("<svg ", '<svg preserveAspectRatio="none" ');
+}
 
 /**
  * Copy high-quality SVG flags from flag-icons to public/flags/{code}.svg
@@ -17,7 +23,8 @@ async function main() {
     const src = path.join(srcDir, `${iso}.svg`);
     const dest = path.join(outDir, `${code.toLowerCase()}.svg`);
     try {
-      await copyFile(src, dest);
+      const raw = await readFile(src, "utf8");
+      await writeFile(dest, stretchableFlagSvg(raw), "utf8");
       console.log(`OK ${code} -> flags/${code.toLowerCase()}.svg`);
     } catch {
       console.error(`Missing flag-icons asset: ${iso}.svg (${code})`);

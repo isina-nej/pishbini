@@ -1,35 +1,35 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { localFlagPath } from "@/lib/team-flag";
 
-type ObjectFit = "cover" | "contain" | "fill";
+type FlagFit = "cover" | "contain" | "stretch";
 
 type TeamFlagProps = {
-  src: string;
+  src?: string;
   code?: string;
   alt?: string;
   className?: string;
   fill?: boolean;
   loading?: "eager" | "lazy";
-  /** Inline object-fit — avoids Tailwind class conflicts in nested layouts */
-  objectFit?: ObjectFit;
+  /** How the flag fills its box */
+  fit?: FlagFit;
+};
+
+const FIT_CLASS: Record<FlagFit, string> = {
+  cover: "team-flag--cover",
+  contain: "team-flag--contain",
+  stretch: "team-flag--stretch",
 };
 
 export function TeamFlag({
-  src,
   code,
   alt = "",
   className,
   fill,
-  loading = "lazy",
-  objectFit = "cover",
+  fit = "cover",
 }: TeamFlagProps) {
-  const [failed, setFailed] = useState(false);
-  const resolved = code ? localFlagPath(code) : src;
-
-  if (failed || !resolved) {
+  if (!code) {
     return (
       <span
         className={cn(
@@ -39,35 +39,22 @@ export function TeamFlag({
         )}
         aria-hidden
       >
-        {code?.slice(0, 3) ?? "?"}
+        ?
       </span>
     );
   }
 
-  const img = (
-    <img
-      src={resolved}
-      alt={alt}
-      loading={loading}
-      decoding="async"
-      draggable={false}
-      onError={() => setFailed(true)}
+  return (
+    <span
+      role="img"
+      aria-label={alt || code}
       className={cn(
-        "object-center",
-        fill ? "absolute inset-0 h-full w-full" : "h-full w-full",
+        "team-flag",
+        fill ? "team-flag--fill" : "team-flag--inline",
+        FIT_CLASS[fit],
         className
       )}
-      style={{ objectFit }}
+      style={{ backgroundImage: `url(${localFlagPath(code)})` }}
     />
   );
-
-  if (fill) {
-    return (
-      <span className="relative block size-full overflow-hidden [transform:translateZ(0)]">
-        {img}
-      </span>
-    );
-  }
-
-  return img;
 }

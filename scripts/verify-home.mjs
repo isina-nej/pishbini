@@ -16,20 +16,25 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 430, height: 900 } });
 
 await page.addInitScript(() => {
-  sessionStorage.setItem("wc_splash_seen", "1");
+  localStorage.setItem("wc_splash_first_visit_done", "1");
 });
 
 await page.goto(url, { waitUntil: "networkidle", timeout: 30_000 });
+
+const splashOverlay = page.locator('[role="presentation"]');
+if (await splashOverlay.isVisible().catch(() => false)) {
+  await splashOverlay.click();
+  await splashOverlay.waitFor({ state: "hidden", timeout: 5_000 }).catch(() => {});
+}
+
 await page.waitForSelector("text=پیش‌بینی جام جهانی", { timeout: 15_000 });
 await page.waitForTimeout(1500);
 
-const flags = await page.$$eval('img[src*="/flags/"]', (imgs) =>
-  imgs.map((img) => ({
-    src: img.getAttribute("src"),
-    ok: img.naturalWidth > 0 && img.naturalHeight > 0,
-    w: img.naturalWidth,
-    h: img.naturalHeight,
-    fit: getComputedStyle(img).objectFit,
+const flags = await page.$$eval(".team-flag", (els) =>
+  els.map((el) => ({
+    classes: el.className,
+    ok: getComputedStyle(el).backgroundImage !== "none",
+    fit: getComputedStyle(el).backgroundSize,
   }))
 );
 
