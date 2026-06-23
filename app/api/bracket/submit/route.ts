@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { setUserSessionCookie } from "@/lib/auth-user";
+import { PARTICIPANT_COOKIE } from "@/lib/me-user";
 import { processBracketSubmission } from "@/lib/bracket/submit-service";
 import { prisma } from "@/lib/db";
 import { normalizePhone } from "@/lib/phone";
@@ -8,8 +9,7 @@ import { REFERRAL_COOKIE_NAME, resolveReferralCode } from "@/lib/referral";
 import { bracketSubmitSchema } from "@/lib/validation";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
-const PARTICIPANT_COOKIE = "wc_participant";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     }
 
     cookieStore.set(PARTICIPANT_COOKIE, result.data.referralCode, {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",

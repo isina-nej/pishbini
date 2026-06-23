@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthenticatedUserId, setUserSessionCookie } from "@/lib/auth-user";
+import { setUserSessionCookie } from "@/lib/auth-user";
+import { PARTICIPANT_COOKIE, resolveUserIdFromCookies } from "@/lib/me-user";
 import { prisma } from "@/lib/db";
 import { normalizePhone } from "@/lib/phone";
 import { verifyOtp } from "@/lib/otp-service";
@@ -23,8 +24,7 @@ const authenticatedSubmitSchema = z.object({
   referralCode: z.string().nullable().optional(),
 });
 
-const PARTICIPANT_COOKIE = "wc_participant";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
 
 export async function POST(request: Request) {
   const ip = getClientIp(request);
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const sessionUserId = await getAuthenticatedUserId();
+    const sessionUserId = await resolveUserIdFromCookies();
     const phone = normalizePhone(body.phone);
     let useSession = false;
 
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     }
 
     cookieStore.set(PARTICIPANT_COOKIE, result.data.referralCode, {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",

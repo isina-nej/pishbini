@@ -2,7 +2,12 @@ import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "crypto";
 
 export const USER_SESSION_COOKIE = "user_session";
-const MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+
+function getMaxAgeSeconds(): number {
+  const days = Number(process.env.USER_SESSION_MAX_DAYS ?? "90");
+  if (!Number.isFinite(days) || days < 1) return 60 * 60 * 24 * 90;
+  return 60 * 60 * 24 * Math.min(Math.floor(days), 365);
+}
 
 function getSecret(): string {
   const secret = process.env.USER_SESSION_SECRET ?? process.env.ADMIN_SESSION_SECRET;
@@ -15,7 +20,8 @@ function sign(payload: string): string {
 }
 
 export function createUserSessionToken(userId: string): string {
-  const expires = Date.now() + MAX_AGE * 1000;
+  const maxAge = getMaxAgeSeconds();
+  const expires = Date.now() + maxAge * 1000;
   const payload = `user:${userId}:${expires}`;
   const signature = sign(payload);
   return Buffer.from(`${payload}:${signature}`).toString("base64url");
@@ -51,7 +57,7 @@ export async function setUserSessionCookie(userId: string): Promise<void> {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: MAX_AGE,
+    maxAge: getMaxAgeSeconds(),
   });
 }
 

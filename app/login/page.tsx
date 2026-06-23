@@ -1,8 +1,20 @@
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { LoginForm } from "@/components/public/LoginForm";
+import { resolveUserIdFromCookies } from "@/lib/me-user";
 
-export default function LoginPage() {
+type Props = {
+  searchParams: Promise<{ from?: string }>;
+};
+
+export default async function LoginPage({ searchParams }: Props) {
+  const userId = await resolveUserIdFromCookies();
+  if (userId) {
+    const { from } = await searchParams;
+    redirect(from || "/profile");
+  }
+
   return (
     <PublicPageShell pageId="profile" showNav={false}>
       <div className="pb-8 pt-8">

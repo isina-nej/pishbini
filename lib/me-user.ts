@@ -1,13 +1,16 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
-import { getAuthenticatedUserId } from "@/lib/auth-user";
+import { getAuthenticatedUserId, setUserSessionCookie } from "@/lib/auth-user";
 import { normalizeReferralCode } from "@/lib/referral";
 
-const PARTICIPANT_COOKIE = "wc_participant";
+export const PARTICIPANT_COOKIE = "wc_participant";
 
 export async function resolveUserIdFromCookies(): Promise<string | null> {
   const sessionUserId = await getAuthenticatedUserId();
-  if (sessionUserId) return sessionUserId;
+  if (sessionUserId) {
+    await setUserSessionCookie(sessionUserId);
+    return sessionUserId;
+  }
 
   const cookieStore = await cookies();
   const referralCode = cookieStore.get(PARTICIPANT_COOKIE)?.value;
@@ -21,7 +24,10 @@ export async function resolveUserIdFromCookies(): Promise<string | null> {
     select: { id: true },
   });
 
-  return user?.id ?? null;
+  if (!user) return null;
+
+  await setUserSessionCookie(user.id);
+  return user.id;
 }
 
 export async function resolveUserIdOrThrow(): Promise<string> {

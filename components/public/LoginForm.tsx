@@ -25,6 +25,18 @@ export function LoginForm() {
   const redirectTo = searchParams.get("from") || "/profile";
 
   useEffect(() => {
+    fetch("/api/me/session", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.loggedIn) {
+          router.replace(redirectTo);
+          router.refresh();
+        }
+      })
+      .catch(() => {});
+  }, [router, redirectTo]);
+
+  useEffect(() => {
     if (countdown <= 0) return;
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
