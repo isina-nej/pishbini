@@ -40,6 +40,11 @@ export const submitSchema = z.object({
   predictions: z.array(predictionItemSchema).min(1, "حداقل یک پیش‌بینی لازم است"),
 });
 
+export const authLoginSchema = z.object({
+  phone: phoneInputSchema,
+  code: z.string().regex(/^\d{4}$/, "کد تأیید باید ۴ رقم باشد"),
+});
+
 export const adminLoginSchema = z.object({
   password: z.string().min(1),
 });

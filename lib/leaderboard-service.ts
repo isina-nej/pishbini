@@ -137,3 +137,45 @@ export async function getUserRankByReferralCode(
   if (idx === -1) return null;
   return { ...sorted[idx], rank: idx + 1 };
 }
+
+export async function getUserRankByUserId(userId: string): Promise<number | null> {
+  const [users, rules] = await Promise.all([
+    prisma.user.findMany({
+      where: { hidden: false },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        referralCode: true,
+        basePointsAwarded: true,
+        correctCount: true,
+        wrongCount: true,
+        referralCount: true,
+        createdAt: true,
+      },
+    }),
+    loadActivePointRulesMap(),
+  ]);
+
+  const sorted = sortEntries(
+    users.map((u) =>
+      toEntry(
+        u,
+        computeUserScore(
+          {
+            basePointsAwarded: u.basePointsAwarded,
+            correctCount: u.correctCount,
+            wrongCount: u.wrongCount,
+            referralCount: u.referralCount,
+          },
+          rules
+        )
+      )
+    )
+  );
+
+  const idx = sorted.findIndex((u) => u.userId === userId);
+  if (idx === -1) return null;
+  return idx + 1;
+}

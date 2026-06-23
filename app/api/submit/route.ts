@@ -1,5 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { setUserSessionCookie } from "@/lib/auth-user";
+import { prisma } from "@/lib/db";
+import { normalizePhone } from "@/lib/phone";
 import { verifyOtp } from "@/lib/otp-service";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { REFERRAL_COOKIE_NAME, resolveReferralCode } from "@/lib/referral";
@@ -53,6 +56,15 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: COOKIE_MAX_AGE,
     });
+
+    const phone = normalizePhone(parsed.data.phone);
+    if (phone) {
+      const user = await prisma.user.findUnique({
+        where: { phone },
+        select: { id: true },
+      });
+      if (user) await setUserSessionCookie(user.id);
+    }
 
     return NextResponse.json({ success: true, user: result.data });
   } catch {
