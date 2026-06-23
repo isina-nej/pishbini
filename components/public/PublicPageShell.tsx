@@ -18,7 +18,7 @@ export function PublicPageShell({
   return (
     <Suspense
       fallback={
-        <div className={`min-h-dvh bg-bg${showNav ? " pb-24" : ""}`}>{children}</div>
+        <div className={`min-h-dvh bg-bg${showNav ? " pb-32" : ""}`}>{children}</div>
       }
     >
       <PublicPageShellClient

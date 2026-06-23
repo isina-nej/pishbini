@@ -97,3 +97,32 @@ body {
 .team-flag--stretch {
   background-size: 100% 100%;
 }
+
+.bottom-nav-halo {
+  background: radial-gradient(
+    circle at 50% 55%,
+    color-mix(in srgb, var(--primary) 42%, transparent) 0%,
+    color-mix(in srgb, var(--secondary) 18%, transparent) 35%,
+    transparent 72%
+  );
+  filter: blur(10px);
+  animation: bottom-nav-halo-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes bottom-nav-halo-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-nav-halo {
+    animation: none;
+  }
+}

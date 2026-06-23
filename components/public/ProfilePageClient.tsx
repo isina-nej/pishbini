@@ -91,7 +91,7 @@ export function ProfilePageClient() {
   return (
     <>
       <TourPageReady ready />
-      <div className="pb-28 pt-4">
+      <div className="pb-32 pt-4">
       <motion.header
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}

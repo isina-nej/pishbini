@@ -45,7 +45,7 @@ export default function SuccessPage() {
 
   return (
     <PageAccessProvider>
-    <div className="pb-24 pt-10">
+    <div className="pb-32 pt-10">
       <ReferralBanner />
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}

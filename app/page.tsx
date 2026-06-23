@@ -123,7 +123,7 @@ export default function HomePage() {
         tourReady={!loading && !error}
         tourHasMatches={matches.length > 0}
       >
-        <div className="pb-28 pt-6">
+        <div className="pb-32 pt-6">
           <motion.header
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -167,7 +167,7 @@ export default function HomePage() {
           })}
 
           {newPicksCount > 0 && (
-            <div className="fixed bottom-16 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2 px-4">
+            <div className="fixed bottom-24 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2 px-4">
               <motion.button
                 type="button"
                 data-tour="submit-predictions"

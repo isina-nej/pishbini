@@ -34,7 +34,7 @@ export default function BracketSuccessPage() {
 
   return (
     <PageAccessProvider>
-    <div className="bracket-root pb-24 pt-10">
+    <div className="bracket-root pb-32 pt-10">
       <div className="px-4 text-center">
         <p className="text-lg font-bold text-[var(--bracket-primary)]">
           پیش‌بینی جدول حذفی شما با موفقیت ثبت شد.

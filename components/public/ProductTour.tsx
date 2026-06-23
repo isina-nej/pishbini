@@ -14,7 +14,7 @@ import type { TourStep } from "@/lib/product-tour";
 const PAD = 8;
 const MARGIN = 12;
 const GAP = 10;
-const NAV_CLEARANCE = 76;
+const NAV_CLEARANCE = 88;
 
 type Props = {
   step: TourStep | null;

@@ -75,7 +75,7 @@ export function PrizesPageClient() {
       {loading && <LoadingState />}
       {error && <ErrorState message={error} />}
       {!loading && !error && content && (
-    <div className="pb-24 pt-4">
+    <div className="pb-32 pt-4">
       <motion.header
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}

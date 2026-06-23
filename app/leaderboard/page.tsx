@@ -34,7 +34,7 @@ export default function LeaderboardPage() {
   return (
     <PublicPageShell pageId="leaderboard" tourReady={!loading && !error}>
       <TourPageReady ready={!loading && !error} />
-      <div className="pb-24 pt-4">
+      <div className="pb-32 pt-4">
         <motion.header
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
