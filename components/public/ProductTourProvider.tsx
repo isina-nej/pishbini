@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -71,6 +72,41 @@ async function waitForTarget(target: string, maxMs = 15_000, cancelled?: () => b
 }
 
 export function ProductTourProvider({
+  pageId,
+  hasMatches = true,
+  tourReady = true,
+  children,
+}: {
+  pageId: PageId;
+  hasMatches?: boolean;
+  tourReady?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Suspense fallback={<ProductTourProviderFallback>{children}</ProductTourProviderFallback>}>
+      <ProductTourProviderInner
+        pageId={pageId}
+        hasMatches={hasMatches}
+        tourReady={tourReady}
+      >
+        {children}
+      </ProductTourProviderInner>
+    </Suspense>
+  );
+}
+
+function ProductTourProviderFallback({ children }: { children: ReactNode }) {
+  const ctx = useMemo<TourContextValue>(() => ({ active: false, stepId: null }), []);
+  const setPageReady = useCallback(() => {}, []);
+
+  return (
+    <TourPageReadySetterContext.Provider value={setPageReady}>
+      <TourContext.Provider value={ctx}>{children}</TourContext.Provider>
+    </TourPageReadySetterContext.Provider>
+  );
+}
+
+function ProductTourProviderInner({
   pageId,
   hasMatches = true,
   tourReady = true,
