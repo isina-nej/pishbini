@@ -11,9 +11,10 @@ type Props = {
   match: ResolvedMatch;
   onSelect: (teamId: string) => void;
   index: number;
+  tourTarget?: boolean;
 };
 
-export function BracketMatchCard({ match, onSelect, index }: Props) {
+export function BracketMatchCard({ match, onSelect, index, tourTarget = false }: Props) {
   const reduceMotion = useReducedMotion();
 
   if (!match.isReady) {
@@ -30,6 +31,7 @@ export function BracketMatchCard({ match, onSelect, index }: Props) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: reduceMotion ? 0 : index * 0.04, duration: 0.22 }}
       className="overflow-hidden rounded-xl border border-[var(--bracket-border)] bg-[var(--bracket-surface-elevated)] shadow-lg"
+      data-tour={tourTarget ? "bracket-match" : undefined}
     >
       <TeamRow
         team={match.homeTeam!}

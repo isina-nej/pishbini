@@ -118,12 +118,17 @@ export default function HomePage() {
 
   return (
     <>
-      <PublicPageShell pageId="predictions">
+      <PublicPageShell
+        pageId="predictions"
+        tourReady={!loading && !error}
+        tourHasMatches={matches.length > 0}
+      >
         <div className="pb-28 pt-6">
           <motion.header
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-6 px-4 text-center"
+            data-tour="home-header"
           >
             <h1 className="bg-gradient-to-l from-primary to-secondary bg-clip-text text-2xl font-bold text-transparent">
               پیش‌بینی جام جهانی
@@ -156,6 +161,7 @@ export default function HomePage() {
                 index={i}
                 submitted={Boolean(saved)}
                 locked={saved ? !saved.canEdit : false}
+                tourTargets={i === 0}
               />
             );
           })}
@@ -164,7 +170,11 @@ export default function HomePage() {
             <div className="fixed bottom-16 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2 px-4">
               <motion.button
                 type="button"
-                onClick={() => setModalOpen(true)}
+                data-tour="submit-predictions"
+                onClick={() => {
+                  if (document.documentElement.dataset.tourStep === "submit") return;
+                  setModalOpen(true);
+                }}
                 whileTap={{ scale: 0.97 }}
                 animate={{ scale: [1, 1.02, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}

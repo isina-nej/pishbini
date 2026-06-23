@@ -126,6 +126,7 @@ export function LoginForm() {
             </label>
             <input
               id="login-phone"
+              data-tour="login-phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               type="tel"
@@ -138,6 +139,7 @@ export function LoginForm() {
           </div>
           <button
             type="button"
+            data-tour="login-send"
             onClick={sendOtp}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 text-base font-bold text-[#10111f]"
           >

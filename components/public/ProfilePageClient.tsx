@@ -17,6 +17,8 @@ import type { UserProfile, ProfilePrediction } from "@/lib/profile-service";
 import { ErrorState } from "@/components/public/ErrorState";
 import { LoadingState } from "@/components/public/LoadingState";
 import { EditPredictionSheet } from "@/components/public/EditPredictionSheet";
+import { TourPageReady } from "@/components/public/TourPageReady";
+import { restartTour } from "@/lib/product-tour";
 import { cn } from "@/lib/utils";
 
 export function ProfilePageClient() {
@@ -67,15 +69,34 @@ export function ProfilePageClient() {
     }
   };
 
-  if (loading) return <LoadingState />;
-  if (error || !profile) return <ErrorState message={error ?? "خطا در بارگذاری"} />;
+  if (loading) {
+    return (
+      <>
+        <TourPageReady ready={false} />
+        <LoadingState />
+      </>
+    );
+  }
+  if (error || !profile) {
+    return (
+      <>
+        <TourPageReady ready={false} />
+        <ErrorState message={error ?? "خطا در بارگذاری"} />
+      </>
+    );
+  }
+
+  const editablePrediction = profile.predictions.find((p) => p.canEdit);
 
   return (
-    <div className="pb-28 pt-4">
+    <>
+      <TourPageReady ready />
+      <div className="pb-28 pt-4">
       <motion.header
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-5 px-4 text-center"
+        data-tour="profile-header"
       >
         <div className="mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-secondary/25 ring-1 ring-white/10">
           <User className="size-8 text-primary" />
@@ -91,7 +112,7 @@ export function ProfilePageClient() {
         </p>
       </motion.header>
 
-      <div className="mx-4 mb-4 grid grid-cols-2 gap-2">
+      <div className="mx-4 mb-4 grid grid-cols-2 gap-2" data-tour="profile-stats">
         <StatCard
           icon={Trophy}
           label="امتیاز"
@@ -115,7 +136,7 @@ export function ProfilePageClient() {
         />
       </div>
 
-      <div className="glass-card mx-4 mb-4 p-4">
+      <div className="glass-card mx-4 mb-4 p-4" data-tour="profile-referral">
         <p className="mb-2 text-xs text-white/50">لینک دعوت شما</p>
         <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-3">
           <p dir="ltr" className="min-w-0 flex-1 truncate text-left text-xs text-white/80">
@@ -123,6 +144,7 @@ export function ProfilePageClient() {
           </p>
           <button
             type="button"
+            data-tour="profile-referral-copy"
             onClick={copyReferral}
             className="shrink-0 rounded-lg bg-primary/15 p-2 text-primary"
             aria-label="کپی لینک"
@@ -134,7 +156,7 @@ export function ProfilePageClient() {
       </div>
 
       {profile.bracketSubmitted && (
-        <div className="glass-card mx-4 mb-4 flex items-center gap-3 p-4">
+        <div className="glass-card mx-4 mb-4 flex items-center gap-3 p-4" data-tour="profile-bracket">
           <GitBranch className="size-5 shrink-0 text-secondary" />
           <div>
             <p className="text-sm font-medium">جدول حذفی ثبت شده</p>
@@ -145,7 +167,7 @@ export function ProfilePageClient() {
         </div>
       )}
 
-      <div className="mx-4 mb-3 flex items-center justify-between">
+      <div className="mx-4 mb-3 flex items-center justify-between" data-tour="profile-history">
         <h2 className="text-sm font-bold">تاریخچه پیش‌بینی‌ها</h2>
         <span className="text-xs text-white/40">
           {profile.predictionsCount.toLocaleString("fa-IR")} مورد
@@ -168,6 +190,7 @@ export function ProfilePageClient() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i * 0.03, 0.3) }}
               className="rounded-xl border border-white/8 bg-white/[0.03] p-3"
+              data-tour={p.id === editablePrediction?.id ? "profile-edit" : undefined}
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-medium leading-snug">{p.matchLabel}</p>
@@ -202,9 +225,21 @@ export function ProfilePageClient() {
         </div>
       )}
 
-      <div className="mx-4 mt-6">
+      <div className="mx-4 mt-4">
         <button
           type="button"
+          data-tour="profile-replay-tour"
+          onClick={() => restartTour("profile")}
+          className="mb-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 py-3 text-sm font-medium text-primary"
+        >
+          مشاهده مجدد آموزش حساب
+        </button>
+      </div>
+
+      <div className="mx-4 mt-2">
+        <button
+          type="button"
+          data-tour="profile-logout"
           onClick={logout}
           className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 py-3 text-sm text-white/60 transition-colors hover:border-danger/30 hover:text-danger"
         >
@@ -219,6 +254,7 @@ export function ProfilePageClient() {
         onSaved={loadProfile}
       />
     </div>
+    </>
   );
 }
 

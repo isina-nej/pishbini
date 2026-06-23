@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { LoadingState } from "@/components/public/LoadingState";
+import { TourPageReady } from "@/components/public/TourPageReady";
 import { ErrorState } from "@/components/public/ErrorState";
 import type { CampaignInfoContent, CampaignInfoSectionIcon } from "@/lib/campaign-info";
 
@@ -66,16 +67,20 @@ export function PrizesPageClient() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error} />;
-  if (!content) return null;
+  const pageReady = !loading && !error && Boolean(content);
 
   return (
+    <>
+      <TourPageReady ready={pageReady} />
+      {loading && <LoadingState />}
+      {error && <ErrorState message={error} />}
+      {!loading && !error && content && (
     <div className="pb-24 pt-4">
       <motion.header
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative mx-4 mb-6 overflow-hidden rounded-3xl border border-white/10 p-6"
+        data-tour="prizes-hero"
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-secondary/25 via-transparent to-primary/20" />
         <div className="pointer-events-none absolute -end-8 -top-8 size-32 rounded-full bg-primary/20 blur-3xl" />
@@ -93,6 +98,7 @@ export function PrizesPageClient() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.08 }}
         className="glass-card mx-4 mb-5 overflow-hidden p-5"
+        data-tour="prizes-list"
       >
         <div className="mb-3 flex items-center gap-2">
           <Trophy className="size-5 text-amber-400" />
@@ -114,6 +120,7 @@ export function PrizesPageClient() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.12 }}
         className="mx-4 mb-5"
+        data-tour="prizes-scoring"
       >
         <h2 className="mb-3 flex items-center gap-2 text-lg font-bold">
           <Zap className="size-5 text-warning" />
@@ -141,7 +148,7 @@ export function PrizesPageClient() {
         </div>
       </motion.section>
 
-      <div className="mx-4 mb-5 space-y-3">
+      <div className="mx-4 mb-5 space-y-3" data-tour="prizes-sections">
         {content.sections.map((section, i) => {
           const Icon = ICONS[section.icon];
           const color = ICON_COLORS[section.icon];
@@ -171,7 +178,7 @@ export function PrizesPageClient() {
         </p>
       )}
 
-      <div className="mx-4">
+      <div className="mx-4" data-tour="prizes-leaderboard-cta">
         <Link
           href="/leaderboard"
           className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-secondary py-4 text-sm font-bold text-[#10111f]"
@@ -181,6 +188,8 @@ export function PrizesPageClient() {
           <ChevronLeft className="size-4" />
         </Link>
       </div>
-    </div>
+      </div>
+      )}
+    </>
   );
 }

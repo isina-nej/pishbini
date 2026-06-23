@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Gift, Trophy } from "lucide-react";
 import { PublicPageShell } from "@/components/public/PublicPageShell";
+import { TourPageReady } from "@/components/public/TourPageReady";
 import { ErrorState } from "@/components/public/ErrorState";
 import { LeaderboardCard, type LeaderboardUser } from "@/components/public/LeaderboardCard";
 import { LeaderboardPodium } from "@/components/public/LeaderboardPodium";
@@ -31,12 +32,14 @@ export default function LeaderboardPage() {
   const rest = users.filter((u) => u.rank > 3 && u.rank <= PUBLIC_LEADERBOARD_LIMIT);
 
   return (
-    <PublicPageShell pageId="leaderboard">
+    <PublicPageShell pageId="leaderboard" tourReady={!loading && !error}>
+      <TourPageReady ready={!loading && !error} />
       <div className="pb-24 pt-4">
         <motion.header
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative mb-2 px-4 text-center"
+          data-tour="leaderboard-header"
         >
           <div className="pointer-events-none absolute inset-x-4 top-0 h-24 rounded-full bg-secondary/20 blur-3xl" />
           <div className="relative">
@@ -49,6 +52,7 @@ export default function LeaderboardPage() {
             </p>
             <Link
               href="/prizes"
+              data-tour="leaderboard-prizes-link"
               className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs text-primary"
             >
               <Gift className="size-3.5" />
@@ -58,7 +62,7 @@ export default function LeaderboardPage() {
         </motion.header>
 
         {!loading && users.length > 0 && (
-          <div className="mx-4 mb-4 flex justify-center">
+          <div className="mx-4 mb-4 flex justify-center" data-tour="leaderboard-top-score">
             <MiniStat
               icon={Trophy}
               label="بیشترین امتیاز"
@@ -71,16 +75,21 @@ export default function LeaderboardPage() {
         {loading && <LoadingState />}
         {error && <ErrorState message={error} />}
 
-        {!loading && !error && users.length > 0 && <LeaderboardPodium users={users} />}
-
-        {!loading && rest.length > 0 && (
-          <p className="mb-2 px-4 text-xs font-medium text-white/40">رتبه‌های ۴ تا ۱۰</p>
+        {!loading && !error && users.length > 0 && (
+          <div data-tour="leaderboard-podium">
+            <LeaderboardPodium users={users} />
+          </div>
         )}
 
         {!loading &&
-          rest.map((user, i) => (
-            <LeaderboardCard key={`${user.rank}-${user.maskedPhone}`} user={user} index={i} />
-          ))}
+          rest.length > 0 && (
+            <div data-tour="leaderboard-list">
+              <p className="mb-2 px-4 text-xs font-medium text-white/40">رتبه‌های ۴ تا ۱۰</p>
+              {rest.map((user, i) => (
+                <LeaderboardCard key={`${user.rank}-${user.maskedPhone}`} user={user} index={i} />
+              ))}
+            </div>
+          )}
 
         {!loading && users.length === 0 && !error && (
           <p className="px-4 py-12 text-center text-sm text-white/45">هنوز کسی در جدول نیست</p>

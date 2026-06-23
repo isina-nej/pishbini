@@ -17,6 +17,17 @@ const page = await browser.newPage({ viewport: { width: 430, height: 900 } });
 
 await page.addInitScript(() => {
   localStorage.setItem("wc_splash_first_visit_done", "1");
+  localStorage.setItem(
+    "wc_product_tour_v2",
+    JSON.stringify({
+      predictions: true,
+      bracket: true,
+      leaderboard: true,
+      prizes: true,
+      profile: true,
+      login: true,
+    })
+  );
 });
 
 await page.goto(url, { waitUntil: "networkidle", timeout: 30_000 });

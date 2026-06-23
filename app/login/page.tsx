@@ -6,7 +6,7 @@ export default function LoginPage() {
   return (
     <PublicPageShell pageId="profile" showNav={false}>
       <div className="pb-8 pt-8">
-        <header className="mb-6 px-4 text-center">
+        <header className="mb-6 px-4 text-center" data-tour="login-header">
           <h1 className="text-2xl font-bold">ورود به حساب</h1>
           <p className="mt-2 text-sm text-white/55">
             با شماره موبایل و کد تأیید وارد شوید

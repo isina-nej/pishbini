@@ -6,6 +6,7 @@ import { PredictionChoice } from "@/generated/prisma";
 import { formatPersianDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { TeamFlag } from "@/components/public/TeamFlag";
+import { MatchPredictionTimer } from "@/components/public/MatchPredictionTimer";
 
 export type MatchStats = {
   homeWinPercent: number;
@@ -30,6 +31,7 @@ type Props = {
   confirmed?: boolean;
   submitted?: boolean;
   locked?: boolean;
+  tourTargets?: boolean;
 };
 
 type TeamInfo = { nameFa: string; code: string; flagUrl: string };
@@ -251,6 +253,7 @@ export function MatchCard({
   confirmed = false,
   submitted = false,
   locked = false,
+  tourTargets = false,
 }: Props) {
   const reduceMotion = useReducedMotion();
 
@@ -259,7 +262,6 @@ export function MatchCard({
   const drawSelected = selected === PredictionChoice.DRAW;
   const hasTeamPick = homeSelected || awaySelected;
   const showConfirmed = (confirmed || locked) && submitted && selected;
-  const isSelecting = !showConfirmed;
 
   const homeNameFlex = hasTeamPick ? (homeSelected ? 4 : 1) : 1;
   const awayNameFlex = hasTeamPick ? (awaySelected ? 4 : 1) : 1;
@@ -299,7 +301,7 @@ export function MatchCard({
               drawSelected && "ring-1 ring-primary/50"
             )}
           >
-            <div className="relative flex h-[96px] w-full">
+            <div className="relative flex h-[96px] w-full" data-tour={tourTargets ? "match-flags" : undefined}>
               <SelectableFlag
                 team={match.homeTeam}
                 selected={homeSelected}
@@ -339,29 +341,33 @@ export function MatchCard({
                 drawSelected={drawSelected}
               />
             </div>
+
+            <motion.button
+              type="button"
+              data-tour={tourTargets ? "match-draw" : undefined}
+              onClick={() => onSelect(PredictionChoice.DRAW)}
+              whileTap={reduceMotion ? undefined : { scale: 0.99 }}
+              className={cn(
+                "w-full border-t border-white/10 bg-white py-2.5 text-sm font-bold transition-shadow",
+                drawSelected
+                  ? "text-primary shadow-[inset_0_0_0_2px_var(--primary)]"
+                  : "text-[#10111f] hover:bg-white/95"
+              )}
+            >
+              مساوی
+            </motion.button>
+
+            <div className="border-t border-white/10 bg-[#0d0e1a] px-3 py-2.5 text-center">
+              <p className="text-[11px] font-medium text-white/55">
+                {formatPersianDateTime(match.startTime)}
+              </p>
+              <div data-tour={tourTargets ? "match-timer" : undefined}>
+                <MatchPredictionTimer startTime={match.startTime} className="mt-1.5" />
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {isSelecting && (
-        <p className="mt-2 text-center text-[11px] text-white/45">
-          {formatPersianDateTime(match.startTime)}
-        </p>
-      )}
-
-      {isSelecting && (
-        <motion.button
-          type="button"
-          onClick={() => onSelect(PredictionChoice.DRAW)}
-          whileTap={reduceMotion ? undefined : { scale: 0.98 }}
-          className={cn(
-            "mt-1 w-full py-2 text-xs font-medium transition-colors",
-            drawSelected ? "text-primary" : "text-white/45 hover:text-white/65"
-          )}
-        >
-          مساوی
-        </motion.button>
-      )}
     </motion.div>
   );
 }

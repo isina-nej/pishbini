@@ -14,7 +14,10 @@ export function SplashScreen() {
   const [siteLoaded, setSiteLoaded] = useState(false);
 
   useEffect(() => {
-    if (reduceMotion) return;
+    if (reduceMotion) {
+      window.dispatchEvent(new CustomEvent("wc:splash-dismissed"));
+      return;
+    }
     setIsFirstVisit(!localStorage.getItem(FIRST_VISIT_KEY));
 
     fetch("/api/splash")
@@ -23,9 +26,13 @@ export function SplashScreen() {
         if (data.videoPath) {
           setVideoPath(data.videoPath);
           setVisible(true);
+        } else {
+          window.dispatchEvent(new CustomEvent("wc:splash-dismissed"));
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        window.dispatchEvent(new CustomEvent("wc:splash-dismissed"));
+      });
   }, [reduceMotion]);
 
   useEffect(() => {
@@ -40,6 +47,7 @@ export function SplashScreen() {
 
   const dismiss = useCallback(() => {
     setVisible(false);
+    window.dispatchEvent(new CustomEvent("wc:splash-dismissed"));
   }, []);
 
   const dismissFromClick = useCallback(() => {
@@ -61,6 +69,7 @@ export function SplashScreen() {
   return (
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black"
+      data-splash-overlay="1"
       onClick={dismissFromClick}
       role="presentation"
     >

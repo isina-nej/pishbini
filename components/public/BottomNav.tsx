@@ -46,6 +46,7 @@ export function BottomNav() {
             <Link
               key={id}
               href={href}
+              data-tour={`nav-${id}`}
               onClick={(e) => handleClick(e, href)}
               className={cn(
                 "flex min-w-0 flex-col items-center gap-0.5 px-1 text-[9px] transition-colors sm:text-[10px]",

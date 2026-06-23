@@ -16,6 +16,7 @@ import { hrefToPageId } from "@/lib/page-access.shared";
 import { BottomNav, useVisibleNavHrefs } from "./BottomNav";
 import { PageAccessGuard } from "./PageAccessGuard";
 import { PageAccessProvider } from "./PageAccessProvider";
+import { ProductTourProvider } from "./ProductTourProvider";
 import { ReferralBanner } from "./ReferralBanner";
 
 const SWIPE_MIN_PX = 48;
@@ -27,23 +28,33 @@ export function PublicPageShell({
   pageId,
   children,
   showNav = true,
+  tourReady = true,
+  tourHasMatches = true,
 }: {
   pageId: PageId;
   children: ReactNode;
   showNav?: boolean;
+  tourReady?: boolean;
+  tourHasMatches?: boolean;
 }) {
   return (
     <PageAccessProvider>
-      <PageAccessGuard pageId={pageId}>
-        <Suspense fallback={<ShellBody showNav={showNav}>{children}</ShellBody>}>
-          <ShellBody pageId={pageId} showNav={showNav}>
-            {children}
-          </ShellBody>
+      <ProductTourProvider
+        pageId={pageId}
+        tourReady={tourReady}
+        hasMatches={tourHasMatches}
+      >
+        <PageAccessGuard pageId={pageId}>
+          <Suspense fallback={<ShellBody showNav={showNav}>{children}</ShellBody>}>
+            <ShellBody pageId={pageId} showNav={showNav}>
+              {children}
+            </ShellBody>
+          </Suspense>
+        </PageAccessGuard>
+        <Suspense fallback={null}>
+          <BottomNavUnlessEmbed showNav={showNav} />
         </Suspense>
-      </PageAccessGuard>
-      <Suspense fallback={null}>
-        <BottomNavUnlessEmbed showNav={showNav} />
-      </Suspense>
+      </ProductTourProvider>
     </PageAccessProvider>
   );
 }

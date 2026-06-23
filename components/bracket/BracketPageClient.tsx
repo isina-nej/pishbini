@@ -17,6 +17,7 @@ import {
 } from "@/lib/bracket/progression";
 import { clearDraft, hasRestoredDraft, loadDraft, saveDraft } from "@/lib/bracket/storage";
 import type { BracketPicks, BracketTree } from "@/lib/bracket/types";
+import { TourPageReady } from "@/components/public/TourPageReady";
 import { cn } from "@/lib/utils";
 
 type ApiResponse = {
@@ -152,35 +153,44 @@ export function BracketPageClient() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <>
+        <TourPageReady ready={false} />
+        <div className="p-6">
         {backLink}
         <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--bracket-primary)] border-t-transparent" />
           <p className="text-sm text-[var(--bracket-text-muted)]">در حال آماده‌سازی جدول حذفی...</p>
         </div>
       </div>
+      </>
     );
   }
 
   if (error || !tree) {
     return (
-      <div className="p-6 text-center">
-        {backLink}
-        <p className="text-[var(--bracket-text-muted)]">
-          {error ?? "جدول مرحله حذفی هنوز منتشر نشده است."}
-        </p>
-      </div>
+      <>
+        <TourPageReady ready={false} />
+        <div className="p-6 text-center">
+          {backLink}
+          <p className="text-[var(--bracket-text-muted)]">
+            {error ?? "جدول مرحله حذفی هنوز منتشر نشده است."}
+          </p>
+        </div>
+      </>
     );
   }
 
   if (!meta.submissionOpen) {
     return (
-      <div className="p-6 text-center">
-        {backLink}
-        <p className="text-[var(--bracket-text-muted)]">
-          مهلت ثبت پیش‌بینی جدول حذفی به پایان رسیده است.
-        </p>
-      </div>
+      <>
+        <TourPageReady ready={false} />
+        <div className="p-6 text-center">
+          {backLink}
+          <p className="text-[var(--bracket-text-muted)]">
+            مهلت ثبت پیش‌بینی جدول حذفی به پایان رسیده است.
+          </p>
+        </div>
+      </>
     );
   }
 
@@ -188,7 +198,11 @@ export function BracketPageClient() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-[var(--bracket-border)] bg-[var(--bracket-bg)]/95 px-4 py-3 backdrop-blur-md">
+      <TourPageReady ready />
+      <header
+        className="sticky top-0 z-30 border-b border-[var(--bracket-border)] bg-[var(--bracket-bg)]/95 px-4 py-3 backdrop-blur-md"
+        data-tour="bracket-header"
+      >
         {backLink}
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -199,6 +213,7 @@ export function BracketPageClient() {
           </div>
           <button
             type="button"
+            data-tour="bracket-reset"
             onClick={() => setResetOpen(true)}
             className="shrink-0 rounded-lg border border-[var(--bracket-border)] px-3 py-1.5 text-xs text-[var(--bracket-text-muted)] hover:border-[var(--bracket-primary)]"
           >
@@ -206,7 +221,7 @@ export function BracketPageClient() {
           </button>
         </div>
 
-        <div className="mt-3">
+        <div className="mt-3" data-tour="bracket-progress">
           <div className="mb-1 flex justify-between text-xs text-[var(--bracket-text-muted)]">
             <span>
               {progress.completed.toLocaleString("fa-IR")} از{" "}
@@ -229,7 +244,10 @@ export function BracketPageClient() {
         )}
       </header>
 
-      <nav className="sticky top-[var(--bracket-header-offset,8.5rem)] z-20 border-b border-[var(--bracket-border)] bg-[var(--bracket-surface)]/95 backdrop-blur-md">
+      <nav
+        className="sticky top-[var(--bracket-header-offset,8.5rem)] z-20 border-b border-[var(--bracket-border)] bg-[var(--bracket-surface)]/95 backdrop-blur-md"
+        data-tour="bracket-stages"
+      >
         <div className="bracket-scroll flex gap-1 px-3 py-2">
           {BRACKET_STAGES.map((stage) => (
             <button
@@ -273,6 +291,7 @@ export function BracketPageClient() {
                   match={m}
                   onSelect={(teamId) => handleSelect(m.matchId, teamId)}
                   index={i}
+                  tourTarget={stage === BracketStage.ROUND_OF_32 && i === 0}
                 />
               ))}
             </section>
@@ -305,6 +324,7 @@ export function BracketPageClient() {
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--bracket-border)] bg-[var(--bracket-bg)]/95 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-md">
         <button
           type="button"
+          data-tour="bracket-submit"
           disabled={!complete}
           onClick={handleSubmit}
           className={cn(
