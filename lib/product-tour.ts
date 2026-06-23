@@ -18,6 +18,8 @@ export type TourStep = {
   waitForTarget?: boolean;
   /** Scroll page so bottom-fixed targets (submit, nav) are in view */
   scrollTo?: "bottom" | "target";
+  /** Mobile: dock tooltip above bottom nav instead of floating near target */
+  placement?: "auto" | "sheet";
 };
 
 export type TourPageState = Partial<Record<TourKey, boolean>>;
@@ -110,6 +112,7 @@ export function predictionsTourSteps(
         advance: "click-target",
         waitForTarget: true,
         scrollTo: "bottom",
+        placement: "sheet",
       }
     );
   }
@@ -124,6 +127,7 @@ export function predictionsTourSteps(
       advance: "click-target",
       blockNavigation: true,
       scrollTo: "bottom",
+      placement: "sheet",
     });
   }
 
@@ -161,6 +165,7 @@ const PROFILE_TOUR: TourStep[] = [
     title: "پروفایل شما",
     description: "نام، شماره موبایل و تاریخ عضویت در کمپین را اینجا می‌بینید.",
     advance: "next-button",
+    scrollTo: "target",
   },
   {
     id: "profile-stats",
@@ -270,6 +275,8 @@ export const PAGE_TOUR_STEPS: Record<PageId, (visible: PageId[]) => TourStep[]> 
       title: "ثبت نهایی",
       description: "بعد از تکمیل همه ۳۱ بازی، با این دکمه پیش‌بینی قهرمانی را ثبت کنید.",
       advance: "next-button",
+      scrollTo: "bottom",
+      placement: "sheet",
     },
   ],
 
