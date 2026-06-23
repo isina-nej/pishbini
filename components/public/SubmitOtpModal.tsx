@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   clearStoredPredictions,
@@ -24,7 +24,12 @@ type Props = {
   }) => void;
 };
 
+const inputClassName =
+  "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-base text-white outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20";
+
 export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
+  const titleId = useId();
+  const otpRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("info");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -45,10 +50,25 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
   }, [open, reset]);
 
   useEffect(() => {
+    if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
     if (countdown <= 0) return;
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [countdown]);
+
+  useEffect(() => {
+    if (!open || step !== "otp") return;
+    const t = window.setTimeout(() => otpRef.current?.focus(), 280);
+    return () => window.clearTimeout(t);
+  }, [open, step]);
 
   const sendOtp = async () => {
     setError(null);
@@ -143,125 +163,195 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
     }
   };
 
-  if (!open) return null;
-
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 40, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 320, damping: 28 }}
-          className="glass-card w-full max-w-[430px] overflow-hidden p-5"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-bold">
-              {step === "otp" ? "کد تأیید" : "ثبت پیش‌بینی"}
-            </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full p-1 text-white/50 hover:bg-white/10 hover:text-white"
-              aria-label="بستن"
+      {open && (
+        <div className="fixed inset-0 z-[120] flex items-end justify-center">
+          <motion.button
+            type="button"
+            aria-label="بستن"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-black/70 backdrop-blur-[2px]"
+            onClick={onClose}
+          />
+
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 420, damping: 36 }}
+            className={cn(
+              "relative z-10 flex w-full max-w-[430px] flex-col",
+              "max-h-[min(92dvh,720px)]",
+              "rounded-t-[1.75rem] border border-white/10 border-b-0 bg-[#121322]/98",
+              "shadow-[0_-12px_48px_rgba(0,0,0,0.55)] backdrop-blur-xl",
+              "pb-[max(1rem,env(safe-area-inset-bottom))]"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="sticky top-0 z-10 shrink-0 rounded-t-[1.75rem] bg-[#121322]/95 px-5 pt-3 backdrop-blur-md"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          {step === "info" && (
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1 block text-xs text-white/60">نام</label>
-                <input
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-primary"
-                  placeholder="نام"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-white/60">نام خانوادگی</label>
-                <input
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-primary"
-                  placeholder="نام خانوادگی"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-white/60">شماره موبایل</label>
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  type="tel"
-                  dir="ltr"
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-white outline-none focus:border-primary"
-                  placeholder="09123456789"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={sendOtp}
-                className="mt-2 w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 font-bold text-[#10111f]"
-              >
-                دریافت کد تأیید
-              </button>
-            </div>
-          )}
-
-          {step === "otp" && (
-            <div className="space-y-3">
-              <p className="text-center text-sm text-white/60">
-                کد ۴ رقمی به {phone} ارسال شد
-              </p>
-              <input
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                type="tel"
-                inputMode="numeric"
-                dir="ltr"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-center text-2xl tracking-[0.5em] text-white outline-none focus:border-primary"
-                placeholder="----"
-                maxLength={4}
+              <div
+                className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-white/25 sm:hidden"
+                aria-hidden
               />
-              <button
-                type="button"
-                onClick={submitPredictions}
-                className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 font-bold text-[#10111f]"
-              >
-                تأیید و ثبت پیش‌بینی
-              </button>
-              <button
-                type="button"
-                onClick={resendOtp}
-                disabled={countdown > 0}
-                className={cn(
-                  "w-full py-2 text-sm",
-                  countdown > 0 ? "text-white/30" : "text-primary hover:underline"
-                )}
-              >
-                {countdown > 0
-                  ? `ارسال مجدد (${countdown.toLocaleString("fa-IR")} ثانیه)`
-                  : "ارسال مجدد کد"}
-              </button>
+
+              <div className="flex items-start justify-between gap-3 pb-3">
+                <div className="min-w-0 flex-1">
+                  <h2 id={titleId} className="text-lg font-bold leading-snug">
+                    {step === "otp" ? "کد تأیید" : "ثبت پیش‌بینی"}
+                  </h2>
+                  <p className="mt-1 text-xs leading-relaxed text-white/50">
+                    {step === "otp"
+                      ? "کد ۴ رقمی پیامک‌شده را وارد کنید"
+                      : "اطلاعات تماس برای تأیید و ثبت نهایی"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="shrink-0 rounded-full p-2 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+                  aria-label="بستن"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
             </div>
-          )}
 
-          {step === "loading" && (
-            <div className="py-8 text-center text-white/70">لطفاً صبر کنید...</div>
-          )}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-2 [-webkit-overflow-scrolling:touch]">
+              {step === "info" && (
+                <div className="space-y-3">
+                  <div>
+                    <label htmlFor="otp-first-name" className="mb-1.5 block text-xs text-white/60">
+                      نام
+                    </label>
+                    <input
+                      id="otp-first-name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      autoComplete="given-name"
+                      enterKeyHint="next"
+                      className={inputClassName}
+                      placeholder="نام"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="otp-last-name" className="mb-1.5 block text-xs text-white/60">
+                      نام خانوادگی
+                    </label>
+                    <input
+                      id="otp-last-name"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      autoComplete="family-name"
+                      enterKeyHint="next"
+                      className={inputClassName}
+                      placeholder="نام خانوادگی"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="otp-phone" className="mb-1.5 block text-xs text-white/60">
+                      شماره موبایل
+                    </label>
+                    <input
+                      id="otp-phone"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      enterKeyHint="done"
+                      dir="ltr"
+                      className={cn(inputClassName, "text-left")}
+                      placeholder="09123456789"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={sendOtp}
+                    className="mt-1 w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 text-base font-bold text-[#10111f] active:scale-[0.99]"
+                  >
+                    دریافت کد تأیید
+                  </button>
+                </div>
+              )}
 
-          {error && <p className="mt-3 text-center text-sm text-danger">{error}</p>}
-        </motion.div>
-      </motion.div>
+              {step === "otp" && (
+                <div className="space-y-4">
+                  <p className="text-center text-sm text-white/60">
+                    کد به{" "}
+                    <span dir="ltr" className="font-medium text-white/80">
+                      {phone}
+                    </span>{" "}
+                    ارسال شد
+                  </p>
+                  <input
+                    ref={otpRef}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    enterKeyHint="done"
+                    dir="ltr"
+                    className={cn(
+                      inputClassName,
+                      "py-4 text-center text-2xl tracking-[0.45em] tabular-nums"
+                    )}
+                    placeholder="••••"
+                    maxLength={4}
+                    aria-label="کد تأیید ۴ رقمی"
+                  />
+                  <button
+                    type="button"
+                    onClick={submitPredictions}
+                    className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 text-base font-bold text-[#10111f] active:scale-[0.99]"
+                  >
+                    تأیید و ثبت پیش‌بینی
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resendOtp}
+                    disabled={countdown > 0}
+                    className={cn(
+                      "w-full py-2.5 text-sm",
+                      countdown > 0 ? "text-white/30" : "text-primary hover:underline"
+                    )}
+                  >
+                    {countdown > 0
+                      ? `ارسال مجدد (${countdown.toLocaleString("fa-IR")} ثانیه)`
+                      : "ارسال مجدد کد"}
+                  </button>
+                </div>
+              )}
+
+              {step === "loading" && (
+                <div className="flex flex-col items-center justify-center gap-3 py-10 text-white/70">
+                  <Loader2 className="size-8 animate-spin text-primary" />
+                  <p className="text-sm">لطفاً صبر کنید...</p>
+                </div>
+              )}
+
+              {error && (
+                <p
+                  role="alert"
+                  className="mt-4 rounded-xl border border-danger/30 bg-danger/10 px-3 py-2.5 text-center text-sm text-danger"
+                >
+                  {error}
+                </p>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
     </AnimatePresence>
   );
 }

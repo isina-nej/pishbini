@@ -3,6 +3,8 @@ import { maskPhone } from "@/lib/masking";
 import { computeUserScore, loadActivePointRulesMap } from "@/lib/user-score";
 import { getReferralLink } from "@/lib/utils";
 
+export const PUBLIC_LEADERBOARD_LIMIT = 10;
+
 export type LeaderboardEntry = {
   rank: number;
   fullName: string;
@@ -55,7 +57,7 @@ function sortEntries(
   });
 }
 
-export async function getLeaderboardData(limit = 10): Promise<LeaderboardEntry[]> {
+export async function getLeaderboardData(limit = PUBLIC_LEADERBOARD_LIMIT): Promise<LeaderboardEntry[]> {
   const [users, rules] = await Promise.all([
     prisma.user.findMany({
       where: { hidden: false },

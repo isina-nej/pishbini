@@ -57,6 +57,7 @@ export default function HomePage() {
   const selectedCount = Object.keys(predictions).length;
 
   return (
+    <>
     <PublicPageShell pageId="predictions">
     <div className="pb-28 pt-6">
       <motion.header
@@ -105,6 +106,9 @@ export default function HomePage() {
         </div>
       )}
 
+    </div>
+    </PublicPageShell>
+
       <SubmitOtpModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -113,8 +117,6 @@ export default function HomePage() {
           router.push("/success");
         }}
       />
-
-    </div>
-    </PublicPageShell>
+    </>
   );
 }

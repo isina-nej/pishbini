@@ -3,16 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Gift, Trophy, Users } from "lucide-react";
+import { Gift, Trophy } from "lucide-react";
 import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { ErrorState } from "@/components/public/ErrorState";
 import { LeaderboardCard, type LeaderboardUser } from "@/components/public/LeaderboardCard";
 import { LeaderboardPodium } from "@/components/public/LeaderboardPodium";
 import { LoadingState } from "@/components/public/LoadingState";
 
+const PUBLIC_LEADERBOARD_LIMIT = 10;
+
 export default function LeaderboardPage() {
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
-  const [currentUser, setCurrentUser] = useState<LeaderboardUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,14 +22,13 @@ export default function LeaderboardPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.error) throw new Error(data.error);
-        setUsers(data.users ?? []);
-        setCurrentUser(data.currentUser ?? null);
+        setUsers((data.users ?? []).slice(0, PUBLIC_LEADERBOARD_LIMIT));
       })
       .catch(() => setError("خطا در دریافت جدول امتیازات"))
       .finally(() => setLoading(false));
   }, []);
 
-  const rest = users.filter((u) => u.rank > 3);
+  const rest = users.filter((u) => u.rank > 3 && u.rank <= PUBLIC_LEADERBOARD_LIMIT);
 
   return (
     <PublicPageShell pageId="leaderboard">
@@ -58,8 +58,7 @@ export default function LeaderboardPage() {
         </motion.header>
 
         {!loading && users.length > 0 && (
-          <div className="mx-4 mb-4 flex justify-center gap-4 text-center">
-            <MiniStat icon={Users} label="شرکت‌کنندگان" value={users.length} color="text-secondary" />
+          <div className="mx-4 mb-4 flex justify-center">
             <MiniStat
               icon={Trophy}
               label="بیشترین امتیاز"
@@ -74,15 +73,8 @@ export default function LeaderboardPage() {
 
         {!loading && !error && users.length > 0 && <LeaderboardPodium users={users} />}
 
-        {currentUser && currentUser.rank > 3 && (
-          <div className="mb-3">
-            <p className="mb-2 px-4 text-xs font-medium text-primary">رتبه شما</p>
-            <LeaderboardCard user={currentUser} index={0} highlight />
-          </div>
-        )}
-
         {!loading && rest.length > 0 && (
-          <p className="mb-2 px-4 text-xs font-medium text-white/40">سایر رتبه‌ها</p>
+          <p className="mb-2 px-4 text-xs font-medium text-white/40">رتبه‌های ۴ تا ۱۰</p>
         )}
 
         {!loading &&
@@ -104,7 +96,7 @@ function MiniStat({
   value,
   color,
 }: {
-  icon: typeof Users;
+  icon: typeof Trophy;
   label: string;
   value: number;
   color: string;
