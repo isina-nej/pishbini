@@ -11,7 +11,6 @@ type Props = {
   stepIndex: number;
   totalSteps: number;
   onAdvance: () => void;
-  onSkip: () => void;
 };
 
 function useTargetRect(target: string | undefined) {
@@ -68,14 +67,12 @@ function Tooltip({
   stepIndex,
   totalSteps,
   onAdvance,
-  onSkip,
 }: {
   step: TourStep;
   rect: DOMRect;
   stepIndex: number;
   totalSteps: number;
   onAdvance: () => void;
-  onSkip: () => void;
 }) {
   const x = Math.max(0, rect.left - PAD);
   const y = Math.max(0, rect.top - PAD);
@@ -83,12 +80,13 @@ function Tooltip({
   const bottom = y + rect.height + PAD * 2;
   const showBelow = bottom + 160 < window.innerHeight;
   const tooltipTop = showBelow ? bottom + 12 : Math.max(16, y - 12);
+  const isLast = stepIndex >= totalSteps - 1;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: showBelow ? 8 : -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed z-[152] mx-auto w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-white/12 bg-[#16172a] p-4 shadow-2xl"
+      className="pointer-events-auto fixed z-[152] mx-auto w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-white/12 bg-[#16172a] p-4 shadow-2xl"
       style={{
         left: Math.min(Math.max(16, x + w / 2), window.innerWidth - 16),
         top: showBelow ? tooltipTop : undefined,
@@ -108,30 +106,19 @@ function Tooltip({
         ) : (
           <span />
         )}
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onSkip}
-            className="rounded-xl px-3 py-2 text-xs text-white/45 hover:text-white/65"
-          >
-            رد کردن
-          </button>
-          {step.advance === "next-button" && (
-            <button
-              type="button"
-              onClick={onAdvance}
-              className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-[#10111f]"
-            >
-              بعدی
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={onAdvance}
+          className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-[#10111f]"
+        >
+          {isLast ? "پایان" : "بعدی"}
+        </button>
       </div>
     </motion.div>
   );
 }
 
-export function ProductTour({ step, stepIndex, totalSteps, onAdvance, onSkip }: Props) {
+export function ProductTour({ step, stepIndex, totalSteps, onAdvance }: Props) {
   const reduceMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
   const { rect, update } = useTargetRect(step?.target);
@@ -139,6 +126,45 @@ export function ProductTour({ step, stepIndex, totalSteps, onAdvance, onSkip }: 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!step?.target) return;
+    const el = document.querySelector(`[data-tour="${step.target}"]`);
+    if (!(el instanceof HTMLElement)) return;
+
+    const prev = { position: el.style.position, zIndex: el.style.zIndex };
+    const computed = getComputedStyle(el);
+    if (computed.position === "static") el.style.position = "relative";
+    el.style.zIndex = "151";
+
+    return () => {
+      el.style.position = prev.position;
+      el.style.zIndex = prev.zIndex;
+    };
+  }, [step?.target]);
+
+  useEffect(() => {
+    if (!step) return;
+
+    const behavior = reduceMotion ? "auto" : ("smooth" as ScrollBehavior);
+
+    const runScroll = () => {
+      if (step.scrollTo === "bottom") {
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior });
+      } else if (step.scrollTo === "target") {
+        const el = document.querySelector(`[data-tour="${step.target}"]`);
+        el?.scrollIntoView({ behavior, block: "center", inline: "nearest" });
+      }
+    };
+
+    const t1 = window.setTimeout(runScroll, 80);
+    const t2 = window.setTimeout(update, reduceMotion ? 120 : 450);
+
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [step, update, reduceMotion]);
 
   useEffect(() => {
     if (!step || step.advance !== "click-target") return;
@@ -161,9 +187,17 @@ export function ProductTour({ step, stepIndex, totalSteps, onAdvance, onSkip }: 
 
   useEffect(() => {
     if (!step?.waitForTarget) return;
-    const timer = window.setInterval(update, 250);
+    const behavior = reduceMotion ? "auto" : ("smooth" as ScrollBehavior);
+    const scrollIfNeeded = () => {
+      if (!document.querySelector(`[data-tour="${step.target}"]`)) return;
+      if (step.scrollTo === "bottom") {
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior });
+      }
+      update();
+    };
+    const timer = window.setInterval(scrollIfNeeded, 300);
     return () => window.clearInterval(timer);
-  }, [step?.waitForTarget, update]);
+  }, [step, update, reduceMotion]);
 
   if (!mounted || !step) return null;
 
@@ -175,7 +209,7 @@ export function ProductTour({ step, stepIndex, totalSteps, onAdvance, onSkip }: 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[150]"
+          className="pointer-events-none fixed inset-0 z-[150]"
           aria-live="polite"
         >
           <OverlayPanels rect={rect} />
@@ -187,7 +221,6 @@ export function ProductTour({ step, stepIndex, totalSteps, onAdvance, onSkip }: 
               top: rect.top - PAD,
               width: rect.width + PAD * 2,
               height: rect.height + PAD * 2,
-              boxShadow: "0 0 0 9999px transparent",
             }}
           >
             {!reduceMotion && (
@@ -201,7 +234,6 @@ export function ProductTour({ step, stepIndex, totalSteps, onAdvance, onSkip }: 
             stepIndex={stepIndex}
             totalSteps={totalSteps}
             onAdvance={onAdvance}
-            onSkip={onSkip}
           />
         </motion.div>
       ) : null}

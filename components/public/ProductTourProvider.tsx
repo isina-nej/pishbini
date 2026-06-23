@@ -221,7 +221,6 @@ export function ProductTourProvider({
             stepIndex={stepIndex}
             totalSteps={steps.length}
             onAdvance={advance}
-            onSkip={finish}
           />
         )}
       </TourContext.Provider>

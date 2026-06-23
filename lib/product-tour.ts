@@ -16,6 +16,8 @@ export type TourStep = {
   blockNavigation?: boolean;
   optional?: boolean;
   waitForTarget?: boolean;
+  /** Scroll page so bottom-fixed targets (submit, nav) are in view */
+  scrollTo?: "bottom" | "target";
 };
 
 export type TourPageState = Partial<Record<TourKey, boolean>>;
@@ -107,6 +109,7 @@ export function predictionsTourSteps(
           "بعد از انتخاب بازی‌ها، با این دکمه پیش‌بینی‌هایتان را ثبت کنید.",
         advance: "click-target",
         waitForTarget: true,
+        scrollTo: "bottom",
       }
     );
   }
@@ -120,6 +123,7 @@ export function predictionsTourSteps(
       description: NAV_DESCRIPTIONS[pageId],
       advance: "click-target",
       blockNavigation: true,
+      scrollTo: "bottom",
     });
   }
 
