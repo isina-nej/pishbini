@@ -126,3 +126,101 @@ body {
     animation: none;
   }
 }
+
+/* Tab navigation — View Transitions API */
+.tab-view-content {
+  view-transition-name: tab-content;
+}
+
+.bottom-nav-shell {
+  view-transition-name: bottom-nav;
+}
+
+:root {
+  --tab-nav-exit: 140ms;
+  --tab-nav-enter: 220ms;
+}
+
+@keyframes tab-nav-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes tab-nav-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* RTL: forward = slide toward lower-index side visually */
+@keyframes tab-nav-slide-out-forward {
+  to {
+    transform: translateX(28px);
+    opacity: 0;
+  }
+}
+
+@keyframes tab-nav-slide-in-forward {
+  from {
+    transform: translateX(-28px);
+    opacity: 0;
+  }
+}
+
+@keyframes tab-nav-slide-out-back {
+  to {
+    transform: translateX(-28px);
+    opacity: 0;
+  }
+}
+
+@keyframes tab-nav-slide-in-back {
+  from {
+    transform: translateX(28px);
+    opacity: 0;
+  }
+}
+
+::view-transition-group(bottom-nav) {
+  animation: none;
+  z-index: 100;
+}
+
+::view-transition-old(bottom-nav),
+::view-transition-new(bottom-nav) {
+  animation: none;
+}
+
+html[data-tab-nav="nav-forward"]::view-transition-old(tab-content) {
+  animation:
+    var(--tab-nav-exit) ease-in both tab-nav-fade-out,
+    280ms ease-in-out both tab-nav-slide-out-forward;
+}
+
+html[data-tab-nav="nav-forward"]::view-transition-new(tab-content) {
+  animation:
+    var(--tab-nav-enter) ease-out var(--tab-nav-exit) both tab-nav-fade-in,
+    320ms ease-out var(--tab-nav-exit) both tab-nav-slide-in-forward;
+}
+
+html[data-tab-nav="nav-back"]::view-transition-old(tab-content) {
+  animation:
+    var(--tab-nav-exit) ease-in both tab-nav-fade-out,
+    280ms ease-in-out both tab-nav-slide-out-back;
+}
+
+html[data-tab-nav="nav-back"]::view-transition-new(tab-content) {
+  animation:
+    var(--tab-nav-enter) ease-out var(--tab-nav-exit) both tab-nav-fade-in,
+    320ms ease-out var(--tab-nav-exit) both tab-nav-slide-in-back;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(tab-content),
+  ::view-transition-new(tab-content),
+  ::view-transition-group(tab-content) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}

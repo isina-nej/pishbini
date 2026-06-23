@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   CircleUserRound,
@@ -18,6 +19,11 @@ import {
   PAGE_ROUTES,
   type PageId,
 } from "@/lib/page-access.shared";
+import {
+  getNavTransitionType,
+  getTabNavIndex,
+  navigateTab,
+} from "@/lib/tab-navigation";
 import { usePageAccess } from "./PageAccessProvider";
 
 const PAGE_ICONS: Record<PageId, LucideIcon> = {
@@ -37,24 +43,31 @@ function NavTab({
   label,
   Icon,
   active,
-  onClick,
+  currentIndex,
+  targetIndex,
   reduceMotion,
+  onNavigate,
 }: {
   id: PageId;
   href: string;
   label: string;
   Icon: LucideIcon;
   active: boolean;
-  onClick: (e: React.MouseEvent<HTMLAnchorElement>) => void;
+  currentIndex: number;
+  targetIndex: number;
   reduceMotion: boolean | null;
+  onNavigate: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
 }) {
+  const transitionType = getNavTransitionType(currentIndex, targetIndex);
+
   return (
     <Link
       href={href}
       data-tour={`nav-${id}`}
-      onClick={onClick}
+      onClick={(e) => onNavigate(e, href)}
       aria-current={active ? "page" : undefined}
       aria-label={label}
+      transitionTypes={[transitionType]}
       className="relative flex min-h-11 min-w-[2.75rem] flex-1 flex-col items-center justify-center px-0.5 py-1"
     >
       {active && (
@@ -103,22 +116,37 @@ function NavTab({
 
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const reduceMotion = useReducedMotion();
-  const { loaded, isPageVisible } = usePageAccess();
+  const { isPageVisible } = usePageAccess();
 
-  const visibleTabs = NAV_TAB_ORDER.filter((id) => !loaded || isPageVisible(id));
+  const visibleTabs = NAV_TAB_ORDER.filter((id) => isPageVisible(id));
+  const visibleHrefs = visibleTabs.map((id) => PAGE_ROUTES[id]);
+  const currentIndex = getTabNavIndex(pathname, visibleHrefs);
 
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  useEffect(() => {
+    visibleHrefs.forEach((href) => router.prefetch(href));
+  }, [visibleHrefs, router]);
+
+  const handleNavigate = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (pathname === href || (href === "/profile" && pathname === "/login")) {
       e.preventDefault();
+      return;
     }
+
+    const targetIndex = getTabNavIndex(href, visibleHrefs);
+    if (targetIndex === -1 || currentIndex === -1) return;
+
+    e.preventDefault();
+    const transitionType = getNavTransitionType(currentIndex, targetIndex);
+    navigateTab(router, href, transitionType, reduceMotion);
   };
 
   return (
     <motion.nav
       aria-label="ناوبری اصلی"
       className={cn(
-        "fixed left-1/2 z-50 w-[calc(100%-2rem)] max-w-[398px] -translate-x-1/2",
+        "bottom-nav-shell fixed left-1/2 z-50 w-[calc(100%-2rem)] max-w-[398px] -translate-x-1/2",
         "rounded-full border border-white/12 bg-white/[0.06]",
         "px-1.5 py-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.45)]",
         "ring-1 ring-inset ring-white/10 backdrop-blur-xl"
@@ -128,7 +156,7 @@ export function BottomNav() {
       }}
     >
       <div className="flex items-stretch justify-around">
-        {visibleTabs.map((id) => {
+        {visibleTabs.map((id, targetIndex) => {
           const href = PAGE_ROUTES[id];
           const label = PAGE_LABELS[id];
           const Icon = PAGE_ICONS[id];
@@ -143,8 +171,10 @@ export function BottomNav() {
               label={label}
               Icon={Icon}
               active={active}
+              currentIndex={currentIndex}
+              targetIndex={targetIndex}
               reduceMotion={reduceMotion}
-              onClick={(e) => handleClick(e, href)}
+              onNavigate={handleNavigate}
             />
           );
         })}
@@ -154,8 +184,8 @@ export function BottomNav() {
 }
 
 export function useVisibleNavHrefs(): string[] {
-  const { loaded, isPageVisible } = usePageAccess();
-  return NAV_TAB_ORDER.filter((id) => !loaded || isPageVisible(id)).map(
+  const { isPageVisible } = usePageAccess();
+  return NAV_TAB_ORDER.filter((id) => isPageVisible(id)).map(
     (id) => PAGE_ROUTES[id]
   );
 }

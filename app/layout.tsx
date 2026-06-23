@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { SplashScreen } from "@/components/public/SplashScreen";
+import { AppProviders } from "@/components/public/AppProviders";
+import { getPageAccessSettings } from "@/lib/page-access.server";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,17 +15,19 @@ export const viewport = {
   viewportFit: "cover" as const,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialPageAccess = await getPageAccessSettings();
+
   return (
     <html lang="fa" dir="rtl">
       <body className="antialiased">
         <SplashScreen />
         <div className="mx-auto min-h-dvh w-full max-w-[430px] [&:has(.admin-root)]:max-w-none [&:has(.bracket-root)]:max-w-none">
-          {children}
+          <AppProviders initialPageAccess={initialPageAccess}>{children}</AppProviders>
         </div>
       </body>
     </html>

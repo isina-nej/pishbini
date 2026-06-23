@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { ReferralCard } from "@/components/public/ReferralCard";
 import { BottomNav } from "@/components/public/BottomNav";
-import { PageAccessProvider } from "@/components/public/PageAccessProvider";
 import { ReferralBanner } from "@/components/public/ReferralBanner";
 
 type SuccessData = {
@@ -44,7 +43,6 @@ export default function SuccessPage() {
   if (!data) return null;
 
   return (
-    <PageAccessProvider>
     <div className="pb-32 pt-10">
       <ReferralBanner />
       <motion.div
@@ -68,6 +66,5 @@ export default function SuccessPage() {
       <ReferralCard referralCode={data.referralCode} referralLink={data.referralLink} />
       <BottomNav />
     </div>
-    </PageAccessProvider>
   );
 }

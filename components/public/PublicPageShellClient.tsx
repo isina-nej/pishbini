@@ -5,25 +5,27 @@ import {
   useCallback,
   useEffect,
   useRef,
-  useState,
-  type CSSProperties,
   type ReactNode,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
 import type { PageId } from "@/lib/page-access";
 import { hrefToPageId } from "@/lib/page-access.shared";
+import {
+  getNavTransitionType,
+  getTabNavIndex,
+  navigateTab,
+} from "@/lib/tab-navigation";
 import { cn } from "@/lib/utils";
 import { BottomNav, useVisibleNavHrefs } from "./BottomNav";
 import { PageAccessGuard } from "./PageAccessGuard";
-import { PageAccessProvider } from "./PageAccessProvider";
 import { ProductTourProvider } from "./ProductTourProvider";
 import { ReferralBanner } from "./ReferralBanner";
+import { TabViewTransition } from "./TabViewTransition";
 
 const SWIPE_MIN_PX = 48;
 const SWIPE_RATIO = 1.4;
 const SWIPE_COMMIT_RATIO = 0.22;
-const SWIPE_MS = 240;
 
 export function PublicPageShellClient({
   pageId,
@@ -39,24 +41,20 @@ export function PublicPageShellClient({
   tourHasMatches?: boolean;
 }) {
   return (
-    <PageAccessProvider>
-      <ProductTourProvider
-        pageId={pageId}
-        tourReady={tourReady}
-        hasMatches={tourHasMatches}
-      >
-        <PageAccessGuard pageId={pageId}>
-          <Suspense fallback={<ShellFallback showNav={showNav}>{children}</ShellFallback>}>
-            <ShellBody pageId={pageId} showNav={showNav}>
-              {children}
-            </ShellBody>
-          </Suspense>
-        </PageAccessGuard>
-        <Suspense fallback={null}>
-          <BottomNavUnlessEmbed showNav={showNav} />
+    <ProductTourProvider
+      pageId={pageId}
+      tourReady={tourReady}
+      hasMatches={tourHasMatches}
+    >
+      <PageAccessGuard pageId={pageId}>
+        <Suspense fallback={<ShellFallback showNav={showNav}>{children}</ShellFallback>}>
+          <ShellBody showNav={showNav}>{children}</ShellBody>
         </Suspense>
-      </ProductTourProvider>
-    </PageAccessProvider>
+      </PageAccessGuard>
+      <Suspense fallback={null}>
+        <BottomNavUnlessEmbed showNav={showNav} />
+      </Suspense>
+    </ProductTourProvider>
   );
 }
 
@@ -77,11 +75,9 @@ function BottomNavUnlessEmbed({ showNav }: { showNav: boolean }) {
 }
 
 function ShellBody({
-  pageId,
   children,
   showNav,
 }: {
-  pageId?: PageId;
   children: ReactNode;
   showNav: boolean;
 }) {
@@ -94,36 +90,14 @@ function ShellBody({
   return (
     <>
       <ReferralBanner />
-      {showNav ? <SwipeTabNav>{children}</SwipeTabNav> : children}
+      {showNav ? (
+        <SwipeTabNav>
+          <TabViewTransition>{children}</TabViewTransition>
+        </SwipeTabNav>
+      ) : (
+        <TabViewTransition>{children}</TabViewTransition>
+      )}
     </>
-  );
-}
-
-function embedHref(href: string) {
-  return href.includes("?") ? `${href}&embed=1` : `${href}?embed=1`;
-}
-
-function AdjacentTab({
-  href,
-  style,
-}: {
-  href: string;
-  style: CSSProperties;
-}) {
-  return (
-    <div
-      className="absolute inset-0 z-0 overflow-hidden bg-bg"
-      style={style}
-      aria-hidden
-    >
-      <iframe
-        src={embedHref(href)}
-        className="pointer-events-none h-full w-full border-0"
-        title=""
-        tabIndex={-1}
-        loading="lazy"
-      />
-    </div>
   );
 }
 
@@ -135,19 +109,13 @@ function SwipeTabNav({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const touchRef = useRef({ x: 0, y: 0, locked: false });
   const dragXRef = useRef(0);
-  const [width, setWidth] = useState(0);
-  const [dragX, setDragX] = useState(0);
-  const [dragging, setDragging] = useState(false);
-  const [animating, setAnimating] = useState(false);
+  const widthRef = useRef(0);
+  const navigatingRef = useRef(false);
 
   const currentPageId = hrefToPageId(pathname);
-  const currentIndex =
-    pathname === "/login"
-      ? visibleHrefs.indexOf("/profile")
-      : visibleHrefs.indexOf(pathname);
+  const currentIndex = getTabNavIndex(pathname, visibleHrefs);
 
-  const prevHref =
-    currentIndex > 0 ? visibleHrefs[currentIndex - 1] : null;
+  const prevHref = currentIndex > 0 ? visibleHrefs[currentIndex - 1] : null;
   const nextHref =
     currentIndex >= 0 && currentIndex < visibleHrefs.length - 1
       ? visibleHrefs[currentIndex + 1]
@@ -156,7 +124,9 @@ function SwipeTabNav({ children }: { children: ReactNode }) {
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const measure = () => setWidth(el.clientWidth);
+    const measure = () => {
+      widthRef.current = el.clientWidth;
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
@@ -164,47 +134,17 @@ function SwipeTabNav({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    dragXRef.current = 0;
-    setDragX(0);
-    setDragging(false);
-    setAnimating(false);
+    navigatingRef.current = false;
   }, [pathname]);
 
-  useEffect(() => {
-    if (currentIndex === -1) return;
-    if (prevHref) router.prefetch(prevHref);
-    if (nextHref) router.prefetch(nextHref);
-  }, [currentIndex, nextHref, prevHref, router]);
-
-  const clampDrag = useCallback(
-    (dx: number) => {
-      if (currentIndex <= 0 && dx < 0) return dx * 0.28;
-      if (currentIndex >= visibleHrefs.length - 1 && dx > 0) return dx * 0.28;
-      return dx;
+  const commitSwipe = useCallback(
+    (href: string | null, targetIndex: number) => {
+      if (!href || navigatingRef.current) return;
+      navigatingRef.current = true;
+      const transitionType = getNavTransitionType(currentIndex, targetIndex);
+      navigateTab(router, href, transitionType, reduceMotion);
     },
-    [currentIndex, visibleHrefs.length]
-  );
-
-  const finishSwipe = useCallback(
-    (targetX: number, href: string | null) => {
-      if (!href || width <= 0) {
-        setAnimating(true);
-        dragXRef.current = 0;
-        setDragX(0);
-        window.setTimeout(() => setAnimating(false), SWIPE_MS);
-        return;
-      }
-      setAnimating(true);
-      dragXRef.current = targetX;
-      setDragX(targetX);
-      window.setTimeout(() => {
-        router.push(href);
-        dragXRef.current = 0;
-        setDragX(0);
-        setAnimating(false);
-      }, SWIPE_MS);
-    },
-    [router, width]
+    [currentIndex, reduceMotion, router]
   );
 
   if (!currentPageId || reduceMotion || currentIndex === -1) {
@@ -212,14 +152,14 @@ function SwipeTabNav({ children }: { children: ReactNode }) {
   }
 
   const onTouchStart = (e: React.TouchEvent) => {
-    if (animating) return;
+    if (navigatingRef.current) return;
     const t = e.touches[0];
     touchRef.current = { x: t.clientX, y: t.clientY, locked: false };
-    setDragging(false);
+    dragXRef.current = 0;
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    if (animating) return;
+    if (navigatingRef.current) return;
     const t = e.touches[0];
     const dx = t.clientX - touchRef.current.x;
     const dy = t.clientY - touchRef.current.y;
@@ -228,83 +168,50 @@ function SwipeTabNav({ children }: { children: ReactNode }) {
       if (Math.abs(dx) < 10) return;
       if (Math.abs(dx) < Math.abs(dy) * SWIPE_RATIO) return;
       touchRef.current.locked = true;
-      setDragging(true);
     }
 
-    e.preventDefault();
-    const next = clampDrag(dx);
-    dragXRef.current = next;
-    setDragX(next);
+    dragXRef.current = dx;
   };
 
   const onTouchEnd = () => {
     if (!touchRef.current.locked) return;
     touchRef.current.locked = false;
-    setDragging(false);
 
+    const width = widthRef.current;
     const threshold = Math.max(
       SWIPE_MIN_PX,
       width > 0 ? width * SWIPE_COMMIT_RATIO : SWIPE_MIN_PX
     );
 
     const dx = dragXRef.current;
+    dragXRef.current = 0;
+
+    // RTL: swipe right (positive dx) → next tab (higher index)
     if (dx > threshold && nextHref) {
-      finishSwipe(width, nextHref);
+      commitSwipe(nextHref, currentIndex + 1);
       return;
     }
     if (dx < -threshold && prevHref) {
-      finishSwipe(-width, prevHref);
+      commitSwipe(prevHref, currentIndex - 1);
       return;
     }
-    finishSwipe(0, null);
   };
 
   const onTouchCancel = () => {
     touchRef.current.locked = false;
-    setDragging(false);
-    finishSwipe(0, null);
+    dragXRef.current = 0;
   };
-
-  const slideStyle = (x: number): CSSProperties => ({
-    transform: `translate3d(${x}px, 0, 0)`,
-    transition:
-      dragging || !animating
-        ? "none"
-        : `transform ${SWIPE_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`,
-    willChange: dragging || animating ? "transform" : "auto",
-  });
-
-  const showNext = !!nextHref && dragX > 6;
-  const showPrev = !!prevHref && dragX < -6;
 
   return (
     <div
       ref={containerRef}
-      className="relative overflow-hidden touch-pan-y"
+      className="touch-pan-y"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       onTouchCancel={onTouchCancel}
     >
-      {showNext && (
-        <AdjacentTab
-          href={nextHref}
-          style={slideStyle(dragX - width)}
-        />
-      )}
-      {showPrev && (
-        <AdjacentTab
-          href={prevHref}
-          style={slideStyle(dragX + width)}
-        />
-      )}
-
-      <div
-        className="relative z-10 min-h-dvh bg-bg"
-        style={slideStyle(dragX)}
-      >
-        {children}
-      </div>
+      {children}
     </div>
   );
 }
