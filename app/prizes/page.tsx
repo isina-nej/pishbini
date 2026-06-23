@@ -1,14 +1,10 @@
-import { BottomNav } from "@/components/public/BottomNav";
-import { PageAccessProvider } from "@/components/public/PageAccessProvider";
-import { ReferralBanner } from "@/components/public/ReferralBanner";
+import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { PrizesPageClient } from "./PrizesPageClient";
 
 export default function PrizesPage() {
   return (
-    <PageAccessProvider>
-      <ReferralBanner />
+    <PublicPageShell pageId="prizes">
       <PrizesPageClient />
-      <BottomNav />
-    </PageAccessProvider>
+    </PublicPageShell>
   );
 }

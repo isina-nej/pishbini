@@ -37,17 +37,34 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
+  const [loggedIn, setLoggedIn] = useState(false);
 
   const reset = useCallback(() => {
     setStep("info");
     setCode("");
     setError(null);
     setCountdown(0);
+    setLoggedIn(false);
   }, []);
 
   useEffect(() => {
     if (!open) reset();
   }, [open, reset]);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/me/session", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.loggedIn) return;
+        setLoggedIn(true);
+        setFirstName(data.firstName ?? "");
+        setLastName(data.lastName ?? "");
+        if (data.phone) setPhone(data.phone);
+        setStep("otp");
+      })
+      .catch(() => {});
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -120,7 +137,7 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
 
   const submitPredictions = async () => {
     setError(null);
-    if (code.length !== 4) {
+    if (!loggedIn && code.length !== 4) {
       setError("کد تأیید باید ۴ رقم باشد.");
       return;
     }
@@ -130,17 +147,19 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
     const referralCode = getStoredReferralCode();
 
     try {
+      const payload: Record<string, unknown> = {
+        firstName,
+        lastName,
+        phone,
+        predictions,
+        referralCode,
+      };
+      if (!loggedIn) payload.code = code;
+
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          phone,
-          code,
-          predictions,
-          referralCode,
-        }),
+        body: JSON.stringify(payload),
       });
       const result = await res.json();
       if (!res.ok) {
@@ -207,12 +226,14 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
               <div className="flex items-start justify-between gap-3 pb-3">
                 <div className="min-w-0 flex-1">
                   <h2 id={titleId} className="text-lg font-bold leading-snug">
-                    {step === "otp" ? "کد تأیید" : "ثبت پیش‌بینی"}
+                    {loggedIn ? "ثبت پیش‌بینی" : step === "otp" ? "کد تأیید" : "ثبت پیش‌بینی"}
                   </h2>
                   <p className="mt-1 text-xs leading-relaxed text-white/50">
-                    {step === "otp"
-                      ? "کد ۴ رقمی پیامک‌شده را وارد کنید"
-                      : "اطلاعات تماس برای تأیید و ثبت نهایی"}
+                    {loggedIn
+                      ? "پیش‌بینی‌های جدید با حساب شما ثبت می‌شود"
+                      : step === "otp"
+                        ? "کد ۴ رقمی پیامک‌شده را وارد کنید"
+                        : "اطلاعات تماس برای تأیید و ثبت نهایی"}
                   </p>
                 </div>
                 <button
@@ -286,50 +307,71 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
 
               {step === "otp" && (
                 <div className="space-y-4">
-                  <p className="text-center text-sm text-white/60">
-                    کد به{" "}
-                    <span dir="ltr" className="font-medium text-white/80">
-                      {phone}
-                    </span>{" "}
-                    ارسال شد
-                  </p>
-                  <input
-                    ref={otpRef}
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    enterKeyHint="done"
-                    dir="ltr"
-                    className={cn(
-                      inputClassName,
-                      "py-4 text-center text-2xl tracking-[0.45em] tabular-nums"
-                    )}
-                    placeholder="••••"
-                    maxLength={4}
-                    aria-label="کد تأیید ۴ رقمی"
-                  />
-                  <button
-                    type="button"
-                    onClick={submitPredictions}
-                    className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 text-base font-bold text-[#10111f] active:scale-[0.99]"
-                  >
-                    تأیید و ثبت پیش‌بینی
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resendOtp}
-                    disabled={countdown > 0}
-                    className={cn(
-                      "w-full py-2.5 text-sm",
-                      countdown > 0 ? "text-white/30" : "text-primary hover:underline"
-                    )}
-                  >
-                    {countdown > 0
-                      ? `ارسال مجدد (${countdown.toLocaleString("fa-IR")} ثانیه)`
-                      : "ارسال مجدد کد"}
-                  </button>
+                  {loggedIn ? (
+                    <>
+                      <p className="text-center text-sm text-white/60">
+                        {firstName} {lastName}
+                        <br />
+                        <span dir="ltr" className="text-white/80">
+                          {phone}
+                        </span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={submitPredictions}
+                        className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 text-base font-bold text-[#10111f] active:scale-[0.99]"
+                      >
+                        ثبت پیش‌بینی
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-center text-sm text-white/60">
+                        کد به{" "}
+                        <span dir="ltr" className="font-medium text-white/80">
+                          {phone}
+                        </span>{" "}
+                        ارسال شد
+                      </p>
+                      <input
+                        ref={otpRef}
+                        value={code}
+                        onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        enterKeyHint="done"
+                        dir="ltr"
+                        className={cn(
+                          inputClassName,
+                          "py-4 text-center text-2xl tracking-[0.45em] tabular-nums"
+                        )}
+                        placeholder="••••"
+                        maxLength={4}
+                        aria-label="کد تأیید ۴ رقمی"
+                      />
+                      <button
+                        type="button"
+                        onClick={submitPredictions}
+                        className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 text-base font-bold text-[#10111f] active:scale-[0.99]"
+                      >
+                        تأیید و ثبت پیش‌بینی
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resendOtp}
+                        disabled={countdown > 0}
+                        className={cn(
+                          "w-full py-2.5 text-sm",
+                          countdown > 0 ? "text-white/30" : "text-primary hover:underline"
+                        )}
+                      >
+                        {countdown > 0
+                          ? `ارسال مجدد (${countdown.toLocaleString("fa-IR")} ثانیه)`
+                          : "ارسال مجدد کد"}
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
 

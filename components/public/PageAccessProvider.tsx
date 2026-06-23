@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   DEFAULT_PAGE_ACCESS,
+  isPageAccessible,
   type PageAccessSettings,
   type PageId,
 } from "@/lib/page-access.shared";
@@ -21,6 +22,7 @@ type PageAccessContextValue = {
   loaded: boolean;
   showNotice: (message: string) => void;
   isPageEnabled: (pageId: PageId) => boolean;
+  isPageVisible: (pageId: PageId) => boolean;
 };
 
 const PageAccessContext = createContext<PageAccessContextValue | null>(null);
@@ -53,6 +55,8 @@ export function PageAccessProvider({ children }: { children: ReactNode }) {
       loaded,
       showNotice,
       isPageEnabled: (pageId: PageId) => settings[pageId]?.enabled !== false,
+      isPageVisible: (pageId: PageId) =>
+        loaded ? isPageAccessible(settings[pageId] ?? DEFAULT_PAGE_ACCESS[pageId]) : true,
     }),
     [settings, loaded, showNotice]
   );

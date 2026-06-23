@@ -16,6 +16,7 @@ import {
   ExternalLink,
   X,
   PanelTop,
+  Clapperboard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ const links = [
   { href: "/admin/point-rules", label: "قوانین امتیاز", icon: Star },
   { href: "/admin/campaign-info", label: "جوایز و امتیازدهی", icon: Gift },
   { href: "/admin/pages", label: "دسترسی صفحات", icon: PanelTop },
+  { href: "/admin/splash", label: "اسپلش اسکرین", icon: Clapperboard },
   { href: "/admin/leaderboard", label: "جدول امتیازات", icon: Trophy },
 ];
 

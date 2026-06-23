@@ -93,6 +93,7 @@ export const adminUserUpdateSchema = z.object({
 
 export const pageAccessItemSchema = z.object({
   enabled: z.boolean(),
+  hidden: z.boolean().optional().default(false),
   message: z.string().trim().max(500),
 });
 
@@ -100,6 +101,8 @@ export const pageAccessSchema = z.object({
   predictions: pageAccessItemSchema,
   bracket: pageAccessItemSchema,
   leaderboard: pageAccessItemSchema,
+  prizes: pageAccessItemSchema,
+  profile: pageAccessItemSchema,
 });
 
 const campaignInfoSectionIconSchema = z.enum([

@@ -7,20 +7,21 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-function parseDatabaseUrl(url: string) {
+function buildDatabaseUrl(url: string) {
   const parsed = new URL(url);
-  const host = parsed.hostname === "localhost" ? "127.0.0.1" : parsed.hostname;
-
-  return {
-    host,
-    port: parsed.port ? Number(parsed.port) : 3306,
-    user: decodeURIComponent(parsed.username),
-    password: decodeURIComponent(parsed.password),
-    database: parsed.pathname.replace(/^\//, ""),
-    connectionLimit: 10,
-    connectTimeout: 10_000,
-    acquireTimeout: 10_000,
-  };
+  if (!parsed.searchParams.has("connectionLimit")) {
+    parsed.searchParams.set("connectionLimit", "10");
+  }
+  if (!parsed.searchParams.has("connectTimeout")) {
+    parsed.searchParams.set("connectTimeout", "30000");
+  }
+  if (!parsed.searchParams.has("acquireTimeout")) {
+    parsed.searchParams.set("acquireTimeout", "30000");
+  }
+  if (!parsed.searchParams.has("allowPublicKeyRetrieval")) {
+    parsed.searchParams.set("allowPublicKeyRetrieval", "true");
+  }
+  return parsed.toString();
 }
 
 function createPrismaClient() {
@@ -29,13 +30,14 @@ function createPrismaClient() {
     throw new Error("DATABASE_URL is not set");
   }
 
-  const adapter = new PrismaMariaDb(parseDatabaseUrl(url));
+  const adapter = new PrismaMariaDb(buildDatabaseUrl(url));
   return new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// Assign on globalThis during creation so parallel cold imports share one pool.
+export const prisma =
+  globalForPrisma.prisma ??
+  (globalForPrisma.prisma = createPrismaClient());

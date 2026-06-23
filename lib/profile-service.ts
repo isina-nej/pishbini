@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { getUserRankByUserId } from "@/lib/leaderboard-service";
+import { isMatchLocked } from "@/lib/matches";
 import { maskPhone } from "@/lib/masking";
+import { PredictionChoice } from "@/generated/prisma";
 import { formatPredictionChoice, formatPredictionResult } from "@/lib/prediction-labels";
 import { computeUserScore, loadActivePointRulesMap } from "@/lib/user-score";
 import { getReferralLink } from "@/lib/utils";
@@ -8,13 +10,18 @@ import { formatPersianDateTime } from "@/lib/dates";
 
 export type ProfilePrediction = {
   id: string;
+  matchId: string;
+  prediction: PredictionChoice;
   matchLabel: string;
+  homeTeamName: string;
+  awayTeamName: string;
   startTime: string;
   startTimeLabel: string;
   predictionLabel: string;
   resultLabel: string;
   pointsAwarded: number;
   createdAtLabel: string;
+  canEdit: boolean;
 };
 
 export type UserProfile = {
@@ -36,8 +43,8 @@ export type UserProfile = {
 };
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
-  const user = await prisma.user.findFirst({
-    where: { id: userId, hidden: false },
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
     select: {
       id: true,
       firstName: true,
@@ -85,6 +92,8 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     rules
   );
 
+  const now = new Date();
+
   return {
     firstName: user.firstName,
     lastName: user.lastName,
@@ -102,7 +111,11 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     memberSinceLabel: formatPersianDateTime(user.createdAt),
     predictions: predictions.map((p) => ({
       id: p.id,
+      matchId: p.matchId,
+      prediction: p.prediction,
       matchLabel: `${p.match.homeTeam.nameFa} – ${p.match.awayTeam.nameFa}`,
+      homeTeamName: p.match.homeTeam.nameFa,
+      awayTeamName: p.match.awayTeam.nameFa,
       startTime: p.match.startTime.toISOString(),
       startTimeLabel: formatPersianDateTime(p.match.startTime),
       predictionLabel: formatPredictionChoice(
@@ -113,6 +126,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
       resultLabel: formatPredictionResult(p.isCorrect, p.pointsAwarded),
       pointsAwarded: p.pointsAwarded,
       createdAtLabel: formatPersianDateTime(p.createdAt),
+      canEdit: p.isCorrect === null && !isMatchLocked(p.match, now),
     })),
   };
 }

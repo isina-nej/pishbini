@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import type { PageId } from "@/lib/page-access.shared";
+import { useRouter } from "next/navigation";
+import {
+  getFirstAccessiblePage,
+  PAGE_ROUTES,
+  type PageId,
+} from "@/lib/page-access.shared";
 import { usePageAccess } from "./PageAccessProvider";
 
 export function PageAccessGuard({
@@ -11,22 +16,26 @@ export function PageAccessGuard({
   pageId: PageId;
   children: ReactNode;
 }) {
-  const { loaded, settings, showNotice } = usePageAccess();
+  const router = useRouter();
+  const { loaded, settings, showNotice, isPageVisible } = usePageAccess();
   const config = settings[pageId];
-  const enabled = config?.enabled !== false;
+  const visible = isPageVisible(pageId);
 
   useEffect(() => {
-    if (loaded && !enabled) {
-      showNotice(config.message);
+    if (!loaded || visible) return;
+    showNotice(config.message);
+    const fallback = getFirstAccessiblePage(settings);
+    if (fallback && fallback !== pageId) {
+      router.replace(PAGE_ROUTES[fallback]);
     }
-  }, [loaded, enabled, config.message, showNotice]);
+  }, [loaded, visible, config.message, showNotice, settings, pageId, router]);
 
   if (!loaded) return <>{children}</>;
 
-  if (!enabled) {
+  if (!visible) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-2 px-6 pb-24 pt-12 text-center">
-        <p className="text-sm text-white/40">این بخش در حال حاضر غیرفعال است</p>
+        <p className="text-sm text-white/40">این بخش در حال حاضر در دسترس نیست</p>
       </div>
     );
   }

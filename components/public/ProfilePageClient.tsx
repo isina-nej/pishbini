@@ -13,9 +13,10 @@ import {
   User,
   Users,
 } from "lucide-react";
-import type { UserProfile } from "@/lib/profile-service";
+import type { UserProfile, ProfilePrediction } from "@/lib/profile-service";
 import { ErrorState } from "@/components/public/ErrorState";
 import { LoadingState } from "@/components/public/LoadingState";
+import { EditPredictionSheet } from "@/components/public/EditPredictionSheet";
 import { cn } from "@/lib/utils";
 
 export function ProfilePageClient() {
@@ -24,6 +25,7 @@ export function ProfilePageClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState<ProfilePrediction | null>(null);
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -186,6 +188,15 @@ export function ProfilePageClient() {
               <p className="mt-1 text-[10px] text-white/35">
                 بازی: {p.startTimeLabel} · ثبت: {p.createdAtLabel}
               </p>
+              {p.canEdit && (
+                <button
+                  type="button"
+                  onClick={() => setEditing(p)}
+                  className="mt-2 text-xs font-medium text-primary hover:underline"
+                >
+                  ویرایش پیش‌بینی
+                </button>
+              )}
             </motion.div>
           ))}
         </div>
@@ -201,6 +212,12 @@ export function ProfilePageClient() {
           خروج از حساب
         </button>
       </div>
+
+      <EditPredictionSheet
+        prediction={editing}
+        onClose={() => setEditing(null)}
+        onSaved={loadProfile}
+      />
     </div>
   );
 }

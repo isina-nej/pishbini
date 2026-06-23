@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
+import { SplashScreen } from "@/components/public/SplashScreen";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body className={`${vazirmatn.variable} antialiased`}>
+        <SplashScreen />
         <div className="mx-auto min-h-dvh w-full max-w-[430px] [&:has(.admin-root)]:max-w-none [&:has(.bracket-root)]:max-w-none">
           {children}
         </div>

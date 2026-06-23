@@ -4,7 +4,7 @@ import { LoginForm } from "@/components/public/LoginForm";
 
 export default function LoginPage() {
   return (
-    <PublicPageShell pageId="predictions" showNav={false}>
+    <PublicPageShell pageId="profile" showNav={false}>
       <div className="pb-8 pt-8">
         <header className="mb-6 px-4 text-center">
           <h1 className="text-2xl font-bold">ورود به حساب</h1>

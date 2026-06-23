@@ -10,12 +10,19 @@ import { AdminToggle } from "@/components/admin/ui/AdminToggle";
 import {
   DEFAULT_PAGE_ACCESS,
   PAGE_LABELS,
+  NAV_TAB_ORDER,
   type PageAccessSettings,
   type PageId,
 } from "@/lib/page-access";
 import { Save } from "lucide-react";
 
-const PAGE_IDS: PageId[] = ["predictions", "bracket", "leaderboard"];
+const PAGE_DESCRIPTIONS: Record<PageId, string> = {
+  predictions: "صفحه اصلی پیش‌بینی بازی‌ها",
+  bracket: "صفحه جدول حذفی",
+  leaderboard: "صفحه جدول امتیازات",
+  prizes: "صفحه جوایز و قوانین کمپین",
+  profile: "صفحه حساب کاربری و تاریخچه پیش‌بینی‌ها",
+};
 
 export default function AdminPagesPage() {
   const [pages, setPages] = useState<PageAccessSettings>(DEFAULT_PAGE_ACCESS);
@@ -59,7 +66,7 @@ export default function AdminPagesPage() {
     <AdminLayout>
       <AdminPageHeader
         title="دسترسی صفحات"
-        description="فعال یا غیرفعال کردن صفحات اصلی سایت و متن نمایشی برای کاربران"
+        description="فعال، مخفی یا غیرفعال کردن تب‌های پایین صفحه و متن نمایشی"
         actions={
           <AdminButton onClick={handleSave} disabled={saving}>
             <Save className="size-3.5" />
@@ -72,25 +79,29 @@ export default function AdminPagesPage() {
         <AdminLoading />
       ) : (
         <div className="grid gap-4">
-          {PAGE_IDS.map((id) => (
+          {NAV_TAB_ORDER.map((id) => (
             <AdminCard key={id}>
               <AdminCardHeader
                 title={PAGE_LABELS[id]}
-                description={
-                  id === "predictions"
-                    ? "صفحه اصلی پیش‌بینی بازی‌ها"
-                    : id === "bracket"
-                      ? "صفحه جدول حذفی"
-                      : "صفحه جدول امتیازات"
-                }
+                description={PAGE_DESCRIPTIONS[id]}
               />
               <AdminCardBody className="space-y-4">
+                <AdminToggle
+                  label="نمایش در منوی پایین"
+                  description={
+                    pages[id].hidden
+                      ? "آیکن و برچسب این تب از منو حذف شده است"
+                      : "تب در منوی پایین نمایش داده می‌شود"
+                  }
+                  checked={!pages[id].hidden}
+                  onChange={(visible) => updatePage(id, { hidden: !visible })}
+                />
                 <AdminToggle
                   label="دسترسی کاربران"
                   description={
                     pages[id].enabled
                       ? "صفحه برای کاربران باز است"
-                      : "با کلیک روی این صفحه، پیام زیر نمایش داده می‌شود"
+                      : "با ورود مستقیم به آدرس، پیام زیر نمایش داده می‌شود"
                   }
                   checked={pages[id].enabled}
                   onChange={(enabled) => updatePage(id, { enabled })}

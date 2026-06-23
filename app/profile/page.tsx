@@ -3,7 +3,7 @@ import { ProfilePageClient } from "@/components/public/ProfilePageClient";
 
 export default function ProfilePage() {
   return (
-    <PublicPageShell pageId="predictions">
+    <PublicPageShell pageId="profile">
       <ProfilePageClient />
     </PublicPageShell>
   );

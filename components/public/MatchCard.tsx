@@ -27,9 +27,13 @@ type Props = {
   onSelect: (choice: PredictionChoice) => void;
   index: number;
   confirmed?: boolean;
+  submitted?: boolean;
+  locked?: boolean;
 };
 
 type TeamInfo = { nameFa: string; code: string; flagUrl: string };
+
+const NAME_STRIP_H = "h-[22px]";
 
 function PureFlag({
   team,
@@ -61,6 +65,22 @@ function ShadowOverlay({ className }: { className?: string }) {
   );
 }
 
+function DrawCenterBadge({ reduceMotion }: { reduceMotion: boolean }) {
+  return (
+    <motion.div
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.55 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={reduceMotion ? undefined : { opacity: 0, scale: 0.85 }}
+      transition={{ type: "spring", stiffness: 420, damping: 26 }}
+      className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
+    >
+      <div className="rounded-full bg-white px-5 py-2 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+        <span className="text-sm font-bold text-[#10111f]">مساوی</span>
+      </div>
+    </motion.div>
+  );
+}
+
 function DateTimeOnShadow({ startTime }: { startTime: string }) {
   return (
     <motion.p
@@ -74,10 +94,11 @@ function DateTimeOnShadow({ startTime }: { startTime: string }) {
   );
 }
 
-function SelectablePanel({
+function SelectableFlag({
   team,
   selected,
   hasTeamPick,
+  drawSelected,
   onSelect,
   loading,
   reduceMotion,
@@ -85,11 +106,12 @@ function SelectablePanel({
   team: TeamInfo;
   selected: boolean;
   hasTeamPick: boolean;
+  drawSelected: boolean;
   onSelect: () => void;
   loading: "eager" | "lazy";
   reduceMotion: boolean;
 }) {
-  const dimmed = hasTeamPick && !selected;
+  const dimmed = drawSelected || (hasTeamPick && !selected);
 
   return (
     <motion.button
@@ -105,8 +127,38 @@ function SelectablePanel({
       aria-label={team.nameFa}
     >
       <PureFlag team={team} loading={loading} />
-      {dimmed && <ShadowOverlay />}
+      {dimmed && (
+        <ShadowOverlay className={drawSelected ? "bg-black/55" : undefined} />
+      )}
     </motion.button>
+  );
+}
+
+function TeamNameStrip({
+  name,
+  flex,
+  selected,
+  drawSelected,
+}: {
+  name: string;
+  flex: number;
+  selected: boolean;
+  drawSelected: boolean;
+}) {
+  return (
+    <motion.span
+      layout
+      animate={{ flex }}
+      transition={{ type: "spring", stiffness: 340, damping: 30 }}
+      className={cn(
+        "min-w-0 truncate border-t border-white/10 px-1 py-1.5 text-center text-[10px] font-medium leading-tight",
+        NAME_STRIP_H,
+        selected && !drawSelected ? "text-primary" : "text-white/75",
+        drawSelected && "text-white/50"
+      )}
+    >
+      {name}
+    </motion.span>
   );
 }
 
@@ -135,20 +187,53 @@ function ConfirmedCard({
       initial={reduceMotion ? false : { opacity: 0.85, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      className="relative h-[118px] w-full overflow-hidden rounded-2xl"
+      className="relative w-full overflow-hidden rounded-2xl"
     >
       {isDraw ? (
-        <div className="absolute inset-0 flex">
-          <div className="relative flex-1 overflow-hidden">
-            <PureFlag team={match.homeTeam} loading={loading} />
+        <div className="relative">
+          <div className="relative flex h-[96px]">
+            <div className="relative flex-1 overflow-hidden">
+              <PureFlag team={match.homeTeam} loading={loading} />
+              <ShadowOverlay className="bg-black/55" />
+            </div>
+            <div className="relative flex-1 overflow-hidden">
+              <PureFlag team={match.awayTeam} loading={loading} />
+              <ShadowOverlay className="bg-black/55" />
+            </div>
+            <DrawCenterBadge reduceMotion={!!reduceMotion} />
           </div>
-          <div className="relative flex-1 overflow-hidden">
-            <PureFlag team={match.awayTeam} loading={loading} />
+          <div className="flex border-t border-white/10 bg-[#0d0e1a]">
+            <span
+              className={cn(
+                "flex-1 truncate px-1 py-1.5 text-center text-[10px] font-medium text-white/50",
+                NAME_STRIP_H
+              )}
+            >
+              {match.homeTeam.nameFa}
+            </span>
+            <span
+              className={cn(
+                "flex-1 truncate px-1 py-1.5 text-center text-[10px] font-medium text-white/50",
+                NAME_STRIP_H
+              )}
+            >
+              {match.awayTeam.nameFa}
+            </span>
           </div>
         </div>
       ) : winTeam ? (
-        <div className="absolute inset-0">
-          <PureFlag team={winTeam} loading={loading} />
+        <div className="relative">
+          <div className="relative h-[96px] overflow-hidden">
+            <PureFlag team={winTeam} loading={loading} />
+          </div>
+          <span
+            className={cn(
+              "block truncate border-t border-white/10 bg-[#0d0e1a] px-2 py-1.5 text-center text-[10px] font-medium text-primary",
+              NAME_STRIP_H
+            )}
+          >
+            {winTeam.nameFa}
+          </span>
         </div>
       ) : null}
 
@@ -164,7 +249,15 @@ function ConfirmedCard({
   );
 }
 
-export function MatchCard({ match, selected, onSelect, index, confirmed = false }: Props) {
+export function MatchCard({
+  match,
+  selected,
+  onSelect,
+  index,
+  confirmed = false,
+  submitted = false,
+  locked = false,
+}: Props) {
   const reduceMotion = useReducedMotion();
   const flagLoading = index === 0 ? "eager" : "lazy";
 
@@ -172,8 +265,11 @@ export function MatchCard({ match, selected, onSelect, index, confirmed = false 
   const awaySelected = selected === PredictionChoice.AWAY_WIN;
   const drawSelected = selected === PredictionChoice.DRAW;
   const hasTeamPick = homeSelected || awaySelected;
-  const showConfirmed = confirmed && selected;
-  const isSelecting = !confirmed;
+  const showConfirmed = (confirmed || locked) && submitted && selected;
+  const isSelecting = !showConfirmed;
+
+  const homeNameFlex = hasTeamPick ? (homeSelected ? 4 : 1) : 1;
+  const awayNameFlex = hasTeamPick ? (awaySelected ? 4 : 1) : 1;
 
   return (
     <motion.div
@@ -182,6 +278,16 @@ export function MatchCard({ match, selected, onSelect, index, confirmed = false 
       transition={{ delay: index * 0.06, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
       className="mb-5 px-1.5"
     >
+      {submitted && !locked && (
+        <p className="mb-1 text-center text-[10px] font-medium text-primary/90">
+          ثبت‌شده — قابل ویرایش
+        </p>
+      )}
+      {submitted && locked && (
+        <p className="mb-1 text-center text-[10px] font-medium text-white/45">
+          ثبت‌شده
+        </p>
+      )}
       <AnimatePresence mode="wait" initial={false}>
         {showConfirmed ? (
           <ConfirmedCard
@@ -201,26 +307,47 @@ export function MatchCard({ match, selected, onSelect, index, confirmed = false 
               drawSelected && "ring-1 ring-primary/50"
             )}
           >
-            <div className="relative flex h-[118px] w-full">
-              <SelectablePanel
+            <div className="relative flex h-[96px] w-full">
+              <SelectableFlag
                 team={match.homeTeam}
                 selected={homeSelected}
                 hasTeamPick={hasTeamPick}
+                drawSelected={drawSelected}
                 onSelect={() => onSelect(PredictionChoice.HOME_WIN)}
                 loading={flagLoading}
                 reduceMotion={!!reduceMotion}
               />
-              <SelectablePanel
+              <SelectableFlag
                 team={match.awayTeam}
                 selected={awaySelected}
                 hasTeamPick={hasTeamPick}
+                drawSelected={drawSelected}
                 onSelect={() => onSelect(PredictionChoice.AWAY_WIN)}
                 loading={flagLoading}
                 reduceMotion={!!reduceMotion}
               />
-              {drawSelected && (
-                <div className="pointer-events-none absolute inset-0 bg-black/25" />
-              )}
+              <AnimatePresence>
+                {drawSelected && (
+                  <DrawCenterBadge
+                    key="draw-badge"
+                    reduceMotion={!!reduceMotion}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+            <div className="flex bg-[#0d0e1a]">
+              <TeamNameStrip
+                name={match.homeTeam.nameFa}
+                flex={homeNameFlex}
+                selected={homeSelected}
+                drawSelected={drawSelected}
+              />
+              <TeamNameStrip
+                name={match.awayTeam.nameFa}
+                flex={awayNameFlex}
+                selected={awaySelected}
+                drawSelected={drawSelected}
+              />
             </div>
           </motion.div>
         )}

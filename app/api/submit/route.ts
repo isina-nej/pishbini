@@ -1,13 +1,27 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { setUserSessionCookie } from "@/lib/auth-user";
+import { z } from "zod";
+import { getAuthenticatedUserId, setUserSessionCookie } from "@/lib/auth-user";
 import { prisma } from "@/lib/db";
 import { normalizePhone } from "@/lib/phone";
 import { verifyOtp } from "@/lib/otp-service";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { REFERRAL_COOKIE_NAME, resolveReferralCode } from "@/lib/referral";
 import { processSubmission } from "@/lib/submit-service";
-import { submitSchema } from "@/lib/validation";
+import {
+  nameSchema,
+  phoneInputSchema,
+  predictionItemSchema,
+  submitSchema,
+} from "@/lib/validation";
+
+const authenticatedSubmitSchema = z.object({
+  firstName: nameSchema,
+  lastName: nameSchema,
+  phone: phoneInputSchema,
+  predictions: z.array(predictionItemSchema).min(1, "حداقل یک پیش‌بینی لازم است"),
+  referralCode: z.string().nullable().optional(),
+});
 
 const PARTICIPANT_COOKIE = "wc_participant";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
@@ -24,7 +38,22 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const parsed = submitSchema.safeParse(body);
+    const sessionUserId = await getAuthenticatedUserId();
+    const phone = normalizePhone(body.phone);
+    let useSession = false;
+
+    if (sessionUserId && phone && !body.code) {
+      const sessionUser = await prisma.user.findUnique({
+        where: { id: sessionUserId },
+        select: { phone: true },
+      });
+      useSession = sessionUser?.phone === phone;
+    }
+
+    const parsed = useSession
+      ? authenticatedSubmitSchema.safeParse(body)
+      : submitSchema.safeParse(body);
+
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.issues[0]?.message ?? "داده نامعتبر" },
@@ -32,9 +61,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const otp = await verifyOtp(parsed.data.phone, parsed.data.code);
-    if (!otp.valid) {
-      return NextResponse.json({ error: otp.error ?? "کد تأیید نامعتبر است." }, { status: 400 });
+    if (!useSession) {
+      const otp = await verifyOtp(parsed.data.phone, (body as { code: string }).code);
+      if (!otp.valid) {
+        return NextResponse.json({ error: otp.error ?? "کد تأیید نامعتبر است." }, { status: 400 });
+      }
     }
 
     const cookieStore = await cookies();
@@ -44,6 +75,7 @@ export async function POST(request: Request) {
     const result = await processSubmission({
       ...parsed.data,
       referralCode,
+      code: useSession ? "0000" : (body as { code: string }).code,
     });
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: result.status });
@@ -57,10 +89,10 @@ export async function POST(request: Request) {
       maxAge: COOKIE_MAX_AGE,
     });
 
-    const phone = normalizePhone(parsed.data.phone);
-    if (phone) {
+    const normalizedPhone = normalizePhone(parsed.data.phone);
+    if (normalizedPhone) {
       const user = await prisma.user.findUnique({
-        where: { phone },
+        where: { phone: normalizedPhone },
         select: { id: true },
       });
       if (user) await setUserSessionCookie(user.id);
