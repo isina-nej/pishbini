@@ -16,6 +16,7 @@
     "backup:cron": "bash scripts/install-backup-cron.sh",
     "verify:home": "node scripts/verify-home.mjs",
     "verify:og": "node scripts/verify-og.mjs",
+    "verify:og:local": "node scripts/verify-og.mjs http://127.0.0.1:3001",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "postinstall": "prisma generate"

@@ -626,7 +626,7 @@ npx prisma migrate deploy
 npx prisma db push          # اگر schema عوض شده
 npm run build
 pm2 restart pishbini
-npm run verify:og https://wc.pishrosarmaye.com
+npm run verify:og:local
 pm2 logs pishbini --lines 50
 ```
 
@@ -799,8 +799,12 @@ pm2 logs pishbini
 
 ```bash
 cd /opt/pishbini
+npm run verify:og:local
+# یا از بیرون سرور:
 npm run verify:og https://wc.pishrosarmaye.com
 ```
+
+> روی خود VPS، دامنه عمومی ممکن است به خاطر hairpin NAT timeout بدهد — `verify:og:local` از `127.0.0.1:3001` تست می‌کند.
 
 اگر خطا داد:
 
