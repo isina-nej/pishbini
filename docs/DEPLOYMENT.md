@@ -574,25 +574,37 @@ pm2 list
 |------|-----|
 | `/admin/teams` | بررسی تیم‌ها |
 | `/admin/matches` | ساخت بازی با زمان واقعی |
+| `/admin/results` | ثبت و ویرایش نتیجه (گل اختیاری، اعلان با تأخیر ۱۰ دقیقه) |
 | `/admin/point-rules` | تأیید امتیازها (۳۰ / ۱۰ / ۳) |
 | `/admin/bracket` | validate → publish |
 | `/admin` | بررسی آمار داشبورد |
 
 ---
 
-## 13.5 Cron — اعلان بازی‌های جدید (Web Push)
+## 13.5 Cron — اعلان Web Push
 
-بعد از تنظیم `VAPID_*` و `CRON_SECRET` در `.env`، migration push را deploy کنید و cron سیستم را اضافه کنید:
+بعد از تنظیم `VAPID_*` و `CRON_SECRET` در `.env`، migrationها را deploy کنید و cron سیستم را اضافه کنید:
 
 ```bash
 crontab -e
 ```
 
 ```cron
-*/15 * * * * curl -fsS -H "Authorization: Bearer YOUR_CRON_SECRET" https://wc.pishrosarmaye.com/api/cron/push-jobs >> /var/log/pishbini-push-cron.log 2>&1
+*/5 * * * * CRON_SECRET=$(grep '^CRON_SECRET=' /opt/pishbini/.env | sed 's/^CRON_SECRET=//' | tr -d '"' | tr -d "'") && curl -fsS -H "Authorization: Bearer ${CRON_SECRET}" https://wc.pishrosarmaye.com/api/cron/push-jobs >> /var/log/pishbini-push-cron.log 2>&1
 ```
 
-این job هر ۱۵ دقیقه بازی‌هایی که تازه وارد پنجره ۲۴ساعته پیش‌بینی شده‌اند را به همه اشتراک‌های push اعلام می‌کند.
+این job دو کار انجام می‌دهد:
+
+1. **بازی‌های جدید در پنجره ۲۴ساعته** — اعلان «بازی جدید برای پیش‌بینی»
+2. **نتیجه بازی‌های تسویه‌شده** — اعلان نتیجه با **تأخیر ۱۰ دقیقه** پس از ثبت/ویرایش در `/admin/results` (هر ویرایش تایمر را ریست می‌کند)
+
+پاسخ نمونه cron:
+
+```json
+{"success":true,"newWindows":{"matchesNotified":0,"pushDelivered":0},"settlement":{"matchesProcessed":0,"pushDelivered":0}}
+```
+
+> برای دقت بهتر اعلان نتیجه، cron را هر **۵ دقیقه** بزنید (نه ۱۵). از `cut -d=` برای خواندن `CRON_SECRET` استفاده نکنید — مقدار base64 ممکن است `=` داشته باشد.
 
 ---
 

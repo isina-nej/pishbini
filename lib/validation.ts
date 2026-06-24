@@ -82,6 +82,16 @@ export const settleSchema = z.object({
   correctPrediction: predictionChoiceSchema,
 });
 
+const optionalScoreSchema = z
+  .union([z.number().int().min(0), z.null()])
+  .optional();
+
+export const matchResultSchema = z.object({
+  correctPrediction: predictionChoiceSchema,
+  homeScore: optionalScoreSchema,
+  awayScore: optionalScoreSchema,
+});
+
 export const pointRuleUpdateSchema = z.object({
   label: z.string().min(1).optional(),
   points: z.number().int().optional(),

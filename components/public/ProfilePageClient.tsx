@@ -255,7 +255,14 @@ export function ProfilePageClient() {
               data-tour={p.id === editablePrediction?.id ? "profile-edit" : undefined}
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-medium leading-snug">{p.matchLabel}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium leading-snug">{p.matchLabel}</p>
+                  {p.matchResultScore && (
+                    <p className="mt-0.5 text-xs tabular-nums text-white/50">
+                      نتیجه: {p.matchResultScore}
+                    </p>
+                  )}
+                </div>
                 <span
                   className={cn(
                     "shrink-0 rounded-full px-2 py-0.5 text-[10px]",

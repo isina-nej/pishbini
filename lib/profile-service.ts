@@ -19,6 +19,7 @@ export type ProfilePrediction = {
   startTimeLabel: string;
   predictionLabel: string;
   resultLabel: string;
+  matchResultScore: string | null;
   pointsAwarded: number;
   createdAtLabel: string;
   canEdit: boolean;
@@ -69,7 +70,12 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
       where: { userId: user.id },
       include: {
         match: {
-          include: {
+          select: {
+            startTime: true,
+            settledAt: true,
+            status: true,
+            homeScore: true,
+            awayScore: true,
             homeTeam: { select: { nameFa: true } },
             awayTeam: { select: { nameFa: true } },
           },
@@ -127,6 +133,10 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
         p.match.awayTeam.nameFa
       ),
       resultLabel: formatPredictionResult(p.isCorrect, p.pointsAwarded),
+      matchResultScore:
+        p.match.homeScore !== null && p.match.awayScore !== null
+          ? `${p.match.homeScore.toLocaleString("fa-IR")} – ${p.match.awayScore.toLocaleString("fa-IR")}`
+          : null,
       pointsAwarded: p.pointsAwarded,
       createdAtLabel: formatPersianDateTime(p.createdAt),
       canEdit: p.isCorrect === null && !isMatchLocked(p.match, now),

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { notifyNewPredictionWindows } from "@/lib/push-notifications";
+import {
+  notifyNewPredictionWindows,
+  processPendingSettlementPushes,
+} from "@/lib/push-notifications";
 import { isPushConfigured } from "@/lib/push-service";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +24,13 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await notifyNewPredictionWindows();
-    return NextResponse.json({ success: true, ...result });
+    const newWindows = await notifyNewPredictionWindows();
+    const settlement = await processPendingSettlementPushes();
+    return NextResponse.json({
+      success: true,
+      newWindows,
+      settlement,
+    });
   } catch (err) {
     console.error("[cron/push-jobs]", err);
     return NextResponse.json({ error: "Cron job failed" }, { status: 500 });

@@ -2,13 +2,23 @@ import { MatchStatus, PointRuleKey, PredictionChoice } from "@/generated/prisma"
 import { prisma } from "@/lib/db";
 import { isMatchAvailableForPrediction } from "@/lib/matches";
 import { getActivePointRules } from "@/lib/points";
-import { formatPredictionResult } from "@/lib/prediction-labels";
+import { formatPredictionChoice, formatPredictionResult } from "@/lib/prediction-labels";
 import { sendPushBroadcast, sendPushToUser } from "@/lib/push-service";
 
-export async function notifyMatchSettlement(
-  matchId: string,
+function formatMatchScoreLine(
+  homeName: string,
+  awayName: string,
+  homeScore: number | null,
+  awayScore: number | null,
   correctPrediction: PredictionChoice
-): Promise<void> {
+): string {
+  if (homeScore !== null && awayScore !== null) {
+    return `${homeName} ${homeScore.toLocaleString("fa-IR")} – ${awayScore.toLocaleString("fa-IR")} ${awayName}`;
+  }
+  return formatPredictionChoice(correctPrediction, homeName, awayName);
+}
+
+export async function notifyMatchSettlement(matchId: string): Promise<number> {
   const match = await prisma.match.findUnique({
     where: { id: matchId },
     include: {
@@ -18,7 +28,9 @@ export async function notifyMatchSettlement(
     },
   });
 
-  if (!match || match.predictions.length === 0) return;
+  if (!match || !match.correctPrediction || match.predictions.length === 0) {
+    return 0;
+  }
 
   const rules = await getActivePointRules([
     PointRuleKey.CORRECT_PREDICTION,
@@ -28,15 +40,60 @@ export async function notifyMatchSettlement(
   const wrongPoints = rules.get(PointRuleKey.WRONG_PREDICTION) ?? 0;
 
   const title = `نتیجه ${match.homeTeam.nameFa} – ${match.awayTeam.nameFa} اعلام شد`;
+  const scoreLine = formatMatchScoreLine(
+    match.homeTeam.nameFa,
+    match.awayTeam.nameFa,
+    match.homeScore,
+    match.awayScore,
+    match.correctPrediction
+  );
 
-  await Promise.allSettled(
+  const results = await Promise.allSettled(
     match.predictions.map((pred) => {
-      const isCorrect = pred.prediction === correctPrediction;
+      const isCorrect = pred.prediction === match.correctPrediction;
       const points = isCorrect ? correctPoints : wrongPoints;
-      const body = `پیش‌بینی شما ${formatPredictionResult(isCorrect, points)}`;
+      const body = `${scoreLine} — پیش‌بینی شما ${formatPredictionResult(isCorrect, points)}`;
       return sendPushToUser(pred.userId, { title, body, url: "/profile" });
     })
   );
+
+  return results.filter((r) => r.status === "fulfilled" && r.value).length;
+}
+
+export async function processPendingSettlementPushes(): Promise<{
+  matchesProcessed: number;
+  pushDelivered: number;
+}> {
+  const now = new Date();
+
+  const pending = await prisma.match.findMany({
+    where: {
+      settledAt: { not: null },
+      settlementPushScheduledAt: { lte: now },
+      settlementPushSentAt: null,
+      status: MatchStatus.FINISHED,
+    },
+    select: { id: true },
+    orderBy: { settlementPushScheduledAt: "asc" },
+  });
+
+  if (pending.length === 0) {
+    return { matchesProcessed: 0, pushDelivered: 0 };
+  }
+
+  let pushDelivered = 0;
+
+  for (const { id } of pending) {
+    const delivered = await notifyMatchSettlement(id);
+    pushDelivered += delivered;
+
+    await prisma.match.update({
+      where: { id },
+      data: { settlementPushSentAt: now },
+    });
+  }
+
+  return { matchesProcessed: pending.length, pushDelivered };
 }
 
 export async function notifyNewPredictionWindows(): Promise<{

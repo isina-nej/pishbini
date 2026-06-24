@@ -63,8 +63,13 @@ model Match {
   status            MatchStatus       @default(SCHEDULED)
   predictionMode    PredictionMode    @default(REGULAR_TIME_90)
   correctPrediction PredictionChoice?
-  settledAt                    DateTime?
-  predictionWindowNotifiedAt   DateTime?
+  homeScore                  Int?
+  awayScore                  Int?
+  settledAt                  DateTime?
+  resultUpdatedAt            DateTime?
+  settlementPushScheduledAt  DateTime?
+  settlementPushSentAt       DateTime?
+  predictionWindowNotifiedAt DateTime?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 

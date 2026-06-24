@@ -10,7 +10,9 @@ import { AdminCard, AdminCardBody, AdminCardHeader } from "@/components/admin/ui
 import { AdminStatusBadge } from "@/components/admin/ui/AdminBadge";
 import { AdminLoading } from "@/components/admin/ui/AdminLoading";
 import { AdminSettlementModal } from "@/components/admin/AdminSettlementModal";
-import { ArrowRight, Gavel } from "lucide-react";
+import { formatPredictionChoice } from "@/lib/prediction-labels";
+import { PredictionChoice } from "@/generated/prisma";
+import { ArrowRight, Gavel, Pencil } from "lucide-react";
 
 export default function AdminMatchDetailPage() {
   const params = useParams();
@@ -40,12 +42,26 @@ export default function AdminMatchDetailPage() {
     awayTeam: { nameFa: string };
     status: string;
     settledAt: string | null;
+    correctPrediction: PredictionChoice | null;
+    homeScore: number | null;
+    awayScore: number | null;
+    settlementPushScheduledAt: string | null;
+    settlementPushSentAt: string | null;
     predictions: Array<{
       id: string;
       prediction: string;
       user: { firstName: string; lastName: string; phone: string };
     }>;
   };
+
+  const resultLabel =
+    m.correctPrediction &&
+    formatPredictionChoice(m.correctPrediction, m.homeTeam.nameFa, m.awayTeam.nameFa);
+
+  const scoreLabel =
+    m.homeScore !== null && m.awayScore !== null
+      ? `${m.homeScore.toLocaleString("fa-IR")} – ${m.awayScore.toLocaleString("fa-IR")}`
+      : null;
 
   return (
     <AdminLayout>
@@ -55,11 +71,18 @@ export default function AdminMatchDetailPage() {
         actions={
           <>
             <AdminStatusBadge status={m.status} />
-            {!m.settledAt && (
+            {!m.settledAt ? (
               <AdminButton size="sm" onClick={() => setShowSettle(true)}>
                 <Gavel className="size-3.5" />
                 ثبت نتیجه
               </AdminButton>
+            ) : (
+              <Link href="/admin/results">
+                <AdminButton variant="outline" size="sm">
+                  <Pencil className="size-3.5" />
+                  ویرایش نتیجه
+                </AdminButton>
+              </Link>
             )}
             <Link href="/admin/matches">
               <AdminButton variant="outline" size="sm">
@@ -73,7 +96,13 @@ export default function AdminMatchDetailPage() {
 
       {m.settledAt && (
         <div className="mb-4 rounded-xl bg-[var(--admin-success-soft)] px-4 py-3 text-sm text-[var(--admin-success)]">
-          این بازی تسویه شده است
+          <p>نتیجه: {resultLabel}</p>
+          {scoreLabel && <p className="mt-1 tabular-nums">گل: {scoreLabel}</p>}
+          <p className="mt-1 text-xs opacity-80">
+            {m.settlementPushSentAt
+              ? "اعلان نتیجه برای کاربران ارسال شده است."
+              : "اعلان نتیجه حدود ۱۰ دقیقه پس از آخرین ذخیره ارسال می‌شود."}
+          </p>
         </div>
       )}
 

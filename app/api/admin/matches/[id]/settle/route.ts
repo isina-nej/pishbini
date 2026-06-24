@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { adminUnauthorizedResponse, requireAdmin } from "@/lib/auth-admin";
+import { handleAdminRouteError } from "@/lib/admin-route";
 import { writeAuditLog } from "@/lib/audit";
-import { SettlementError, settleMatch } from "@/lib/settlement-service";
-import { notifyMatchSettlement } from "@/lib/push-notifications";
-import { isPushConfigured } from "@/lib/push-service";
+import { applyMatchResult, SettlementError } from "@/lib/settlement-service";
 import { settleSchema } from "@/lib/validation";
 
 type Params = { params: Promise<{ id: string }> };
@@ -18,23 +17,25 @@ export async function POST(request: Request, { params }: Params) {
       return NextResponse.json({ error: "نتیجه نامعتبر" }, { status: 400 });
     }
 
-    const summary = await settleMatch(id, parsed.data.correctPrediction);
-    await writeAuditLog("MATCH_SETTLE", "Match", id, {
+    const summary = await applyMatchResult(id, {
       correctPrediction: parsed.data.correctPrediction,
-      ...summary,
     });
 
-    if (isPushConfigured()) {
-      notifyMatchSettlement(id, parsed.data.correctPrediction).catch((err) =>
-        console.error("[push/settlement]", err)
-      );
-    }
+    await writeAuditLog(
+      summary.isResettlement ? "MATCH_RESULT_UPDATE" : "MATCH_SETTLE",
+      "Match",
+      id,
+      {
+        correctPrediction: parsed.data.correctPrediction,
+        ...summary,
+      }
+    );
 
     return NextResponse.json({ success: true, summary });
   } catch (err) {
     if (err instanceof SettlementError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    return adminUnauthorizedResponse();
+    return handleAdminRouteError(err, "خطا در تسویه بازی");
   }
 }
