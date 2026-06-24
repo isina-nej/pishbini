@@ -37,17 +37,32 @@ async function fetchWithTimeout(url, init = {}) {
   return fetch(url, { ...init, signal: AbortSignal.timeout(15000) });
 }
 
+async function fetchWithRetry(url, init = {}, attempts = 5) {
+  let lastError;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fetchWithTimeout(url, init);
+    } catch (error) {
+      lastError = error;
+      if (i < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+    }
+  }
+  throw lastError;
+}
+
 console.log(`Checking OG metadata at ${pageUrl}`);
 
 let homeRes;
 try {
-  homeRes = await fetchWithTimeout(pageUrl, {
+  homeRes = await fetchWithRetry(pageUrl, {
     headers: { "User-Agent": botUa },
     redirect: "follow",
   });
 } catch (error) {
   const hint = isLocalFetch
-    ? ""
+    ? "\nTip: wait a few seconds after `pm2 restart` and retry."
     : "\nTip: on the VPS, public domain may not loop back (hairpin NAT). Try:\n  npm run verify:og:local";
   fail(`Could not reach ${pageUrl}: ${error instanceof Error ? error.message : error}${hint}`);
 }
