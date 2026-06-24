@@ -10,7 +10,7 @@ type SessionState =
   | { status: "guest" }
   | { status: "loggedIn"; firstName: string; lastName: string; phone: string };
 
-export const GLASS_TOP_NAV_HEIGHT = "3rem";
+export const GLASS_TOP_NAV_HEIGHT = "4.25rem";
 
 async function fetchSession(): Promise<SessionState> {
   const res = await fetch("/api/me/session", {
@@ -66,29 +66,31 @@ export function GlassTopNav() {
       data-tour="home-header"
     >
       {session.status === "loading" ? (
-        <div className="flex flex-col items-end gap-1">
-          <div className="h-2.5 w-24 animate-pulse rounded-full bg-white/15" />
+        <div className="flex w-full items-center justify-between gap-3">
           <div className="h-3 w-32 animate-pulse rounded-full bg-white/20" />
+          <div className="h-2.5 w-24 animate-pulse rounded-full bg-white/15" />
         </div>
       ) : session.status === "loggedIn" ? (
-        <div className="flex flex-col items-end gap-0.5">
+        <div className="flex w-full items-center justify-between gap-3">
+          <p className="min-w-0 truncate text-right text-xs font-bold leading-tight text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.75)]">
+            سلام، {session.firstName} {session.lastName}!
+          </p>
           {session.phone ? (
             <p
               dir="ltr"
-              className="text-xs font-semibold tabular-nums text-white [text-shadow:0_1px_8px_rgba(0,0,0,0.85)]"
+              className="shrink-0 text-xs font-semibold tabular-nums text-white [text-shadow:0_1px_8px_rgba(0,0,0,0.85)]"
             >
               {session.phone}
             </p>
-          ) : null}
-          <p className="text-xs font-bold leading-tight text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.75)]">
-            سلام، {session.firstName} {session.lastName}!
-          </p>
+          ) : (
+            <span aria-hidden />
+          )}
         </div>
-      ) : (
-        <p className="text-right text-xs font-bold text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.75)]">
-          به پیش‌بینی جام جهانی خوش آمدید
-        </p>
-      )}
+      ) : null}
+
+      <p className="mt-1 text-center text-xs font-bold leading-snug text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.75)]">
+        به تورنومنت بزرگ پیش‌بینی پیشرو سرمایه خوش آمدید
+      </p>
     </header>
   );
 }
