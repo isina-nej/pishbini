@@ -656,11 +656,20 @@ npm run backup:restore -- /opt/backups/pishbini/pishbini_backup_20260623_120000.
 npm run backup:restore -- backup.tar.gz --db-only
 ```
 
-Cron روزانه (مثال ساعت ۳ بامداد):
+Cron هر **۴ ساعت** (مثال):
 
 ```cron
-0 3 * * * cd /opt/pishbini && /usr/bin/npm run backup >> /var/log/pishbini-backup.log 2>&1
+0 */4 * * * cd /opt/pishbini && /usr/bin/npm run backup >> /var/log/pishbini-backup.log 2>&1
 ```
+
+یا نصب خودکار خط cron (بدون حذف cronهای دیگر):
+
+```bash
+cd /opt/pishbini
+bash scripts/install-backup-cron.sh
+```
+
+> با بک‌آپ ۴ ساعته، `KEEP_DAYS=14` یعنی حداکثر ~۸۴ فایل. برای دیسک کم: `KEEP_DAYS=7`.
 
 ### دستی (بدون اسکریپت)
 

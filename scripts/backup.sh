@@ -6,6 +6,8 @@
 #   BACKUP_ROOT=/opt/backups/pishbini KEEP_DAYS=30 ./scripts/backup.sh
 #   npm run backup
 #
+# Cron (هر ۴ ساعت): bash scripts/install-backup-cron.sh
+#
 # Restore:
 #   npm run backup:restore -- /path/to/pishbini_backup_YYYYMMDD_HHMMSS.tar.gz
 

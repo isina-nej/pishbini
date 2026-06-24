@@ -12,6 +12,7 @@
     "icons:generate": "node scripts/generate-pwa-icons.mjs",
     "backup": "bash scripts/backup.sh",
     "backup:restore": "bash scripts/restore-backup.sh",
+    "backup:cron": "bash scripts/install-backup-cron.sh",
     "verify:home": "node scripts/verify-home.mjs",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
