@@ -40,9 +40,22 @@ export const submitSchema = z.object({
   predictions: z.array(predictionItemSchema).min(1, "حداقل یک پیش‌بینی لازم است"),
 });
 
+export const authPhoneCheckSchema = z.object({
+  phone: phoneInputSchema,
+});
+
+export const authRegisterSchema = z.object({
+  phone: phoneInputSchema,
+  code: z.string().regex(/^\d{4}$/, "کد تأیید باید ۴ رقم باشد"),
+  firstName: nameSchema,
+  lastName: nameSchema,
+});
+
 export const authLoginSchema = z.object({
   phone: phoneInputSchema,
   code: z.string().regex(/^\d{4}$/, "کد تأیید باید ۴ رقم باشد"),
+  firstName: nameSchema.optional(),
+  lastName: nameSchema.optional(),
 });
 
 export const adminLoginSchema = z.object({

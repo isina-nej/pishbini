@@ -65,7 +65,7 @@ function ShellFallback({
   children: ReactNode;
   showNav: boolean;
 }) {
-  return <div className={cn("min-h-dvh bg-bg", showNav && "pb-32")}>{children}</div>;
+  return <div className={cn("min-h-dvh", showNav && "pb-32")}>{children}</div>;
 }
 
 function BottomNavUnlessEmbed({ showNav }: { showNav: boolean }) {
@@ -84,7 +84,7 @@ function ShellBody({
   const embed = useSearchParams().get("embed") === "1";
 
   if (embed) {
-    return <div className="min-h-dvh bg-bg">{children}</div>;
+    return <div className="min-h-dvh">{children}</div>;
   }
 
   return (

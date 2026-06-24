@@ -25,6 +25,7 @@ export default async function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body className="antialiased">
+        <div className="app-background" aria-hidden />
         <SplashScreen />
         <div className="mx-auto min-h-dvh w-full max-w-[430px] [&:has(.admin-root)]:max-w-none [&:has(.bracket-root)]:max-w-none">
           <AppProviders initialPageAccess={initialPageAccess}>{children}</AppProviders>

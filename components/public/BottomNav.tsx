@@ -146,10 +146,8 @@ export function BottomNav() {
     <motion.nav
       aria-label="ناوبری اصلی"
       className={cn(
-        "bottom-nav-shell fixed left-1/2 z-50 w-[calc(100%-2rem)] max-w-[398px] -translate-x-1/2",
-        "rounded-full border border-white/12 bg-white/[0.06]",
-        "px-1.5 py-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.45)]",
-        "ring-1 ring-inset ring-white/10 backdrop-blur-xl"
+        "bottom-nav-shell glass-pill fixed left-1/2 z-50 w-[calc(100%-2rem)] max-w-[398px] -translate-x-1/2",
+        "rounded-full px-1.5 py-1.5"
       )}
       style={{
         bottom: "max(1rem, env(safe-area-inset-bottom, 0px))",

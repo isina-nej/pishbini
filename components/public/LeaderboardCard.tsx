@@ -40,12 +40,12 @@ export function LeaderboardCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, type: "spring", stiffness: 380, damping: 28 }}
       className={cn(
-        "mx-4 mb-3 overflow-hidden rounded-2xl border p-4 backdrop-blur-md",
+        "mx-4 mb-3 overflow-hidden rounded-2xl p-4 glass-panel",
         highlight
           ? "border-primary/40 bg-primary/10 shadow-[0_0_24px_rgba(20,224,189,0.15)]"
           : isTop && topStyle
             ? `bg-gradient-to-l ${topStyle}`
-            : "border-white/10 bg-white/[0.04]"
+            : ""
       )}
     >
       <div className="flex items-center gap-3">

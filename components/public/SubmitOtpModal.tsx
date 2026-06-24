@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, X } from "lucide-react";
+import { AUTH_INPUT_CLASS } from "@/components/public/PhoneAuthFlow";
 import { cn } from "@/lib/utils";
 import {
   clearStoredPredictions,
@@ -24,8 +25,7 @@ type Props = {
   }) => void;
 };
 
-const inputClassName =
-  "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-base text-white outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20";
+const inputClassName = AUTH_INPUT_CLASS;
 
 export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
   const titleId = useId();
@@ -208,14 +208,14 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
             className={cn(
               "relative z-10 flex w-full max-w-[430px] flex-col",
               "max-h-[min(92dvh,720px)]",
-              "rounded-t-[1.75rem] border border-white/10 border-b-0 bg-[#121322]/98",
-              "shadow-[0_-12px_48px_rgba(0,0,0,0.55)] backdrop-blur-xl",
+              "rounded-t-[1.75rem] border border-white/10 border-b-0 glass-panel",
+              "shadow-[0_-12px_48px_rgba(0,0,0,0.55)]",
               "pb-[max(1rem,env(safe-area-inset-bottom))]"
             )}
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              className="sticky top-0 z-10 shrink-0 rounded-t-[1.75rem] bg-[#121322]/95 px-5 pt-3 backdrop-blur-md"
+              className="sticky top-0 z-10 shrink-0 rounded-t-[1.75rem] glass-surface px-5 pt-3"
               onClick={(e) => e.stopPropagation()}
             >
               <div

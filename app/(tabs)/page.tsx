@@ -9,6 +9,8 @@ import { EmptyState } from "@/components/public/EmptyState";
 import { ErrorState } from "@/components/public/ErrorState";
 import { LoadingState } from "@/components/public/LoadingState";
 import { MatchCard, type MatchData } from "@/components/public/MatchCard";
+import { GlassTopNav } from "@/components/public/GlassTopNav";
+import { PredictionsHero } from "@/components/public/PredictionsHero";
 import { SubmitOtpModal } from "@/components/public/SubmitOtpModal";
 import {
   getStoredPredictions,
@@ -123,18 +125,16 @@ export default function HomePage() {
         tourReady={!loading && !error}
         tourHasMatches={matches.length > 0}
       >
-        <div className="pb-32 pt-6">
-          <motion.header
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 px-4 text-center"
-            data-tour="home-header"
-          >
-            <h1 className="bg-gradient-to-l from-primary to-secondary bg-clip-text text-2xl font-bold text-transparent">
-              پیش‌بینی جام جهانی
-            </h1>
-            <p className="mt-1 text-sm text-white/65">بازی‌های ۲۴ ساعت آینده</p>
-          </motion.header>
+        <PredictionsHero />
+        <GlassTopNav />
+
+        <div className="relative z-10">
+          <div className="predictions-hero-spacer" aria-hidden />
+
+          <div className="predictions-content-scrim pb-32">
+            <p className="mb-4 px-4 text-center text-sm text-white/65">
+              بازی‌های ۲۴ ساعت آینده
+            </p>
 
           {loading && <LoadingState />}
           {error && <ErrorState message={error} />}
@@ -184,6 +184,7 @@ export default function HomePage() {
               </motion.button>
             </div>
           )}
+          </div>
         </div>
       </PublicPageShell>
 

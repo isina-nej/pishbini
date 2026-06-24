@@ -7,7 +7,7 @@ export function TabViewTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div key={pathname} className="tab-view-content min-h-dvh bg-bg">
+    <div key={pathname} className="tab-view-content min-h-dvh">
       {children}
     </div>
   );

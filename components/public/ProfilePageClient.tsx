@@ -17,12 +17,15 @@ import type { UserProfile, ProfilePrediction } from "@/lib/profile-service";
 import { ErrorState } from "@/components/public/ErrorState";
 import { LoadingState } from "@/components/public/LoadingState";
 import { EditPredictionSheet } from "@/components/public/EditPredictionSheet";
+import { PhoneAuthFlow } from "@/components/public/PhoneAuthFlow";
 import { TourPageReady } from "@/components/public/TourPageReady";
 import { restartTour } from "@/lib/product-tour";
 import { cn } from "@/lib/utils";
 
 export function ProfilePageClient() {
   const router = useRouter();
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,25 +39,58 @@ export function ProfilePageClient() {
       const res = await fetch("/api/profile");
       const data = await res.json();
       if (res.status === 401) {
-        router.replace("/login?from=/profile");
+        setLoggedIn(false);
+        setProfile(null);
         return;
       }
       if (!res.ok) throw new Error(data.error ?? "خطا");
       setProfile(data.profile);
+      setLoggedIn(true);
     } catch {
       setError("خطا در دریافت اطلاعات حساب");
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
-    loadProfile();
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/me/session", { credentials: "include" });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!data.loggedIn) {
+          setLoggedIn(false);
+          setLoading(false);
+          setAuthChecked(true);
+          return;
+        }
+        setLoggedIn(true);
+        setAuthChecked(true);
+        await loadProfile();
+      } catch {
+        if (!cancelled) {
+          setAuthChecked(true);
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [loadProfile]);
+
+  const handleAuthSuccess = () => {
+    setLoggedIn(true);
+    loadProfile();
+    router.refresh();
+  };
 
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/login");
+    setProfile(null);
+    setLoggedIn(false);
     router.refresh();
   };
 
@@ -69,7 +105,7 @@ export function ProfilePageClient() {
     }
   };
 
-  if (loading) {
+  if (!authChecked || (loggedIn && loading)) {
     return (
       <>
         <TourPageReady ready={false} />
@@ -77,6 +113,24 @@ export function ProfilePageClient() {
       </>
     );
   }
+
+  if (!loggedIn) {
+    return (
+      <>
+        <TourPageReady ready={false} />
+        <div className="pb-32 pt-6">
+          <PhoneAuthFlow
+            title="حساب کاربری"
+            subtitle="برای مشاهده پروفایل وارد شوید یا ثبت‌نام کنید"
+            onSuccess={handleAuthSuccess}
+            onCancel={() => router.replace("/")}
+            showCancel
+          />
+        </div>
+      </>
+    );
+  }
+
   if (error || !profile) {
     return (
       <>
@@ -98,7 +152,7 @@ export function ProfilePageClient() {
         className="mb-5 px-4 text-center"
         data-tour="profile-header"
       >
-        <div className="mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-secondary/25 ring-1 ring-white/10">
+        <div className="mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl glass-surface bg-gradient-to-br from-primary/25 to-secondary/25">
           <User className="size-8 text-primary" />
         </div>
         <h1 className="text-xl font-bold">
@@ -189,7 +243,7 @@ export function ProfilePageClient() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: Math.min(i * 0.03, 0.3) }}
-              className="rounded-xl border border-white/8 bg-white/[0.03] p-3"
+              className="glass-surface rounded-2xl p-3"
               data-tour={p.id === editablePrediction?.id ? "profile-edit" : undefined}
             >
               <div className="flex items-start justify-between gap-2">
@@ -275,7 +329,7 @@ function StatCard({
     typeof value === "number" ? value.toLocaleString("fa-IR") : value;
 
   return (
-    <div className={cn("rounded-xl border border-white/8 bg-white/[0.03] p-3", className)}>
+    <div className={cn("glass-surface rounded-2xl p-3", className)}>
       <p className={cn("flex items-center gap-1 text-lg font-bold", accent)}>
         <Icon className="size-4 opacity-80" />
         {display}

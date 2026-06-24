@@ -37,6 +37,9 @@ type Props = {
 type TeamInfo = { nameFa: string; code: string; flagUrl: string };
 
 const NAME_STRIP_H = "h-[22px]";
+const SELECTED_FLAG_FLEX = 3;
+const UNSELECTED_FLAG_FLEX = 2;
+const FLAGS_BOX_LAYOUT = "mx-auto w-[85%]";
 
 const FLAGS_BOX_CLASS =
   "relative overflow-hidden ring-1 ring-inset ring-white/15";
@@ -50,7 +53,7 @@ function FlagsBox({
   className?: string;
 } & React.ComponentPropsWithoutRef<"div">) {
   return (
-    <div className={cn(FLAGS_BOX_CLASS, className)} {...props}>
+    <div className={cn(FLAGS_BOX_CLASS, FLAGS_BOX_LAYOUT, className)} {...props}>
       {children}
     </div>
   );
@@ -124,7 +127,7 @@ function SelectableFlag({
       onClick={onSelect}
       whileTap={reduceMotion ? undefined : { scale: 0.99 }}
       animate={{
-        flex: hasTeamPick ? (selected ? 4 : 1) : 1,
+        flex: hasTeamPick ? (selected ? SELECTED_FLAG_FLEX : UNSELECTED_FLAG_FLEX) : 1,
       }}
       transition={{ type: "spring", stiffness: 340, damping: 30 }}
       className="relative h-full min-w-0 overflow-hidden"
@@ -189,7 +192,7 @@ function ConfirmedCard({
       initial={reduceMotion ? false : { opacity: 0.85, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      className="relative w-full overflow-hidden rounded-2xl"
+      className="relative w-full overflow-hidden rounded-2xl glass-panel"
     >
       {isDraw ? (
         <div className="relative">
@@ -204,7 +207,7 @@ function ConfirmedCard({
             </div>
             <DrawCenterBadge reduceMotion={!!reduceMotion} />
           </FlagsBox>
-          <div className="flex border-t border-white/10 bg-[#0d0e1a]">
+          <div className={cn("flex glass-surface rounded-b-2xl", FLAGS_BOX_LAYOUT)}>
             <span
               className={cn(
                 "flex-1 truncate px-1 py-1.5 text-center text-[10px] font-medium text-white/50",
@@ -230,7 +233,7 @@ function ConfirmedCard({
           </FlagsBox>
           <span
             className={cn(
-              "block truncate border-t border-white/10 bg-[#0d0e1a] px-2 py-1.5 text-center text-[10px] font-medium text-primary",
+              "block truncate border-t border-white/10 px-2 py-1.5 text-center text-[10px] font-medium text-primary glass-surface rounded-b-2xl",
               NAME_STRIP_H
             )}
           >
@@ -269,8 +272,16 @@ export function MatchCard({
   const hasTeamPick = homeSelected || awaySelected;
   const showConfirmed = (confirmed || locked) && submitted && selected;
 
-  const homeNameFlex = hasTeamPick ? (homeSelected ? 4 : 1) : 1;
-  const awayNameFlex = hasTeamPick ? (awaySelected ? 4 : 1) : 1;
+  const homeNameFlex = hasTeamPick
+    ? homeSelected
+      ? SELECTED_FLAG_FLEX
+      : UNSELECTED_FLAG_FLEX
+    : 1;
+  const awayNameFlex = hasTeamPick
+    ? awaySelected
+      ? SELECTED_FLAG_FLEX
+      : UNSELECTED_FLAG_FLEX
+    : 1;
 
   return (
     <motion.div
@@ -303,12 +314,13 @@ export function MatchCard({
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.3 }}
             className={cn(
-              "overflow-hidden rounded-2xl shadow-[0_8px_28px_rgba(0,0,0,0.35)]",
+              "overflow-hidden rounded-2xl glass-panel",
               drawSelected && "ring-1 ring-primary/50"
             )}
           >
+            <div className="pt-3">
             <FlagsBox
-              className="flex h-[96px] w-full rounded-t-2xl"
+              className="flex h-[96px] rounded-t-2xl"
               data-tour={tourTargets ? "match-flags" : undefined}
             >
               <SelectableFlag
@@ -336,7 +348,7 @@ export function MatchCard({
                 )}
               </AnimatePresence>
             </FlagsBox>
-            <div className="flex bg-[#0d0e1a]">
+            <div className={cn("mt-2 flex glass-surface rounded-2xl", FLAGS_BOX_LAYOUT)}>
               <TeamNameStrip
                 name={match.homeTeam.nameFa}
                 flex={homeNameFlex}
@@ -357,22 +369,24 @@ export function MatchCard({
               onClick={() => onSelect(PredictionChoice.DRAW)}
               whileTap={reduceMotion ? undefined : { scale: 0.99 }}
               className={cn(
-                "w-full border-t border-white/10 bg-white py-2.5 text-sm font-bold transition-shadow",
+                FLAGS_BOX_LAYOUT,
+                "mt-2 flex h-11 items-center justify-center rounded-2xl text-sm font-bold transition-shadow glass-pill",
                 drawSelected
-                  ? "text-primary shadow-[inset_0_0_0_2px_var(--primary)]"
-                  : "text-[#10111f] hover:bg-white/95"
+                  ? "text-primary ring-2 ring-primary/60"
+                  : "text-white/90 hover:bg-white/[0.12]"
               )}
             >
               مساوی
             </motion.button>
 
-            <div className="border-t border-white/10 bg-[#0d0e1a] px-3 py-2.5 text-center">
+            <div className={cn("mt-2 px-3 py-2.5 text-center glass-surface rounded-2xl", FLAGS_BOX_LAYOUT)}>
               <p className="text-[11px] font-medium text-white/55">
                 {formatPersianDateTime(match.startTime)}
               </p>
               <div data-tour={tourTargets ? "match-timer" : undefined}>
                 <MatchPredictionTimer startTime={match.startTime} className="mt-1.5" />
               </div>
+            </div>
             </div>
           </motion.div>
         )}
