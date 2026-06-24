@@ -5,6 +5,7 @@ import type { PageAccessSettings } from "@/lib/page-access.shared";
 import { PageAccessProvider } from "./PageAccessProvider";
 import { PushNotificationPrompt } from "./PushNotificationPrompt";
 import { PushSitePermissionPrompt } from "./PushSitePermissionPrompt";
+import { PwaSupport } from "./PwaSupport";
 
 export function AppProviders({
   children,
@@ -16,6 +17,7 @@ export function AppProviders({
   return (
     <PageAccessProvider initialSettings={initialPageAccess}>
       {children}
+      <PwaSupport />
       <PushSitePermissionPrompt />
       <PushNotificationPrompt />
     </PageAccessProvider>

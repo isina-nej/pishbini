@@ -1,4 +1,4 @@
-const SW_PATH = "/sw.js";
+import { registerPwaServiceWorker } from "@/lib/pwa";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -26,8 +26,7 @@ export function getVapidPublicKey(): string | null {
 }
 
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  if (!("serviceWorker" in navigator)) return null;
-  return navigator.serviceWorker.register(SW_PATH, { scope: "/" });
+  return registerPwaServiceWorker();
 }
 
 export async function getPushPermission(): Promise<NotificationPermission | "unsupported"> {
