@@ -398,9 +398,10 @@ export function MatchCard({
             </div>
 
             <AnimatePresence mode="popLayout" initial={false}>
-              {!drawSelected ? (
+              {!drawSelected && (
                 <motion.button
                   key="draw-button"
+                  layout
                   type="button"
                   data-tour={tourTargets ? "match-draw" : undefined}
                   onClick={() => onSelect(PredictionChoice.DRAW)}
@@ -422,24 +423,16 @@ export function MatchCard({
                     <span>مساوی</span>
                   )}
                 </motion.button>
-              ) : (
-                <motion.div
-                  key="draw-spacer"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className={cn(FLAGS_BOX_LAYOUT, "mt-2 h-11")}
-                  aria-hidden
-                />
               )}
             </AnimatePresence>
 
-            <MatchMetaRow
-              startTime={match.startTime}
+            <motion.div
+              layout
+              transition={DRAW_MORPH_TRANSITION}
               className={cn("mt-2", FLAGS_BOX_LAYOUT)}
-              tourTarget={tourTargets}
-            />
+            >
+              <MatchMetaRow startTime={match.startTime} tourTarget={tourTargets} />
+            </motion.div>
             </div>
             </LayoutGroup>
           </motion.div>
