@@ -627,6 +627,43 @@ pm2 logs pishbini --lines 50
 
 ## 15. Backup
 
+اسکریپت خودکار در repo:
+
+```bash
+cd /opt/pishbini
+chmod +x scripts/backup.sh scripts/restore-backup.sh
+npm run backup
+```
+
+خروجی: `/opt/backups/pishbini/pishbini_backup_YYYYMMDD_HHMMSS.tar.gz`
+
+شامل:
+- `database.sql` — dump کامل MySQL
+- `env.backup` — کپی `.env` (رمزها و VAPID)
+- `splash_screen/` — ویدیوهای آپلودشده اسپلش (در صورت وجود)
+- `manifest.json` — زمان و commit
+
+تنظیمات اختیاری:
+
+```bash
+BACKUP_ROOT=/var/backups KEEP_DAYS=30 npm run backup
+```
+
+بازگردانی:
+
+```bash
+npm run backup:restore -- /opt/backups/pishbini/pishbini_backup_20260623_120000.tar.gz
+npm run backup:restore -- backup.tar.gz --db-only
+```
+
+Cron روزانه (مثال ساعت ۳ بامداد):
+
+```cron
+0 3 * * * cd /opt/pishbini && /usr/bin/npm run backup >> /var/log/pishbini-backup.log 2>&1
+```
+
+### دستی (بدون اسکریپت)
+
 کاربر `wcuser` معمولاً privilege `PROCESS` ندارد — از `--no-tablespaces` استفاده کنید:
 
 ```bash
