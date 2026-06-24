@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -8,81 +8,91 @@ import {
   enablePushFlow,
   getVapidPublicKey,
   isPushSupported,
-  syncPushSubscriptionIfGranted,
 } from "@/lib/push-client";
 import {
-  PUSH_PROMPT_DISMISS_KEY,
-  SHOW_PUSH_PROMPT_EVENT,
+  markPushSitePermissionAsked,
   wasPushSitePermissionAsked,
 } from "@/lib/push-prompt-events";
-import { SESSION_UPDATED_EVENT } from "@/lib/session-events";
 
-export function PushNotificationPrompt() {
+const SPLASH_DONE_KEY = "wc_splash_first_visit_done";
+const SITE_PROMPT_DELAY_MS = 3500;
+
+function isSplashDone(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(SPLASH_DONE_KEY) === "1";
+}
+
+export function PushSitePermissionPrompt() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission | "unsupported">(
-    "default"
-  );
   const [busy, setBusy] = useState(false);
 
+  const isHome = pathname === "/";
   const isAdmin = pathname.startsWith("/admin");
 
   useEffect(() => {
-    if (isPushSupported()) {
-      setPermission(Notification.permission);
-    } else {
-      setPermission("unsupported");
+    if (isAdmin || !isHome) {
+      setVisible(false);
+      return;
     }
-  }, []);
 
-  useEffect(() => {
-    const onShow = () => setVisible(true);
-    window.addEventListener(SHOW_PUSH_PROMPT_EVENT, onShow);
-    return () => window.removeEventListener(SHOW_PUSH_PROMPT_EVENT, onShow);
-  }, []);
+    if (
+      !isPushSupported() ||
+      !getVapidPublicKey() ||
+      Notification.permission !== "default" ||
+      wasPushSitePermissionAsked()
+    ) {
+      return;
+    }
 
-  useEffect(() => {
-    const onSessionUpdated = () => {
-      if (Notification.permission === "granted") {
-        void syncPushSubscriptionIfGranted();
-      }
+    let cancelled = false;
+    let delayId: number | undefined;
+    let pollId: number | undefined;
+
+    const tryShow = () => {
+      if (cancelled) return;
+      if (!isSplashDone()) return;
+      setVisible(true);
     };
-    window.addEventListener(SESSION_UPDATED_EVENT, onSessionUpdated);
-    return () => window.removeEventListener(SESSION_UPDATED_EVENT, onSessionUpdated);
-  }, []);
 
-  useEffect(() => {
-    if (permission !== "granted") return;
-    void syncPushSubscriptionIfGranted();
+    if (isSplashDone()) {
+      delayId = window.setTimeout(tryShow, SITE_PROMPT_DELAY_MS);
+    } else {
+      pollId = window.setInterval(() => {
+        if (isSplashDone()) {
+          if (pollId) window.clearInterval(pollId);
+          delayId = window.setTimeout(tryShow, SITE_PROMPT_DELAY_MS);
+        }
+      }, 400);
+    }
+
+    return () => {
+      cancelled = true;
+      if (delayId) window.clearTimeout(delayId);
+      if (pollId) window.clearInterval(pollId);
+    };
+  }, [isHome, isAdmin]);
+
+  const finish = () => {
+    markPushSitePermissionAsked();
     setVisible(false);
-  }, [permission]);
+  };
 
   const handleEnable = async () => {
     setBusy(true);
     try {
-      const result = await enablePushFlow();
-      setPermission(result.permission);
-      if (result.permission === "granted") {
-        setVisible(false);
-        localStorage.setItem(PUSH_PROMPT_DISMISS_KEY, "1");
-      }
+      await enablePushFlow();
     } finally {
       setBusy(false);
+      finish();
     }
   };
 
-  const handleDismiss = useCallback(() => {
-    setVisible(false);
-    localStorage.setItem(PUSH_PROMPT_DISMISS_KEY, "1");
-  }, []);
+  const handleDismiss = () => {
+    finish();
+  };
 
-  const shouldRender =
-    !isAdmin &&
-    isPushSupported() &&
-    getVapidPublicKey() &&
-    permission === "default" &&
-    wasPushSitePermissionAsked() &&
-    visible;
+  const shouldRender = visible && !isAdmin && isHome;
 
   return (
     <AnimatePresence>
@@ -107,7 +117,7 @@ export function PushNotificationPrompt() {
               اعلان نتیجه بازی‌ها
             </p>
             <p className="mt-1 text-xs leading-relaxed text-white/85">
-              با فعال‌سازی اعلان‌ها، نتیجه پیش‌بینی‌ها و بازی‌های جدید را دریافت کنید.
+              برای دریافت نتیجه پیش‌بینی‌ها و بازی‌های جدید، اعلان مرورگر را فعال کنید.
             </p>
             <div className="mt-3 flex gap-2">
               <button

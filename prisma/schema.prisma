@@ -20,6 +20,7 @@ model User {
   referralCount     Int      @default(0)
   basePointsAwarded Boolean  @default(false)
   hidden            Boolean  @default(false)
+  pushOptIn         Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

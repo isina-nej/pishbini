@@ -178,6 +178,10 @@ export const pushUnsubscribeSchema = z.object({
   endpoint: z.string().url(),
 });
 
+export const pushPreferencesSchema = z.object({
+  enabled: z.boolean(),
+});
+
 export type SubmitInput = z.infer<typeof submitSchema>;
 export type BracketSubmitInput = z.infer<typeof bracketSubmitSchema>;
 export type TeamInput = z.infer<typeof teamSchema>;

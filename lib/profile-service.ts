@@ -39,6 +39,7 @@ export type UserProfile = {
   bracketSubmitted: boolean;
   championTeamName: string | null;
   memberSinceLabel: string;
+  pushOptIn: boolean;
   predictions: ProfilePrediction[];
 };
 
@@ -55,6 +56,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
       correctCount: true,
       wrongCount: true,
       referralCount: true,
+      pushOptIn: true,
       createdAt: true,
     },
   });
@@ -109,6 +111,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     bracketSubmitted: Boolean(bracketSubmission),
     championTeamName: bracketSubmission?.championTeam.nameFa ?? null,
     memberSinceLabel: formatPersianDateTime(user.createdAt),
+    pushOptIn: user.pushOptIn,
     predictions: predictions.map((p) => ({
       id: p.id,
       matchId: p.matchId,

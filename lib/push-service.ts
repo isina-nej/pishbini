@@ -33,26 +33,46 @@ export async function savePushSubscription(
   userId: string,
   input: { endpoint: string; p256dh: string; auth: string; userAgent?: string }
 ) {
-  await prisma.pushSubscription.upsert({
-    where: { endpoint: input.endpoint },
-    create: {
-      userId,
-      endpoint: input.endpoint,
-      p256dh: input.p256dh,
-      auth: input.auth,
-      userAgent: input.userAgent,
-    },
-    update: {
-      userId,
-      p256dh: input.p256dh,
-      auth: input.auth,
-      userAgent: input.userAgent,
-    },
-  });
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { pushOptIn: true },
+    }),
+    prisma.pushSubscription.upsert({
+      where: { endpoint: input.endpoint },
+      create: {
+        userId,
+        endpoint: input.endpoint,
+        p256dh: input.p256dh,
+        auth: input.auth,
+        userAgent: input.userAgent,
+      },
+      update: {
+        userId,
+        p256dh: input.p256dh,
+        auth: input.auth,
+        userAgent: input.userAgent,
+      },
+    }),
+  ]);
 }
 
 export async function removePushSubscription(endpoint: string) {
   await prisma.pushSubscription.deleteMany({ where: { endpoint } });
+}
+
+export async function removeAllPushSubscriptionsForUser(userId: string) {
+  await prisma.pushSubscription.deleteMany({ where: { userId } });
+}
+
+export async function setUserPushOptIn(userId: string, enabled: boolean) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { pushOptIn: enabled },
+  });
+  if (!enabled) {
+    await removeAllPushSubscriptionsForUser(userId);
+  }
 }
 
 async function sendToSubscription(
@@ -79,12 +99,20 @@ async function sendToSubscription(
 }
 
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { pushOptIn: true },
+  });
+  if (!user?.pushOptIn) return;
+
   const subs = await prisma.pushSubscription.findMany({ where: { userId } });
   await Promise.allSettled(subs.map((sub) => sendToSubscription(sub, payload)));
 }
 
 export async function sendPushBroadcast(payload: PushPayload): Promise<number> {
-  const subs = await prisma.pushSubscription.findMany();
+  const subs = await prisma.pushSubscription.findMany({
+    where: { user: { pushOptIn: true } },
+  });
   const results = await Promise.allSettled(subs.map((sub) => sendToSubscription(sub, payload)));
   return results.filter((r) => r.status === "fulfilled").length;
 }
@@ -92,7 +120,7 @@ export async function sendPushBroadcast(payload: PushPayload): Promise<number> {
 export async function sendPushToUsers(userIds: string[], payload: PushPayload): Promise<void> {
   if (userIds.length === 0) return;
   const subs = await prisma.pushSubscription.findMany({
-    where: { userId: { in: userIds } },
+    where: { userId: { in: userIds }, user: { pushOptIn: true } },
   });
   await Promise.allSettled(subs.map((sub) => sendToSubscription(sub, payload)));
 }

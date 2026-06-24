@@ -18,6 +18,7 @@ import { ErrorState } from "@/components/public/ErrorState";
 import { LoadingState } from "@/components/public/LoadingState";
 import { EditPredictionSheet } from "@/components/public/EditPredictionSheet";
 import { PhoneAuthFlow } from "@/components/public/PhoneAuthFlow";
+import { PushNotificationSettings } from "@/components/public/PushNotificationSettings";
 import { TourPageReady } from "@/components/public/TourPageReady";
 import { restartTour } from "@/lib/product-tour";
 import { cn } from "@/lib/utils";
@@ -189,6 +190,13 @@ export function ProfilePageClient() {
           className="col-span-2"
         />
       </div>
+
+      <PushNotificationSettings
+        pushOptIn={profile.pushOptIn}
+        onPushOptInChange={(enabled) =>
+          setProfile((prev) => (prev ? { ...prev, pushOptIn: enabled } : prev))
+        }
+      />
 
       <div className="glass-card mx-4 mb-4 p-4" data-tour="profile-referral">
         <p className="mb-2 text-xs text-white/50">لینک دعوت شما</p>

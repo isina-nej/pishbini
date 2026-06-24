@@ -35,6 +35,42 @@ export async function getPushPermission(): Promise<NotificationPermission | "uns
   return Notification.permission;
 }
 
+export type PushBrowserState = {
+  supported: boolean;
+  permission: NotificationPermission | "unsupported";
+  subscribed: boolean;
+};
+
+export async function getPushBrowserState(): Promise<PushBrowserState> {
+  if (!isPushSupported()) {
+    return { supported: false, permission: "unsupported", subscribed: false };
+  }
+
+  const permission = Notification.permission;
+  let subscribed = false;
+
+  if (permission === "granted" && "serviceWorker" in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      subscribed = (await registration.pushManager.getSubscription()) !== null;
+    } catch {
+      subscribed = false;
+    }
+  }
+
+  return { supported: true, permission, subscribed };
+}
+
+export async function setPushOptInOnServer(enabled: boolean): Promise<boolean> {
+  const res = await fetch("/api/me/push-preferences", {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled }),
+  });
+  return res.ok;
+}
+
 export async function subscribeToPush(): Promise<PushSubscription | null> {
   const vapidKey = getVapidPublicKey();
   if (!vapidKey || !isPushSupported()) return null;
@@ -70,8 +106,30 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
     }),
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) return subscription;
   return subscription;
+}
+
+export async function unsubscribeFromPush(): Promise<void> {
+  if (!isPushSupported()) return;
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    if (!subscription) return;
+
+    const endpoint = subscription.endpoint;
+    await subscription.unsubscribe();
+
+    await fetch("/api/push/subscribe", {
+      method: "DELETE",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ endpoint }),
+    });
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function syncPushSubscriptionIfGranted(): Promise<void> {
@@ -94,4 +152,39 @@ export async function syncPushSubscriptionIfGranted(): Promise<void> {
       keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
     }),
   });
+}
+
+export async function enablePushFlow(): Promise<{
+  permission: NotificationPermission | "unsupported";
+  subscribed: boolean;
+}> {
+  const { setPushOptInLocal } = await import("@/lib/push-prompt-events");
+  setPushOptInLocal(true);
+
+  if (!isPushSupported()) {
+    return { permission: "unsupported", subscribed: false };
+  }
+
+  let permission = Notification.permission;
+  if (permission !== "granted") {
+    permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      return { permission, subscribed: false };
+    }
+  }
+
+  const subscription = await subscribeToPush();
+  if (subscription) {
+    await setPushOptInOnServer(true);
+  }
+
+  const state = await getPushBrowserState();
+  return { permission: state.permission, subscribed: state.subscribed };
+}
+
+export async function disablePushFlow(): Promise<void> {
+  const { setPushOptInLocal } = await import("@/lib/push-prompt-events");
+  setPushOptInLocal(false);
+  await unsubscribeFromPush();
+  await setPushOptInOnServer(false);
 }
