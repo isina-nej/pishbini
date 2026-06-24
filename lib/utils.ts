@@ -5,12 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const PRODUCTION_APP_URL = "https://wc.pishrosarmaye.com";
+
 export function getAppUrl(): string {
-  const url = process.env.NEXT_PUBLIC_APP_URL;
-  if (process.env.NODE_ENV === "production" && !url) {
-    throw new Error("NEXT_PUBLIC_APP_URL is not set");
+  const url = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  if (url) return url;
+  if (process.env.NODE_ENV === "production") {
+    return PRODUCTION_APP_URL;
   }
-  return url ?? "http://localhost:3000";
+  return "http://localhost:3000";
 }
 
 export function getReferralLink(code: string): string {

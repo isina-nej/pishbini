@@ -15,6 +15,7 @@
     "backup:restore": "bash scripts/restore-backup.sh",
     "backup:cron": "bash scripts/install-backup-cron.sh",
     "verify:home": "node scripts/verify-home.mjs",
+    "verify:og": "node scripts/verify-og.mjs",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "postinstall": "prisma generate"

@@ -489,6 +489,14 @@ server {
     listen 80;
     server_name wc.pishrosarmaye.com;
 
+    # تصویر پیش‌نمایش تلگرام/توییتر — مستقیم از دیسک (سریع‌تر از proxy)
+    location /og/ {
+        alias /opt/pishbini/public/og/;
+        expires 7d;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
     location / {
         proxy_pass http://127.0.0.1:3001;   # پورت pishbini در ecosystem.config.cjs
         proxy_http_version 1.1;
@@ -618,6 +626,7 @@ npx prisma migrate deploy
 npx prisma db push          # اگر schema عوض شده
 npm run build
 pm2 restart pishbini
+npm run verify:og https://wc.pishrosarmaye.com
 pm2 logs pishbini --lines 50
 ```
 
@@ -783,6 +792,30 @@ pm2 logs pishbini
 ### لینک referral اشتباه
 
 `NEXT_PUBLIC_APP_URL` باید `https://wc.pishrosarmaye.com` باشد → rebuild + restart.
+
+---
+
+### پیش‌نمایش لینک در تلگرام / توییتر نشان داده نمی‌شود
+
+```bash
+cd /opt/pishbini
+npm run verify:og https://wc.pishrosarmaye.com
+```
+
+اگر خطا داد:
+
+1. مطمئن شوید `public/og/og-image.png` وجود دارد (`npm run og:generate` در صورت نیاز)
+2. `grep NEXT_PUBLIC_APP_URL .env` → باید `https://wc.pishrosarmaye.com` باشد
+3. `npm run build && pm2 restart pishbini`
+4. در Nginx بلوک `location /og/` را اضافه کنید (بخش ۱۱.۱)
+5. کش تلگرام: لینک را به [@WebpageBot](https://t.me/WebpageBot) بفرستید یا `?v=2` به URL اضافه کنید
+
+تست دستی:
+
+```bash
+curl -sS -A "TelegramBot" https://wc.pishrosarmaye.com/ | grep -E 'og:(title|image)'
+curl -sSI https://wc.pishrosarmaye.com/og/og-image.png | head -5
+```
 
 ---
 

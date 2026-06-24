@@ -28,6 +28,13 @@ const nextConfig: NextConfig = {
           { key: "Service-Worker-Allowed", value: "/" },
         ],
       },
+      {
+        source: "/og/:path*",
+        headers: [
+          { key: "Content-Type", value: "image/png" },
+          { key: "Cache-Control", value: "public, max-age=604800, immutable" },
+        ],
+      },
     ];
   },
 };

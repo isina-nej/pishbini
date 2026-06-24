@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { SplashScreen } from "@/components/public/SplashScreen";
 import { AppProviders } from "@/components/public/AppProviders";
 import { PwaEarlyRegister } from "@/components/public/PwaEarlyRegister";
-import { getPageAccessSettings } from "@/lib/page-access.server";
 import { rootMetadata } from "@/lib/site-metadata";
 import "./globals.css";
 
@@ -15,13 +14,11 @@ export const viewport = {
   themeColor: "#07080f",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const initialPageAccess = await getPageAccessSettings();
-
   return (
     <html lang="fa" dir="rtl">
       <head>
@@ -48,7 +45,7 @@ export default async function RootLayout({
         <div className="app-background" aria-hidden />
         <SplashScreen />
         <div className="mx-auto min-h-dvh w-full max-w-[430px] [&:has(.admin-root)]:max-w-none [&:has(.bracket-root)]:max-w-none">
-          <AppProviders initialPageAccess={initialPageAccess}>{children}</AppProviders>
+          <AppProviders>{children}</AppProviders>
         </div>
       </body>
     </html>
