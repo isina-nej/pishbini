@@ -3,29 +3,10 @@ import { SplashScreen } from "@/components/public/SplashScreen";
 import { AppProviders } from "@/components/public/AppProviders";
 import { PwaEarlyRegister } from "@/components/public/PwaEarlyRegister";
 import { getPageAccessSettings } from "@/lib/page-access.server";
+import { rootMetadata } from "@/lib/site-metadata";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "پیش‌بینی جام جهانی | پیشرو سرمایه",
-  description: "کمپین پیش‌بینی جام جهانی پیشرو سرمایه",
-  applicationName: "پیش‌بینی پیشرو",
-  manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    title: "پیش‌بینی",
-    statusBarStyle: "black-translucent",
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  icons: {
-    icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-  },
-};
+export const metadata: Metadata = rootMetadata;
 
 export const viewport = {
   width: "device-width",

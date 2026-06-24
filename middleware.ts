@@ -6,6 +6,7 @@ import {
   REFERRAL_COOKIE_MAX_AGE,
   REFERRAL_COOKIE_NAME,
 } from "@/lib/referral";
+import { isSocialCrawler } from "@/lib/social-crawlers";
 
 function attachReferralCookie(response: NextResponse, code: string) {
   response.cookies.set(REFERRAL_COOKIE_NAME, code, {
@@ -23,6 +24,9 @@ export function middleware(request: NextRequest) {
   const refPathMatch = pathname.match(/^\/ref\/([^/]+)\/?$/);
   if (refPathMatch) {
     const code = normalizeReferralCode(refPathMatch[1]);
+    if (isSocialCrawler(request.headers.get("user-agent"))) {
+      return NextResponse.next();
+    }
     const response = NextResponse.redirect(new URL("/", request.url));
     if (code) attachReferralCookie(response, code);
     return response;
