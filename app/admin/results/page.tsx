@@ -10,6 +10,7 @@ import { AdminCard, AdminCardBody, AdminCardHeader } from "@/components/admin/ui
 import { AdminLoading } from "@/components/admin/ui/AdminLoading";
 import { formatPersianDateTime } from "@/lib/dates";
 import { isScoreOutcomeMismatch } from "@/lib/match-result-utils";
+import { getMatchOutcomeOptions } from "@/lib/prediction-labels";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 
@@ -36,12 +37,6 @@ type FormState = {
   homeScore: string;
   awayScore: string;
 };
-
-const OUTCOME_OPTIONS: { value: PredictionChoice; label: string }[] = [
-  { value: PredictionChoice.HOME_WIN, label: "برد میزبان" },
-  { value: PredictionChoice.DRAW, label: "مساوی" },
-  { value: PredictionChoice.AWAY_WIN, label: "برد میهمان" },
-];
 
 function emptyForm(match?: ResultMatch): FormState {
   return {
@@ -94,20 +89,24 @@ function ResultRow({
 
   const homeScore = parseOptionalScore(form.homeScore);
   const awayScore = parseOptionalScore(form.awayScore);
+  const outcomeOptions = useMemo(
+    () => getMatchOutcomeOptions(match.homeTeam.nameFa, match.awayTeam.nameFa),
+    [match.homeTeam.nameFa, match.awayTeam.nameFa]
+  );
 
   const scoreWarning = useMemo(() => {
     if (homeScore === null || awayScore === null) return null;
     if (form.homeScore.trim() && parseOptionalScore(form.homeScore) === null) {
-      return "گل میزبان باید عدد صحیح نامنفی باشد.";
+      return `گل ${match.homeTeam.nameFa} باید عدد صحیح نامنفی باشد.`;
     }
     if (form.awayScore.trim() && parseOptionalScore(form.awayScore) === null) {
-      return "گل میهمان باید عدد صحیح نامنفی باشد.";
+      return `گل ${match.awayTeam.nameFa} باید عدد صحیح نامنفی باشد.`;
     }
     if (isScoreOutcomeMismatch(form.correctPrediction, homeScore, awayScore)) {
       return "گل‌های واردشده با نتیجه انتخاب‌شده هم‌خوانی ندارند.";
     }
     return null;
-  }, [form, homeScore, awayScore]);
+  }, [form, homeScore, awayScore, match.homeTeam.nameFa, match.awayTeam.nameFa]);
 
   const handleSave = async () => {
     setError(null);
@@ -115,11 +114,11 @@ function ResultRow({
     setSaved(false);
 
     if (form.homeScore.trim() && homeScore === null) {
-      setError("گل میزبان نامعتبر است.");
+      setError(`گل ${match.homeTeam.nameFa} نامعتبر است.`);
       return;
     }
     if (form.awayScore.trim() && awayScore === null) {
-      setError("گل میهمان نامعتبر است.");
+      setError(`گل ${match.awayTeam.nameFa} نامعتبر است.`);
       return;
     }
 
@@ -195,7 +194,7 @@ function ResultRow({
               setForm({ ...form, correctPrediction: e.target.value as PredictionChoice })
             }
           >
-            {OUTCOME_OPTIONS.map((o) => (
+            {outcomeOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
               </option>
@@ -203,7 +202,7 @@ function ResultRow({
           </AdminSelect>
         </div>
         <div>
-          <AdminLabel>گل میزبان</AdminLabel>
+          <AdminLabel>گل {match.homeTeam.nameFa}</AdminLabel>
           <AdminInput
             type="number"
             min={0}
@@ -215,7 +214,7 @@ function ResultRow({
           />
         </div>
         <div>
-          <AdminLabel>گل میهمان</AdminLabel>
+          <AdminLabel>گل {match.awayTeam.nameFa}</AdminLabel>
           <AdminInput
             type="number"
             min={0}

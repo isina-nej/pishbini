@@ -137,7 +137,11 @@ export default function AdminMatchDetailPage() {
                     </td>
                     <td>
                       <span className="rounded-md bg-[var(--admin-surface-elevated)] px-2 py-0.5 text-xs">
-                        {p.prediction}
+                        {formatPredictionChoice(
+                          p.prediction as PredictionChoice,
+                          m.homeTeam.nameFa,
+                          m.awayTeam.nameFa
+                        )}
                       </span>
                     </td>
                   </tr>
@@ -151,6 +155,8 @@ export default function AdminMatchDetailPage() {
       {showSettle && (
         <AdminSettlementModal
           matchId={id}
+          homeTeamName={m.homeTeam.nameFa}
+          awayTeamName={m.awayTeam.nameFa}
           onClose={() => setShowSettle(false)}
           onSettled={() => {
             setShowSettle(false);

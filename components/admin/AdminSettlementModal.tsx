@@ -1,25 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PredictionChoice } from "@/generated/prisma";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { AdminSelect, AdminLabel, AdminInput } from "@/components/admin/ui/AdminInput";
 import { AdminCard, AdminCardBody } from "@/components/admin/ui/AdminCard";
+import { getMatchOutcomeOptions } from "@/lib/prediction-labels";
 import { X } from "lucide-react";
 
 type Props = {
   matchId: string;
+  homeTeamName: string;
+  awayTeamName: string;
   onClose: () => void;
   onSettled: () => void;
 };
 
-export function AdminSettlementModal({ matchId, onClose, onSettled }: Props) {
+export function AdminSettlementModal({
+  matchId,
+  homeTeamName,
+  awayTeamName,
+  onClose,
+  onSettled,
+}: Props) {
   const [result, setResult] = useState<PredictionChoice>(PredictionChoice.HOME_WIN);
   const [homeScore, setHomeScore] = useState("");
   const [awayScore, setAwayScore] = useState("");
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<Record<string, number> | null>(null);
+
+  const outcomeOptions = useMemo(
+    () => getMatchOutcomeOptions(homeTeamName, awayTeamName),
+    [homeTeamName, awayTeamName]
+  );
 
   const parseScore = (v: string) => {
     const t = v.trim();
@@ -72,14 +86,16 @@ export function AdminSettlementModal({ matchId, onClose, onSettled }: Props) {
             onChange={(e) => setResult(e.target.value as PredictionChoice)}
             className="mb-4"
           >
-            <option value={PredictionChoice.HOME_WIN}>برد میزبان</option>
-            <option value={PredictionChoice.DRAW}>مساوی</option>
-            <option value={PredictionChoice.AWAY_WIN}>برد میهمان</option>
+            {outcomeOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
           </AdminSelect>
 
           <div className="mb-4 grid grid-cols-2 gap-3">
             <div>
-              <AdminLabel>گل میزبان</AdminLabel>
+              <AdminLabel>گل {homeTeamName}</AdminLabel>
               <AdminInput
                 type="number"
                 min={0}
@@ -90,7 +106,7 @@ export function AdminSettlementModal({ matchId, onClose, onSettled }: Props) {
               />
             </div>
             <div>
-              <AdminLabel>گل میهمان</AdminLabel>
+              <AdminLabel>گل {awayTeamName}</AdminLabel>
               <AdminInput
                 type="number"
                 min={0}

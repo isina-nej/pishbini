@@ -17,6 +17,23 @@ export function formatPredictionChoice(
   }
 }
 
+export function getMatchOutcomeOptions(homeNameFa: string, awayNameFa: string) {
+  return [
+    {
+      value: PredictionChoice.HOME_WIN,
+      label: formatPredictionChoice(PredictionChoice.HOME_WIN, homeNameFa, awayNameFa),
+    },
+    {
+      value: PredictionChoice.DRAW,
+      label: formatPredictionChoice(PredictionChoice.DRAW, homeNameFa, awayNameFa),
+    },
+    {
+      value: PredictionChoice.AWAY_WIN,
+      label: formatPredictionChoice(PredictionChoice.AWAY_WIN, homeNameFa, awayNameFa),
+    },
+  ];
+}
+
 export function formatPredictionResult(isCorrect: boolean | null, pointsAwarded: number): string {
   if (isCorrect === null) return "در انتظار نتیجه";
   if (isCorrect) return `درست (+${pointsAwarded.toLocaleString("fa-IR")})`;
