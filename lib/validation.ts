@@ -166,6 +166,18 @@ export const bracketSettingsSchema = z.object({
   submissionOpen: z.boolean().optional(),
 });
 
+export const pushSubscribeSchema = z.object({
+  endpoint: z.string().url(),
+  keys: z.object({
+    p256dh: z.string().min(1),
+    auth: z.string().min(1),
+  }),
+});
+
+export const pushUnsubscribeSchema = z.object({
+  endpoint: z.string().url(),
+});
+
 export type SubmitInput = z.infer<typeof submitSchema>;
 export type BracketSubmitInput = z.infer<typeof bracketSubmitSchema>;
 export type TeamInput = z.infer<typeof teamSchema>;

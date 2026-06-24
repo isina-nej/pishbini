@@ -30,6 +30,7 @@ model User {
   referredRecord    Referral?          @relation("Referred")
   bracketPicks      BracketPick[]
   bracketSubmission BracketSubmission?
+  pushSubscriptions PushSubscription[]
 
   @@index([points])
   @@index([createdAt])
@@ -61,7 +62,8 @@ model Match {
   status            MatchStatus       @default(SCHEDULED)
   predictionMode    PredictionMode    @default(REGULAR_TIME_90)
   correctPrediction PredictionChoice?
-  settledAt         DateTime?
+  settledAt                    DateTime?
+  predictionWindowNotifiedAt   DateTime?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
@@ -143,6 +145,21 @@ model Otp {
 
   @@index([phone])
   @@index([expiresAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique @db.VarChar(768)
+  p256dh    String
+  auth      String
+  userAgent String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model SmsLog {

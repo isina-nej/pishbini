@@ -280,12 +280,20 @@ IPPANEL_CONFIRM_PATTERN_CODE=""
 
 RATE_LIMIT_ENABLED="true"
 NODE_ENV="production"
+
+# Web Push (npx web-push generate-vapid-keys)
+NEXT_PUBLIC_VAPID_PUBLIC_KEY="..."
+VAPID_PUBLIC_KEY="..."
+VAPID_PRIVATE_KEY="..."
+VAPID_SUBJECT="mailto:support@pishrosarmaye.com"
+CRON_SECRET="..."
 ```
 
 تولید secret:
 
 ```bash
 openssl rand -base64 32
+npx web-push generate-vapid-keys
 ```
 
 ### جدول متغیرها
@@ -569,6 +577,22 @@ pm2 list
 | `/admin/point-rules` | تأیید امتیازها (۳۰ / ۱۰ / ۳) |
 | `/admin/bracket` | validate → publish |
 | `/admin` | بررسی آمار داشبورد |
+
+---
+
+## 13.5 Cron — اعلان بازی‌های جدید (Web Push)
+
+بعد از تنظیم `VAPID_*` و `CRON_SECRET` در `.env`، migration push را deploy کنید و cron سیستم را اضافه کنید:
+
+```bash
+crontab -e
+```
+
+```cron
+*/15 * * * * curl -fsS -H "Authorization: Bearer YOUR_CRON_SECRET" https://wc.pishrosarmaye.com/api/cron/push-jobs >> /var/log/pishbini-push-cron.log 2>&1
+```
+
+این job هر ۱۵ دقیقه بازی‌هایی که تازه وارد پنجره ۲۴ساعته پیش‌بینی شده‌اند را به همه اشتراک‌های push اعلام می‌کند.
 
 ---
 

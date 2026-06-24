@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { adminUnauthorizedResponse, requireAdmin } from "@/lib/auth-admin";
 import { writeAuditLog } from "@/lib/audit";
 import { SettlementError, settleMatch } from "@/lib/settlement-service";
+import { notifyMatchSettlement } from "@/lib/push-notifications";
+import { isPushConfigured } from "@/lib/push-service";
 import { settleSchema } from "@/lib/validation";
 
 type Params = { params: Promise<{ id: string }> };
@@ -21,6 +23,12 @@ export async function POST(request: Request, { params }: Params) {
       correctPrediction: parsed.data.correctPrediction,
       ...summary,
     });
+
+    if (isPushConfigured()) {
+      notifyMatchSettlement(id, parsed.data.correctPrediction).catch((err) =>
+        console.error("[push/settlement]", err)
+      );
+    }
 
     return NextResponse.json({ success: true, summary });
   } catch (err) {

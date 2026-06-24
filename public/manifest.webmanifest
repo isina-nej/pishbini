@@ -1,0 +1,19 @@
+{
+  "name": "پیش‌بینی جام جهانی | پیشرو سرمایه",
+  "short_name": "پیش‌بینی",
+  "description": "کمپین پیش‌بینی جام جهانی پیشرو سرمایه",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07080f",
+  "theme_color": "#07080f",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/photo/image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

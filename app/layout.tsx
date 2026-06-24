@@ -7,12 +7,15 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "پیش‌بینی جام جهانی | پیشرو سرمایه",
   description: "کمپین پیش‌بینی جام جهانی پیشرو سرمایه",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true },
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover" as const,
+  themeColor: "#07080f",
 };
 
 export default async function RootLayout({
