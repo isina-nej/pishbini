@@ -2,7 +2,7 @@
 @import "@fontsource-variable/vazirmatn/wght.css";
 
 :root {
-  --bg: #0a0b14;
+  --bg: #07080f;
   --card-bg: rgba(255, 255, 255, 0.06);
   --card-border: rgba(255, 255, 255, 0.12);
   --glass-bg: rgba(255, 255, 255, 0.06);
@@ -54,25 +54,55 @@ body {
   background-color: var(--bg);
   background-image:
     radial-gradient(
-      ellipse 80% 50% at 15% -5%,
-      color-mix(in srgb, var(--primary) 12%, transparent),
+      ellipse 55% 40% at 12% 18%,
+      color-mix(in srgb, var(--primary) 14%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 50% 38% at 88% 22%,
+      color-mix(in srgb, var(--secondary) 12%, transparent),
       transparent 55%
     ),
     radial-gradient(
-      ellipse 70% 45% at 90% 8%,
-      color-mix(in srgb, var(--secondary) 10%, transparent),
+      ellipse 45% 35% at 50% 95%,
+      color-mix(in srgb, #ff6b2c 8%, transparent),
       transparent 50%
     ),
     radial-gradient(
-      ellipse 60% 40% at 50% 100%,
-      color-mix(in srgb, var(--secondary) 8%, transparent),
-      transparent 45%
-    ),
-    linear-gradient(
-      180deg,
-      transparent 0%,
-      color-mix(in srgb, var(--bg) 40%, transparent) 100%
+      ellipse 100% 80% at 50% 50%,
+      transparent 40%,
+      color-mix(in srgb, var(--bg) 88%, transparent) 100%
     );
+}
+
+.app-background::before {
+  content: "";
+  position: absolute;
+  inset: -20% -10%;
+  opacity: 0.09;
+  background:
+    repeating-linear-gradient(
+      168deg,
+      transparent 0,
+      transparent 46px,
+      color-mix(in srgb, var(--primary) 55%, transparent) 47px,
+      transparent 48px
+    ),
+    repeating-linear-gradient(
+      12deg,
+      transparent 0,
+      transparent 72px,
+      color-mix(in srgb, #ff6b2c 45%, transparent) 73px,
+      transparent 74px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 38px,
+      color-mix(in srgb, var(--secondary) 40%, transparent) 39px,
+      transparent 40px
+    );
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 42%, black 20%, transparent 72%);
 }
 
 .app-background::after {

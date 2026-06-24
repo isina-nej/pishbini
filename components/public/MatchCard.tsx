@@ -1,12 +1,17 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  LayoutGroup,
+  useReducedMotion,
+} from "framer-motion";
 import { PredictionChoice } from "@/generated/prisma";
 import { formatPersianDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { TeamFlag } from "@/components/public/TeamFlag";
-import { MatchPredictionTimer } from "@/components/public/MatchPredictionTimer";
+import { MatchMetaRow } from "@/components/public/MatchMetaRow";
 
 export type MatchStats = {
   homeWinPercent: number;
@@ -40,6 +45,7 @@ const NAME_STRIP_H = "h-[22px]";
 const SELECTED_FLAG_FLEX = 3;
 const UNSELECTED_FLAG_FLEX = 2;
 const FLAGS_BOX_LAYOUT = "mx-auto w-[85%]";
+const DRAW_MORPH_TRANSITION = { type: "spring" as const, stiffness: 380, damping: 32 };
 
 const FLAGS_BOX_CLASS =
   "relative overflow-hidden ring-1 ring-inset ring-white/15";
@@ -74,18 +80,43 @@ function ShadowOverlay({ className }: { className?: string }) {
   );
 }
 
-function DrawCenterBadge({ reduceMotion }: { reduceMotion: boolean }) {
+function DrawPill({
+  layoutId,
+  className,
+}: {
+  layoutId?: string;
+  className?: string;
+}) {
   return (
     <motion.div
-      initial={reduceMotion ? false : { opacity: 0, scale: 0.55 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={reduceMotion ? undefined : { opacity: 0, scale: 0.85 }}
-      transition={{ type: "spring", stiffness: 420, damping: 26 }}
+      layoutId={layoutId}
+      transition={DRAW_MORPH_TRANSITION}
+      className={cn(
+        "flex items-center justify-center rounded-full bg-white px-5 py-2 shadow-[0_4px_24px_rgba(0,0,0,0.4)]",
+        className
+      )}
+    >
+      <span className="text-sm font-bold text-[#10111f]">مساوی</span>
+    </motion.div>
+  );
+}
+
+function DrawCenterBadge({
+  layoutId,
+  reduceMotion,
+}: {
+  layoutId?: string;
+  reduceMotion: boolean;
+}) {
+  return (
+    <motion.div
+      initial={reduceMotion ? { opacity: 0 } : false}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: reduceMotion ? 0.15 : 0.2 }}
       className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
     >
-      <div className="rounded-full bg-white px-5 py-2 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-        <span className="text-sm font-bold text-[#10111f]">مساوی</span>
-      </div>
+      <DrawPill layoutId={layoutId} />
     </motion.div>
   );
 }
@@ -282,6 +313,7 @@ export function MatchCard({
       ? SELECTED_FLAG_FLEX
       : UNSELECTED_FLAG_FLEX
     : 1;
+  const drawLayoutId = reduceMotion ? undefined : `draw-pill-${match.id}`;
 
   return (
     <motion.div
@@ -318,6 +350,7 @@ export function MatchCard({
               drawSelected && "ring-1 ring-primary/50"
             )}
           >
+            <LayoutGroup id={`match-draw-${match.id}`}>
             <div className="pt-3">
             <FlagsBox
               className="flex h-[96px] rounded-t-2xl"
@@ -343,6 +376,7 @@ export function MatchCard({
                 {drawSelected && (
                   <DrawCenterBadge
                     key="draw-badge"
+                    layoutId={drawLayoutId}
                     reduceMotion={!!reduceMotion}
                   />
                 )}
@@ -363,31 +397,51 @@ export function MatchCard({
               />
             </div>
 
-            <motion.button
-              type="button"
-              data-tour={tourTargets ? "match-draw" : undefined}
-              onClick={() => onSelect(PredictionChoice.DRAW)}
-              whileTap={reduceMotion ? undefined : { scale: 0.99 }}
-              className={cn(
-                FLAGS_BOX_LAYOUT,
-                "mt-2 flex h-11 items-center justify-center rounded-2xl text-sm font-bold transition-shadow glass-pill",
-                drawSelected
-                  ? "text-primary ring-2 ring-primary/60"
-                  : "text-white/90 hover:bg-white/[0.12]"
+            <AnimatePresence mode="popLayout" initial={false}>
+              {!drawSelected ? (
+                <motion.button
+                  key="draw-button"
+                  type="button"
+                  data-tour={tourTargets ? "match-draw" : undefined}
+                  onClick={() => onSelect(PredictionChoice.DRAW)}
+                  whileTap={reduceMotion ? undefined : { scale: 0.99 }}
+                  className={cn(
+                    FLAGS_BOX_LAYOUT,
+                    "mt-2 flex h-11 items-center justify-center rounded-2xl text-sm font-bold text-white/90 transition-shadow glass-pill hover:bg-white/[0.12]"
+                  )}
+                >
+                  {drawLayoutId ? (
+                    <motion.div
+                      layoutId={drawLayoutId}
+                      transition={DRAW_MORPH_TRANSITION}
+                      className="flex h-full w-full items-center justify-center rounded-2xl"
+                    >
+                      مساوی
+                    </motion.div>
+                  ) : (
+                    <span>مساوی</span>
+                  )}
+                </motion.button>
+              ) : (
+                <motion.div
+                  key="draw-spacer"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className={cn(FLAGS_BOX_LAYOUT, "mt-2 h-11")}
+                  aria-hidden
+                />
               )}
-            >
-              مساوی
-            </motion.button>
+            </AnimatePresence>
 
-            <div className={cn("mt-2 px-3 py-2.5 text-center glass-surface rounded-2xl", FLAGS_BOX_LAYOUT)}>
-              <p className="text-[11px] font-medium text-white/55">
-                {formatPersianDateTime(match.startTime)}
-              </p>
-              <div data-tour={tourTargets ? "match-timer" : undefined}>
-                <MatchPredictionTimer startTime={match.startTime} className="mt-1.5" />
-              </div>
+            <MatchMetaRow
+              startTime={match.startTime}
+              className={cn("mt-2", FLAGS_BOX_LAYOUT)}
+              tourTarget={tourTargets}
+            />
             </div>
-            </div>
+            </LayoutGroup>
           </motion.div>
         )}
       </AnimatePresence>
