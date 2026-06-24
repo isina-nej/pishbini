@@ -62,10 +62,13 @@ export function PushNotificationSettings({ pushOptIn, onPushOptInChange }: Props
       } else {
         const result = await enablePushFlow();
         setPermission(result.permission);
-        if (result.permission === "granted") {
+        if (result.ok) {
           onPushOptInChange(true);
         } else if (result.permission === "denied") {
           setError("مجوز اعلان در مرورگر مسدود است. از تنظیمات سایت آن را فعال کنید.");
+          onPushOptInChange(false);
+        } else if (result.permission === "granted") {
+          setError("اشتراک اعلان برقرار نشد. دوباره تلاش کنید.");
           onPushOptInChange(false);
         } else {
           setError("فعال‌سازی اعلان لغو شد.");

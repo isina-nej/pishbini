@@ -62,7 +62,7 @@ export function PushNotificationPrompt() {
     try {
       const result = await enablePushFlow();
       setPermission(result.permission);
-      if (result.permission === "granted") {
+      if (result.ok) {
         setVisible(false);
         localStorage.setItem(PUSH_PROMPT_DISMISS_KEY, "1");
       }
