@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import { Download, Share, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  isIosSafari,
   isStandalonePwa,
+  needsIosInstallHint,
   PWA_INSTALL_DISMISS_KEY,
   PWA_IOS_HINT_DISMISS_KEY,
   registerPwaServiceWorker,
@@ -46,10 +46,10 @@ export function PwaSupport() {
 
   useEffect(() => {
     if (isAdmin || isStandalonePwa()) return;
-    if (!isIosSafari()) return;
+    if (!needsIosInstallHint()) return;
     if (localStorage.getItem(PWA_IOS_HINT_DISMISS_KEY) === "1") return;
 
-    const timer = window.setTimeout(() => setShowIosHint(true), 4000);
+    const timer = window.setTimeout(() => setShowIosHint(true), 3500);
     return () => window.clearTimeout(timer);
   }, [isAdmin]);
 
@@ -127,24 +127,37 @@ export function PwaSupport() {
           role="region"
           aria-label="راهنمای نصب iOS"
         >
-          <div className="glass-card flex items-start gap-3 border border-white/15 p-3 shadow-lg">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary/15">
-              <Share className="size-5 text-secondary" />
+          <div className="glass-card border border-white/15 p-3 shadow-lg">
+            <div className="flex items-start gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary/15">
+                <Share className="size-5 text-secondary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">افزودن به صفحه اصلی آیفون</p>
+                <ol className="mt-2 list-decimal space-y-1 ps-4 text-[11px] leading-relaxed text-white/55">
+                  <li>دکمه اشتراک‌گذاری (مربع با فلش بالا) را بزنید</li>
+                  <li>
+                    گزینه{" "}
+                    <span className="text-white/80" dir="ltr">
+                      Add to Home Screen
+                    </span>{" "}
+                    را انتخاب کنید
+                  </li>
+                  <li>روی Add بزنید و از آیکن صفحه اصلی باز کنید</li>
+                </ol>
+                <p className="mt-2 text-[10px] leading-relaxed text-white/40">
+                  برای اعلان‌ها در iOS باید حتماً از آیکن صفحه اصلی وارد شوید (iOS 16.4+).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={dismissIosHint}
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-white/40 hover:bg-white/10"
+                aria-label="بستن"
+              >
+                <X className="size-4" />
+              </button>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">افزودن به صفحه اصلی</p>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-white/50">
-                در Safari دکمه اشتراک‌گذاری را بزنید و «Add to Home Screen» را انتخاب کنید.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={dismissIosHint}
-              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-white/40 hover:bg-white/10"
-              aria-label="بستن"
-            >
-              <X className="size-4" />
-            </button>
           </div>
         </div>
       )}

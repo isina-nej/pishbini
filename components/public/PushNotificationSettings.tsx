@@ -11,6 +11,7 @@ import {
   isPushSupported,
   syncPushSubscriptionIfGranted,
 } from "@/lib/push-client";
+import { needsIosInstallHint } from "@/lib/pwa";
 import { SESSION_UPDATED_EVENT } from "@/lib/session-events";
 
 type Props = {
@@ -49,6 +50,7 @@ export function PushNotificationSettings({ pushOptIn, onPushOptInChange }: Props
   }
 
   const denied = permission === "denied";
+  const iosNeedsHomeScreen = needsIosInstallHint();
   const switchOn = pushOptIn && !denied;
 
   const handleToggle = async () => {
@@ -97,11 +99,13 @@ export function PushNotificationSettings({ pushOptIn, onPushOptInChange }: Props
           <div className="min-w-0">
             <p className="text-sm font-medium">اعلان نتیجه بازی‌ها</p>
             <p className="mt-0.5 text-[11px] leading-relaxed text-white/45">
-              {denied
-                ? "مجوز اعلان در مرورگر خاموش است."
-                : switchOn
-                  ? "اعلان‌ها فعال است."
-                  : "اعلان‌ها خاموش است."}
+              {iosNeedsHomeScreen
+                ? "در iOS از آیکن صفحه اصلی وارد شوید."
+                : denied
+                  ? "مجوز اعلان در مرورگر خاموش است."
+                  : switchOn
+                    ? "اعلان‌ها فعال است."
+                    : "اعلان‌ها خاموش است."}
             </p>
           </div>
         </div>
@@ -126,6 +130,12 @@ export function PushNotificationSettings({ pushOptIn, onPushOptInChange }: Props
           />
         </button>
       </div>
+      {iosNeedsHomeScreen && (
+        <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+          اعلان در Safari داخل تب مرورگر کار نمی‌کند. اول «افزودن به صفحه اصلی» کنید، بعد از آیکن اپ
+          وارد شوید و اعلان را فعال کنید.
+        </p>
+      )}
       {denied && (
         <p className="mt-2 text-[11px] leading-relaxed text-white/40">
           برای فعال‌سازی، از تنظیمات مرورگر مجوز اعلان این سایت را روشن کنید.

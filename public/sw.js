@@ -1,22 +1,40 @@
-const CACHE_VERSION = "pishbini-pwa-v1";
-const PRECACHE_URLS = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
+const CACHE_VERSION = "pishbini-pwa-v2";
+const PRECACHE_URLS = [
+  "/manifest.webmanifest",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+  "/icons/apple-touch-icon.png",
+];
+
+async function precacheAssets(cache) {
+  await Promise.allSettled(
+    PRECACHE_URLS.map(async (url) => {
+      try {
+        await cache.add(url);
+      } catch {
+        /* optional asset — do not fail install */
+      }
+    })
+  );
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_VERSION)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then((cache) => precacheAssets(cache))
       .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k))
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
       )
-    ).then(() => self.clients.claim())
+      .then(() => self.clients.claim())
   );
 });
 
@@ -28,10 +46,11 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
 
+  // iOS standalone: intercepting navigation on first load can cause a blank screen.
+  if (request.mode === "navigate") return;
+
   event.respondWith(
-    fetch(request).catch(() =>
-      caches.match(request).then((cached) => cached ?? caches.match("/"))
-    )
+    fetch(request).catch(() => caches.match(request))
   );
 });
 
