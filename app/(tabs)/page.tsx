@@ -17,6 +17,7 @@ import {
   setStoredPredictions,
   type StoredPrediction,
 } from "@/lib/predictions-storage";
+import { notifyShowPushPrompt } from "@/lib/push-prompt-events";
 
 type SavedPick = {
   prediction: PredictionChoice;
@@ -73,6 +74,7 @@ export default function HomePage() {
 
   const handleSelect = async (matchId: string, choice: PredictionChoice) => {
     setPatchError(null);
+    const isFirstPick = Object.keys(predictions).length === 0;
 
     if (savedPicks[matchId]) {
       if (!savedPicks[matchId].canEdit) return;
@@ -114,6 +116,10 @@ export default function HomePage() {
       persistDraft(next);
       return next;
     });
+
+    if (isFirstPick) {
+      notifyShowPushPrompt();
+    }
   };
 
   const newPicksCount = Object.keys(predictions).filter((id) => !savedPicks[id]).length;

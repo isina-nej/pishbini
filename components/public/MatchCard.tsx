@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   motion,
   AnimatePresence,
@@ -46,6 +47,10 @@ const SELECTED_FLAG_FLEX = 3;
 const UNSELECTED_FLAG_FLEX = 2;
 const FLAGS_BOX_LAYOUT = "mx-auto w-[85%]";
 const DRAW_MORPH_TRANSITION = { type: "spring" as const, stiffness: 380, damping: 32 };
+const FLAG_EASE = [0.22, 1, 0.36, 1] as const;
+const FLAG_INNER_RADIUS = "rounded-xl";
+const FLAG_LAYOUT_SPRING = { type: "spring" as const, stiffness: 300, damping: 34 };
+const FLAG_ALIGN_MS = 400;
 
 const FLAGS_BOX_CLASS =
   "relative overflow-hidden ring-1 ring-inset ring-white/15";
@@ -67,7 +72,7 @@ function FlagsBox({
 
 function PureFlag({ team, className }: { team: TeamInfo; className?: string }) {
   return (
-    <TeamFlag code={team.code} alt={team.nameFa} fill fit="stretch" className={className} />
+    <TeamFlag code={team.code} alt={team.nameFa} fill fit="cover" className={className} />
   );
 }
 
@@ -88,7 +93,7 @@ function FlagGhostBackdrop({ team, cardLevel }: { team: TeamInfo; cardLevel?: bo
         fit="cover"
         className={cn(
           cardLevel
-            ? "scale-[1.55] opacity-[0.09] blur-[8px] saturate-[0.85]"
+            ? "scale-[1.5] opacity-[0.14] blur-[6px] saturate-[1.05]"
             : "scale-[1.4] opacity-[0.1] blur-[5px] saturate-[0.9]"
         )}
       />
@@ -101,7 +106,7 @@ function ShadowOverlay({ className }: { className?: string }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.35 }}
+      transition={{ duration: 0.45, ease: FLAG_EASE }}
       className={cn("absolute inset-0 bg-black/60", className)}
     />
   );
@@ -148,6 +153,165 @@ function DrawCenterBadge({
   );
 }
 
+function VsCenterBadge({ reduceMotion }: { reduceMotion: boolean }) {
+  return (
+    <motion.div
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: reduceMotion ? 0.15 : 0.3, ease: FLAG_EASE }}
+      className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
+    >
+      <span className="rounded-full bg-black/35 px-2.5 py-1 text-[10px] font-bold tracking-[0.2em] text-white/45 ring-1 ring-white/12 backdrop-blur-[2px]">
+        VS
+      </span>
+    </motion.div>
+  );
+}
+
+type FlagLayoutMode = "idle" | "align" | "hero" | "draw";
+type FlagSide = "home" | "away";
+
+function flagsGridClass(mode: FlagLayoutMode) {
+  switch (mode) {
+    case "align":
+      return "grid-cols-2 gap-1.5 p-1.5";
+    case "hero":
+      return "grid-cols-[minmax(0,0.82fr)_minmax(0,1.36fr)_minmax(0,0.82fr)]";
+    default:
+      return "grid-cols-2";
+  }
+}
+
+function flagCellClass(
+  side: FlagSide,
+  mode: FlagLayoutMode,
+  selectedSide: FlagSide | null
+) {
+  if (mode !== "hero" || !selectedSide) return undefined;
+  if (selectedSide === "home") {
+    return side === "home" ? "col-start-2" : "col-start-3";
+  }
+  return side === "away" ? "col-start-2" : "col-start-1";
+}
+
+function useFlagLayoutMode(
+  hasTeamPick: boolean,
+  drawSelected: boolean,
+  homeSelected: boolean,
+  awaySelected: boolean,
+  reduceMotion: boolean
+): FlagLayoutMode {
+  const [mode, setMode] = useState<FlagLayoutMode>("idle");
+  const skipAlign = useRef(true);
+  const generation = useRef(0);
+
+  useEffect(() => {
+    if (skipAlign.current) {
+      skipAlign.current = false;
+      if (drawSelected) setMode("draw");
+      else if (hasTeamPick) setMode("hero");
+      else setMode("idle");
+      return;
+    }
+
+    if (reduceMotion) {
+      setMode(drawSelected ? "draw" : hasTeamPick ? "hero" : "idle");
+      return;
+    }
+
+    if (drawSelected) {
+      setMode("draw");
+      return;
+    }
+
+    if (!hasTeamPick) {
+      setMode("idle");
+      return;
+    }
+
+    const gen = ++generation.current;
+    setMode("align");
+    const timer = window.setTimeout(() => {
+      if (generation.current === gen) setMode("hero");
+    }, FLAG_ALIGN_MS);
+    return () => window.clearTimeout(timer);
+  }, [hasTeamPick, drawSelected, homeSelected, awaySelected, reduceMotion]);
+
+  return mode;
+}
+
+function FlagPane({
+  team,
+  side,
+  mode,
+  selectedSide,
+  drawSelected,
+  reduceMotion,
+}: {
+  team: TeamInfo;
+  side: FlagSide;
+  mode: FlagLayoutMode;
+  selectedSide: FlagSide | null;
+  drawSelected: boolean;
+  reduceMotion: boolean;
+}) {
+  const isSelected = selectedSide === side;
+  const dimmed = (mode === "hero" && !!selectedSide && !isSelected) || drawSelected;
+  const rounded = mode === "align" || (mode === "hero" && isSelected);
+
+  return (
+    <motion.div
+      layout
+      transition={
+        reduceMotion
+          ? { duration: 0.12 }
+          : { layout: FLAG_LAYOUT_SPRING, opacity: { duration: 0.28, ease: FLAG_EASE } }
+      }
+      animate={{ opacity: dimmed ? 0.52 : 1 }}
+      className={cn(
+        "relative min-h-0 min-w-0 overflow-hidden",
+        flagCellClass(side, mode, selectedSide),
+        rounded && FLAG_INNER_RADIUS
+      )}
+    >
+      <PureFlag team={team} />
+      {drawSelected && <ShadowOverlay className="z-[2] bg-black/55" />}
+      {dimmed && !drawSelected && (
+        <ShadowOverlay className="z-[2] bg-black/72 shadow-[inset_0_0_24px_rgba(0,0,0,0.45)]" />
+      )}
+    </motion.div>
+  );
+}
+
+function FlagClickZone({
+  side,
+  label,
+  selected,
+  onSelect,
+  reduceMotion,
+}: {
+  side: "home" | "away";
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+  reduceMotion: boolean;
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onSelect}
+      whileTap={reduceMotion ? undefined : { scale: 0.995 }}
+      className={cn(
+        "absolute inset-y-0 z-30 w-1/2 bg-transparent",
+        side === "home" ? "right-0" : "left-0"
+      )}
+      aria-label={label}
+      aria-pressed={selected}
+    />
+  );
+}
+
 function DateTimeOnShadow({ startTime }: { startTime: string }) {
   return (
     <motion.p
@@ -161,49 +325,99 @@ function DateTimeOnShadow({ startTime }: { startTime: string }) {
   );
 }
 
-function SelectableFlag({
-  team,
-  selected,
-  hasTeamPick,
+function FlagsPickArea({
+  match,
+  homeSelected,
+  awaySelected,
   drawSelected,
+  hasTeamPick,
   onSelect,
   reduceMotion,
+  drawLayoutId,
+  tourTargets,
 }: {
-  team: TeamInfo;
-  selected: boolean;
-  hasTeamPick: boolean;
+  match: MatchData;
+  homeSelected: boolean;
+  awaySelected: boolean;
   drawSelected: boolean;
-  onSelect: () => void;
+  hasTeamPick: boolean;
+  onSelect: (choice: PredictionChoice) => void;
   reduceMotion: boolean;
+  drawLayoutId?: string;
+  tourTargets?: boolean;
 }) {
-  const dimmed = drawSelected || (hasTeamPick && !selected);
+  const selectedSide: FlagSide | null = homeSelected
+    ? "home"
+    : awaySelected
+      ? "away"
+      : null;
+
+  const layoutMode = useFlagLayoutMode(
+    hasTeamPick,
+    drawSelected,
+    homeSelected,
+    awaySelected,
+    reduceMotion
+  );
 
   return (
-    <motion.button
-      type="button"
-      layout
-      onClick={onSelect}
-      whileTap={reduceMotion ? undefined : { scale: 0.99 }}
-      animate={{
-        flex: hasTeamPick ? (selected ? SELECTED_FLAG_FLEX : UNSELECTED_FLAG_FLEX) : 1,
-      }}
-      transition={{ type: "spring", stiffness: 340, damping: 30 }}
-      className="relative h-full min-w-0 overflow-hidden"
-      aria-label={team.nameFa}
-      aria-pressed={selected}
+    <div
+      className={cn(FLAGS_BOX_CLASS, FLAGS_BOX_LAYOUT, "relative h-[96px] rounded-2xl")}
+      data-tour={tourTargets ? "match-flags" : undefined}
     >
-      <div className="relative z-[1] h-full">
-        <PureFlag team={team} />
-      </div>
-      {dimmed && (
-        <ShadowOverlay
-          className={cn(
-            "z-[2]",
-            drawSelected ? "bg-black/55" : "bg-black/72 shadow-[inset_0_0_24px_rgba(0,0,0,0.45)]"
-          )}
+      <FlagClickZone
+        side="home"
+        label={match.homeTeam.nameFa}
+        selected={homeSelected}
+        onSelect={() => onSelect(PredictionChoice.HOME_WIN)}
+        reduceMotion={reduceMotion}
+      />
+      <FlagClickZone
+        side="away"
+        label={match.awayTeam.nameFa}
+        selected={awaySelected}
+        onSelect={() => onSelect(PredictionChoice.AWAY_WIN)}
+        reduceMotion={reduceMotion}
+      />
+
+      <motion.div
+        layout
+        transition={reduceMotion ? { duration: 0.12 } : { layout: FLAG_LAYOUT_SPRING }}
+        className={cn("grid h-full", flagsGridClass(layoutMode))}
+      >
+        <FlagPane
+          side="home"
+          team={match.homeTeam}
+          mode={layoutMode}
+          selectedSide={selectedSide}
+          drawSelected={drawSelected}
+          reduceMotion={reduceMotion}
         />
-      )}
-    </motion.button>
+        <FlagPane
+          side="away"
+          team={match.awayTeam}
+          mode={layoutMode}
+          selectedSide={selectedSide}
+          drawSelected={drawSelected}
+          reduceMotion={reduceMotion}
+        />
+      </motion.div>
+
+      <AnimatePresence>
+        {!hasTeamPick && !drawSelected && (
+          <VsCenterBadge key="vs-badge" reduceMotion={reduceMotion} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {drawSelected && (
+          <DrawCenterBadge
+            key="draw-badge"
+            layoutId={drawLayoutId}
+            reduceMotion={reduceMotion}
+          />
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -213,25 +427,50 @@ function TeamNameStrip({
   selected,
   drawSelected,
   hasTeamPick,
+  onSelect,
+  reduceMotion,
 }: {
   name: string;
   flex: number;
   selected: boolean;
   drawSelected: boolean;
   hasTeamPick: boolean;
+  onSelect?: () => void;
+  reduceMotion?: boolean;
 }) {
+  const className = cn(
+    "min-w-0 truncate border-t border-white/10 px-1 py-1.5 text-center text-[10px] font-medium leading-tight",
+    NAME_STRIP_H,
+    selected && !drawSelected ? "text-primary" : "text-white/75",
+    drawSelected && "text-white/50",
+    hasTeamPick && !selected && !drawSelected && "text-white/40",
+    onSelect && "cursor-pointer hover:text-white/90"
+  );
+
+  if (onSelect) {
+    return (
+      <motion.button
+        type="button"
+        layout
+        onClick={onSelect}
+        whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+        animate={{ flex }}
+        transition={{ type: "spring", stiffness: 340, damping: 30 }}
+        className={className}
+        aria-label={name}
+        aria-pressed={selected}
+      >
+        {name}
+      </motion.button>
+    );
+  }
+
   return (
     <motion.span
       layout
       animate={{ flex }}
       transition={{ type: "spring", stiffness: 340, damping: 30 }}
-      className={cn(
-        "min-w-0 truncate border-t border-white/10 px-1 py-1.5 text-center text-[10px] font-medium leading-tight",
-        NAME_STRIP_H,
-        selected && !drawSelected ? "text-primary" : "text-white/75",
-        drawSelected && "text-white/50",
-        hasTeamPick && !selected && !drawSelected && "text-white/40"
-      )}
+      className={className}
     >
       {name}
     </motion.span>
@@ -265,12 +504,12 @@ function ConfirmedCard({
     >
       {isDraw ? (
         <div className="relative">
-          <FlagsBox className="flex h-[96px] rounded-t-2xl">
-            <div className="relative min-w-0 flex-1 overflow-hidden">
+          <FlagsBox className="relative flex h-[96px] overflow-hidden rounded-2xl">
+            <div className="relative h-full min-w-0 flex-1 overflow-hidden">
               <PureFlag team={match.homeTeam} />
               <ShadowOverlay className="bg-black/55" />
             </div>
-            <div className="relative min-w-0 flex-1 overflow-hidden">
+            <div className="relative h-full min-w-0 flex-1 overflow-hidden">
               <PureFlag team={match.awayTeam} />
               <ShadowOverlay className="bg-black/55" />
             </div>
@@ -299,7 +538,7 @@ function ConfirmedCard({
         <div className="relative overflow-hidden rounded-2xl pt-3">
           <FlagGhostBackdrop team={winTeam} cardLevel />
           <div className="relative z-[1]">
-            <FlagsBox className="h-[96px] rounded-t-2xl">
+            <FlagsBox className="relative h-[96px] overflow-hidden rounded-2xl">
               <PureFlag team={winTeam} />
             </FlagsBox>
             <span
@@ -405,36 +644,17 @@ export function MatchCard({
               )}
             </AnimatePresence>
             <div className="relative z-[1]">
-            <FlagsBox
-              className="flex h-[96px] rounded-t-2xl"
-              data-tour={tourTargets ? "match-flags" : undefined}
-            >
-              <SelectableFlag
-                team={match.homeTeam}
-                selected={homeSelected}
-                hasTeamPick={hasTeamPick}
-                drawSelected={drawSelected}
-                onSelect={() => onSelect(PredictionChoice.HOME_WIN)}
-                reduceMotion={!!reduceMotion}
-              />
-              <SelectableFlag
-                team={match.awayTeam}
-                selected={awaySelected}
-                hasTeamPick={hasTeamPick}
-                drawSelected={drawSelected}
-                onSelect={() => onSelect(PredictionChoice.AWAY_WIN)}
-                reduceMotion={!!reduceMotion}
-              />
-              <AnimatePresence>
-                {drawSelected && (
-                  <DrawCenterBadge
-                    key="draw-badge"
-                    layoutId={drawLayoutId}
-                    reduceMotion={!!reduceMotion}
-                  />
-                )}
-              </AnimatePresence>
-            </FlagsBox>
+            <FlagsPickArea
+              match={match}
+              homeSelected={homeSelected}
+              awaySelected={awaySelected}
+              drawSelected={drawSelected}
+              hasTeamPick={hasTeamPick}
+              onSelect={onSelect}
+              reduceMotion={!!reduceMotion}
+              drawLayoutId={drawLayoutId}
+              tourTargets={tourTargets}
+            />
             <div className={cn("mt-2 flex glass-surface rounded-2xl", FLAGS_BOX_LAYOUT)}>
               <TeamNameStrip
                 name={match.homeTeam.nameFa}
@@ -442,6 +662,8 @@ export function MatchCard({
                 selected={homeSelected}
                 drawSelected={drawSelected}
                 hasTeamPick={hasTeamPick}
+                onSelect={() => onSelect(PredictionChoice.HOME_WIN)}
+                reduceMotion={!!reduceMotion}
               />
               <TeamNameStrip
                 name={match.awayTeam.nameFa}
@@ -449,6 +671,8 @@ export function MatchCard({
                 selected={awaySelected}
                 drawSelected={drawSelected}
                 hasTeamPick={hasTeamPick}
+                onSelect={() => onSelect(PredictionChoice.AWAY_WIN)}
+                reduceMotion={!!reduceMotion}
               />
             </div>
 

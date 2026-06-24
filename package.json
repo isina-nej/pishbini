@@ -15,7 +15,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@fontsource-variable/vazirmatn": "^5.2.8",
+    "@fontsource/estedad": "^5.2.1",
     "@hookform/resolvers": "^5.4.0",
     "@prisma/adapter-mariadb": "^7.8.0",
     "@prisma/client": "^7.8.0",
