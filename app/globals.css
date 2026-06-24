@@ -5,10 +5,10 @@
   --bg: #07080f;
   --card-bg: rgba(255, 255, 255, 0.06);
   --card-border: rgba(255, 255, 255, 0.12);
-  --glass-bg: rgba(255, 255, 255, 0.06);
-  --glass-bg-elevated: rgba(255, 255, 255, 0.09);
+  --glass-bg: rgba(255, 255, 255, 0.045);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.075);
   --glass-border: rgba(255, 255, 255, 0.14);
-  --glass-blur: 20px;
+  --glass-blur: 14px;
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
   --predictions-hero-height: min(42vh, 300px);
   --glass-top-nav-height: 4.25rem;
@@ -70,39 +70,39 @@ body {
     ),
     radial-gradient(
       ellipse 100% 80% at 50% 50%,
-      transparent 40%,
-      color-mix(in srgb, var(--bg) 88%, transparent) 100%
+      transparent 50%,
+      color-mix(in srgb, var(--bg) 62%, transparent) 100%
     );
 }
 
 .app-background::before {
   content: "";
   position: absolute;
-  inset: -20% -10%;
-  opacity: 0.09;
+  inset: -15% -8%;
+  opacity: 0.22;
   background:
     repeating-linear-gradient(
       168deg,
       transparent 0,
-      transparent 46px,
-      color-mix(in srgb, var(--primary) 55%, transparent) 47px,
-      transparent 48px
+      transparent 44px,
+      color-mix(in srgb, var(--primary) 70%, transparent) 45px,
+      transparent 46px
     ),
     repeating-linear-gradient(
       12deg,
       transparent 0,
-      transparent 72px,
-      color-mix(in srgb, #ff6b2c 45%, transparent) 73px,
-      transparent 74px
+      transparent 68px,
+      color-mix(in srgb, #ff6b2c 55%, transparent) 69px,
+      transparent 70px
     ),
     repeating-linear-gradient(
       0deg,
       transparent 0,
-      transparent 38px,
-      color-mix(in srgb, var(--secondary) 40%, transparent) 39px,
-      transparent 40px
+      transparent 36px,
+      color-mix(in srgb, var(--secondary) 55%, transparent) 37px,
+      transparent 38px
     );
-  mask-image: radial-gradient(ellipse 85% 75% at 50% 42%, black 20%, transparent 72%);
+  mask-image: radial-gradient(ellipse 100% 95% at 50% 48%, black 30%, transparent 88%);
 }
 
 .app-background::after {
@@ -184,8 +184,8 @@ body {
   background: linear-gradient(
     180deg,
     transparent 0%,
-    color-mix(in srgb, var(--bg) 60%, transparent) 12%,
-    var(--bg) 28%
+    color-mix(in srgb, var(--bg) 28%, transparent) 14%,
+    color-mix(in srgb, var(--bg) 45%, transparent) 32%
   );
 }
 

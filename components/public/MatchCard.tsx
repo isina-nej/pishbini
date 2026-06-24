@@ -65,8 +65,35 @@ function FlagsBox({
   );
 }
 
-function PureFlag({ team }: { team: TeamInfo }) {
-  return <TeamFlag code={team.code} alt={team.nameFa} fill fit="stretch" />;
+function PureFlag({ team, className }: { team: TeamInfo; className?: string }) {
+  return (
+    <TeamFlag code={team.code} alt={team.nameFa} fill fit="stretch" className={className} />
+  );
+}
+
+function FlagGhostBackdrop({ team, cardLevel }: { team: TeamInfo; cardLevel?: boolean }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-2xl"
+      aria-hidden
+    >
+      <TeamFlag
+        code={team.code}
+        alt=""
+        fill
+        fit="cover"
+        className={cn(
+          cardLevel
+            ? "scale-[1.55] opacity-[0.09] blur-[8px] saturate-[0.85]"
+            : "scale-[1.4] opacity-[0.1] blur-[5px] saturate-[0.9]"
+        )}
+      />
+    </motion.div>
+  );
 }
 
 function ShadowOverlay({ className }: { className?: string }) {
@@ -163,10 +190,18 @@ function SelectableFlag({
       transition={{ type: "spring", stiffness: 340, damping: 30 }}
       className="relative h-full min-w-0 overflow-hidden"
       aria-label={team.nameFa}
+      aria-pressed={selected}
     >
-      <PureFlag team={team} />
+      <div className="relative z-[1] h-full">
+        <PureFlag team={team} />
+      </div>
       {dimmed && (
-        <ShadowOverlay className={drawSelected ? "bg-black/55" : undefined} />
+        <ShadowOverlay
+          className={cn(
+            "z-[2]",
+            drawSelected ? "bg-black/55" : "bg-black/72 shadow-[inset_0_0_24px_rgba(0,0,0,0.45)]"
+          )}
+        />
       )}
     </motion.button>
   );
@@ -177,11 +212,13 @@ function TeamNameStrip({
   flex,
   selected,
   drawSelected,
+  hasTeamPick,
 }: {
   name: string;
   flex: number;
   selected: boolean;
   drawSelected: boolean;
+  hasTeamPick: boolean;
 }) {
   return (
     <motion.span
@@ -192,7 +229,8 @@ function TeamNameStrip({
         "min-w-0 truncate border-t border-white/10 px-1 py-1.5 text-center text-[10px] font-medium leading-tight",
         NAME_STRIP_H,
         selected && !drawSelected ? "text-primary" : "text-white/75",
-        drawSelected && "text-white/50"
+        drawSelected && "text-white/50",
+        hasTeamPick && !selected && !drawSelected && "text-white/40"
       )}
     >
       {name}
@@ -258,18 +296,22 @@ function ConfirmedCard({
           </div>
         </div>
       ) : winTeam ? (
-        <div className="relative">
-          <FlagsBox className="h-[96px] rounded-t-2xl">
-            <PureFlag team={winTeam} />
-          </FlagsBox>
-          <span
-            className={cn(
-              "block truncate border-t border-white/10 px-2 py-1.5 text-center text-[10px] font-medium text-primary glass-surface rounded-b-2xl",
-              NAME_STRIP_H
-            )}
-          >
-            {winTeam.nameFa}
-          </span>
+        <div className="relative overflow-hidden rounded-2xl pt-3">
+          <FlagGhostBackdrop team={winTeam} cardLevel />
+          <div className="relative z-[1]">
+            <FlagsBox className="h-[96px] rounded-t-2xl">
+              <PureFlag team={winTeam} />
+            </FlagsBox>
+            <span
+              className={cn(
+                "mx-auto mt-2 block truncate border-t border-white/10 px-2 py-1.5 text-center text-[10px] font-medium text-primary glass-surface rounded-b-2xl",
+                NAME_STRIP_H,
+                FLAGS_BOX_LAYOUT
+              )}
+            >
+              {winTeam.nameFa}
+            </span>
+          </div>
         </div>
       ) : null}
 
@@ -314,6 +356,11 @@ export function MatchCard({
       : UNSELECTED_FLAG_FLEX
     : 1;
   const drawLayoutId = reduceMotion ? undefined : `draw-pill-${match.id}`;
+  const selectedTeam = homeSelected
+    ? match.homeTeam
+    : awaySelected
+      ? match.awayTeam
+      : null;
 
   return (
     <motion.div
@@ -351,7 +398,13 @@ export function MatchCard({
             )}
           >
             <LayoutGroup id={`match-draw-${match.id}`}>
-            <div className="pt-3">
+            <div className="relative pt-3">
+            <AnimatePresence>
+              {selectedTeam && (
+                <FlagGhostBackdrop key={selectedTeam.code} team={selectedTeam} cardLevel />
+              )}
+            </AnimatePresence>
+            <div className="relative z-[1]">
             <FlagsBox
               className="flex h-[96px] rounded-t-2xl"
               data-tour={tourTargets ? "match-flags" : undefined}
@@ -388,12 +441,14 @@ export function MatchCard({
                 flex={homeNameFlex}
                 selected={homeSelected}
                 drawSelected={drawSelected}
+                hasTeamPick={hasTeamPick}
               />
               <TeamNameStrip
                 name={match.awayTeam.nameFa}
                 flex={awayNameFlex}
                 selected={awaySelected}
                 drawSelected={drawSelected}
+                hasTeamPick={hasTeamPick}
               />
             </div>
 
@@ -433,6 +488,7 @@ export function MatchCard({
             >
               <MatchMetaRow startTime={match.startTime} tourTarget={tourTargets} />
             </motion.div>
+            </div>
             </div>
             </LayoutGroup>
           </motion.div>
