@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, LogIn, Phone, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { notifySessionUpdated } from "@/lib/session-events";
 
 export const AUTH_INPUT_CLASS =
   "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-base text-white outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20";
@@ -151,6 +152,7 @@ export function PhoneAuthFlow({
         return;
       }
       onSuccess();
+      notifySessionUpdated();
     } catch {
       setError("خطا در ارتباط با سرور");
       setStep("otp");

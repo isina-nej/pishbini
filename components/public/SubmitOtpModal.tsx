@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, X } from "lucide-react";
 import { AUTH_INPUT_CLASS } from "@/components/public/PhoneAuthFlow";
 import { cn } from "@/lib/utils";
+import { notifySessionUpdated } from "@/lib/session-events";
 import {
   clearStoredPredictions,
   getStoredPredictions,
@@ -168,6 +169,7 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
         return;
       }
       clearStoredPredictions();
+      notifySessionUpdated();
       onSuccess({
         firstName: result.user.firstName,
         referralCode: result.user.referralCode,

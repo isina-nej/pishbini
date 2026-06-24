@@ -7,6 +7,8 @@ import {
   MeUserError,
 } from "@/lib/me-user";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const userId = await resolveUserIdInRouteHandler();
