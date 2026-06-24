@@ -38,20 +38,26 @@ type TeamInfo = { nameFa: string; code: string; flagUrl: string };
 
 const NAME_STRIP_H = "h-[22px]";
 
-function FlagFrame({ children }: { children: ReactNode }) {
+const FLAGS_BOX_CLASS =
+  "relative overflow-hidden ring-1 ring-inset ring-white/15";
+
+function FlagsBox({
+  children,
+  className,
+  ...props
+}: {
+  children: ReactNode;
+  className?: string;
+} & React.ComponentPropsWithoutRef<"div">) {
   return (
-    <div className="absolute inset-0 size-full overflow-hidden rounded-2xl ring-1 ring-inset ring-white/15">
+    <div className={cn(FLAGS_BOX_CLASS, className)} {...props}>
       {children}
     </div>
   );
 }
 
 function PureFlag({ team }: { team: TeamInfo }) {
-  return (
-    <FlagFrame>
-      <TeamFlag code={team.code} alt={team.nameFa} fill fit="stretch" />
-    </FlagFrame>
-  );
+  return <TeamFlag code={team.code} alt={team.nameFa} fill fit="stretch" />;
 }
 
 function ShadowOverlay({ className }: { className?: string }) {
@@ -187,17 +193,17 @@ function ConfirmedCard({
     >
       {isDraw ? (
         <div className="relative">
-          <div className="relative flex h-[96px]">
-            <div className="relative flex-1 overflow-hidden">
+          <FlagsBox className="flex h-[96px] rounded-t-2xl">
+            <div className="relative min-w-0 flex-1 overflow-hidden">
               <PureFlag team={match.homeTeam} />
               <ShadowOverlay className="bg-black/55" />
             </div>
-            <div className="relative flex-1 overflow-hidden">
+            <div className="relative min-w-0 flex-1 overflow-hidden">
               <PureFlag team={match.awayTeam} />
               <ShadowOverlay className="bg-black/55" />
             </div>
             <DrawCenterBadge reduceMotion={!!reduceMotion} />
-          </div>
+          </FlagsBox>
           <div className="flex border-t border-white/10 bg-[#0d0e1a]">
             <span
               className={cn(
@@ -219,9 +225,9 @@ function ConfirmedCard({
         </div>
       ) : winTeam ? (
         <div className="relative">
-          <div className="relative h-[96px] overflow-hidden">
+          <FlagsBox className="h-[96px] rounded-t-2xl">
             <PureFlag team={winTeam} />
-          </div>
+          </FlagsBox>
           <span
             className={cn(
               "block truncate border-t border-white/10 bg-[#0d0e1a] px-2 py-1.5 text-center text-[10px] font-medium text-primary",
@@ -301,7 +307,10 @@ export function MatchCard({
               drawSelected && "ring-1 ring-primary/50"
             )}
           >
-            <div className="relative flex h-[96px] w-full" data-tour={tourTargets ? "match-flags" : undefined}>
+            <FlagsBox
+              className="flex h-[96px] w-full rounded-t-2xl"
+              data-tour={tourTargets ? "match-flags" : undefined}
+            >
               <SelectableFlag
                 team={match.homeTeam}
                 selected={homeSelected}
@@ -326,7 +335,7 @@ export function MatchCard({
                   />
                 )}
               </AnimatePresence>
-            </div>
+            </FlagsBox>
             <div className="flex bg-[#0d0e1a]">
               <TeamNameStrip
                 name={match.homeTeam.nameFa}
