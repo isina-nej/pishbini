@@ -7,11 +7,13 @@
  *   node scripts/verify-og.mjs http://127.0.0.1:3001   # on VPS (hairpin-safe)
  *   node scripts/verify-og.mjs https://wc.pishrosarmaye.com
  */
-const baseUrl = (process.argv[2] ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(
+const input = (process.argv[2] ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(
   /\/$/,
   ""
 );
-const homeUrl = `${baseUrl}/`;
+const parsed = new URL(input.includes("://") ? input : `http://localhost:3000${input.startsWith("/") ? input : `/${input}`}`);
+const baseUrl = parsed.origin;
+const pageUrl = parsed.href.endsWith("/") && parsed.pathname !== "/" ? parsed.href.slice(0, -1) : parsed.href;
 const botUa = "TelegramBot (like TwitterBot)";
 const isLocalFetch = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(baseUrl);
 const publicBase =
@@ -35,11 +37,11 @@ async function fetchWithTimeout(url, init = {}) {
   return fetch(url, { ...init, signal: AbortSignal.timeout(15000) });
 }
 
-console.log(`Checking OG metadata at ${homeUrl}`);
+console.log(`Checking OG metadata at ${pageUrl}`);
 
 let homeRes;
 try {
-  homeRes = await fetchWithTimeout(homeUrl, {
+  homeRes = await fetchWithTimeout(pageUrl, {
     headers: { "User-Agent": botUa },
     redirect: "follow",
   });
@@ -47,7 +49,7 @@ try {
   const hint = isLocalFetch
     ? ""
     : "\nTip: on the VPS, public domain may not loop back (hairpin NAT). Try:\n  npm run verify:og:local";
-  fail(`Could not reach ${homeUrl}: ${error instanceof Error ? error.message : error}${hint}`);
+  fail(`Could not reach ${pageUrl}: ${error instanceof Error ? error.message : error}${hint}`);
 }
 
 if (!homeRes.ok) {
@@ -64,6 +66,16 @@ if (!ogTitle) fail("Missing og:title");
 if (!ogDescription) fail("Missing og:description");
 if (!ogImage) fail("Missing og:image");
 if (!twitterCard) fail("Missing twitter:card");
+
+if (parsed.pathname.startsWith("/ref/")) {
+  if (!ogTitle.includes("دعوت")) {
+    fail(`Referral page og:title should mention دعوت, got: ${ogTitle}`);
+  }
+  const ogUrl = extractMeta(html, "og:url");
+  if (ogUrl && !ogUrl.includes("/ref/")) {
+    fail(`Referral page og:url should include /ref/, got: ${ogUrl}`);
+  }
+}
 
 if (!ogImage.startsWith("https://")) {
   fail(`og:image must be absolute HTTPS URL, got: ${ogImage}`);

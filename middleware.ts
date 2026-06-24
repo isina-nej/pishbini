@@ -6,7 +6,6 @@ import {
   REFERRAL_COOKIE_MAX_AGE,
   REFERRAL_COOKIE_NAME,
 } from "@/lib/referral";
-import { isSocialCrawler } from "@/lib/social-crawlers";
 
 function attachReferralCookie(response: NextResponse, code: string) {
   response.cookies.set(REFERRAL_COOKIE_NAME, code, {
@@ -20,17 +19,6 @@ function attachReferralCookie(response: NextResponse, code: string) {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  const refPathMatch = pathname.match(/^\/ref\/([^/]+)\/?$/);
-  if (refPathMatch) {
-    const code = normalizeReferralCode(refPathMatch[1]);
-    if (isSocialCrawler(request.headers.get("user-agent"))) {
-      return NextResponse.next();
-    }
-    const response = NextResponse.redirect(new URL("/", request.url));
-    if (code) attachReferralCookie(response, code);
-    return response;
-  }
 
   if (pathname === "/") {
     const refQuery = request.nextUrl.searchParams.get("ref");
@@ -55,5 +43,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/ref/:path*", "/"],
+  matcher: ["/admin/:path*", "/"],
 };

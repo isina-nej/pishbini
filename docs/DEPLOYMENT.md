@@ -800,6 +800,7 @@ pm2 logs pishbini
 ```bash
 cd /opt/pishbini
 npm run verify:og:local
+npm run verify:og:ref
 # یا از بیرون سرور:
 npm run verify:og https://wc.pishrosarmaye.com
 ```
