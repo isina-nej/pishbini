@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, X } from "lucide-react";
 import { PredictionChoice } from "@/generated/prisma";
 import type { ProfilePrediction } from "@/lib/profile-service";
+import { getMatchOutcomeOptions, resolveMatchTeamNames } from "@/lib/prediction-labels";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -16,6 +17,13 @@ type Props = {
 export function EditPredictionSheet({ prediction, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const teamNames = prediction
+    ? resolveMatchTeamNames(prediction)
+    : { homeNameFa: "", awayNameFa: "" };
+  const outcomeOptions = prediction
+    ? getMatchOutcomeOptions(teamNames.homeNameFa, teamNames.awayNameFa)
+    : [];
 
   const save = async (choice: PredictionChoice) => {
     if (!prediction || saving) return;
@@ -45,7 +53,7 @@ export function EditPredictionSheet({ prediction, onClose, onSaved }: Props) {
   return (
     <AnimatePresence>
       {prediction && (
-        <div className="fixed inset-0 z-[120] flex items-end justify-center">
+        <div className="fixed inset-0 z-[130]">
           <motion.button
             type="button"
             aria-label="بستن"
@@ -60,7 +68,7 @@ export function EditPredictionSheet({ prediction, onClose, onSaved }: Props) {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 420, damping: 36 }}
-            className="relative z-10 w-full max-w-[430px] rounded-t-[1.75rem] border border-white/10 bg-[#121322] p-5 pb-[max(1rem,env(safe-area-inset-bottom))]"
+            className="absolute inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] z-10 mx-auto w-full max-w-[430px] rounded-t-[1.75rem] border border-white/10 bg-[#121322] p-5 pb-4 shadow-[0_-12px_48px_rgba(0,0,0,0.55)]"
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
@@ -77,24 +85,15 @@ export function EditPredictionSheet({ prediction, onClose, onSaved }: Props) {
             </div>
 
             <div className="space-y-2">
-              <ChoiceButton
-                label={`برد ${prediction.homeTeamName}`}
-                selected={prediction.prediction === PredictionChoice.HOME_WIN}
-                disabled={saving}
-                onClick={() => save(PredictionChoice.HOME_WIN)}
-              />
-              <ChoiceButton
-                label="مساوی"
-                selected={prediction.prediction === PredictionChoice.DRAW}
-                disabled={saving}
-                onClick={() => save(PredictionChoice.DRAW)}
-              />
-              <ChoiceButton
-                label={`برد ${prediction.awayTeamName}`}
-                selected={prediction.prediction === PredictionChoice.AWAY_WIN}
-                disabled={saving}
-                onClick={() => save(PredictionChoice.AWAY_WIN)}
-              />
+              {outcomeOptions.map((option) => (
+                <ChoiceButton
+                  key={option.value}
+                  label={option.label}
+                  selected={prediction.prediction === option.value}
+                  disabled={saving}
+                  onClick={() => save(option.value)}
+                />
+              ))}
             </div>
 
             {saving && (
