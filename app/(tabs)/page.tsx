@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import { PredictionChoice } from "@/generated/prisma";
 import { EmptyState } from "@/components/public/EmptyState";
 import { ErrorState } from "@/components/public/ErrorState";
@@ -10,6 +9,7 @@ import { LoadingState } from "@/components/public/LoadingState";
 import { MatchCard, type MatchData } from "@/components/public/MatchCard";
 import { GlassTopNav } from "@/components/public/GlassTopNav";
 import { PredictionsHero } from "@/components/public/PredictionsHero";
+import { SubmitPredictionsBar, SubmitPredictionsBarSpacer } from "@/components/public/SubmitPredictionsBar";
 import { SubmitOtpModal } from "@/components/public/SubmitOtpModal";
 import {
   getStoredPredictions,
@@ -194,26 +194,17 @@ export default function HomePage() {
             );
           })}
 
-          {newPicksCount > 0 && (
-            <div className="fixed bottom-24 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2 px-4">
-              <motion.button
-                type="button"
-                data-tour="submit-predictions"
-                onClick={() => {
-                  if (document.documentElement.dataset.tourStep === "submit") return;
-                  setModalOpen(true);
-                }}
-                whileTap={{ scale: 0.97 }}
-                animate={{ scale: [1, 1.02, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-4 font-bold text-[#10111f] shadow-lg shadow-primary/20"
-              >
-                ثبت پیش‌بینی ({newPicksCount.toLocaleString("fa-IR")})
-              </motion.button>
-            </div>
-          )}
+          <SubmitPredictionsBarSpacer visible={newPicksCount > 0} />
         </div>
       </div>
+
+      <SubmitPredictionsBar
+        count={newPicksCount}
+        onSubmit={() => {
+          if (document.documentElement.dataset.tourStep === "submit") return;
+          setModalOpen(true);
+        }}
+      />
 
       <SubmitOtpModal
         open={modalOpen}
