@@ -30,6 +30,10 @@ export default function AdminUserDetailPage() {
   const [assigning, setAssigning] = useState(false);
   const [assignMessage, setAssignMessage] = useState<string | null>(null);
   const [assignError, setAssignError] = useState(false);
+  const [changeInput, setChangeInput] = useState("");
+  const [changing, setChanging] = useState(false);
+  const [changeMessage, setChangeMessage] = useState<string | null>(null);
+  const [changeError, setChangeError] = useState(false);
   const [activity, setActivity] = useState<
     Array<{ id: string; actionLabel: string; summary: string | null; createdAt: string }>
   >([]);
@@ -109,6 +113,32 @@ export default function AdminUserDetailPage() {
       await load();
     } finally {
       setAssigning(false);
+    }
+  };
+
+  const handleChangeReferral = async () => {
+    setChanging(true);
+    setChangeMessage(null);
+    setChangeError(false);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${id}/change-referral`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referrerPhoneOrCode: changeInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setChangeError(true);
+        setChangeMessage(data.error ?? "خطا در تغییر معرف");
+        return;
+      }
+      setChangeError(false);
+      setChangeMessage(data.message ?? "معرف با موفقیت تغییر کرد.");
+      setChangeInput("");
+      await load();
+    } finally {
+      setChanging(false);
     }
   };
 
@@ -217,22 +247,59 @@ export default function AdminUserDetailPage() {
         </AdminCardBody>
       </AdminCard>
 
-      {u.referredRecord ? (
+      {u.referredRecord || u.referredByCode ? (
         <AdminCard className="mb-6">
           <AdminCardHeader title="معرف این کاربر" />
-          <AdminCardBody>
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <AdminBadge tone="primary">
-                <UserPlus className="size-3.5" />
-                {u.referredRecord.referrer.firstName} {u.referredRecord.referrer.lastName}
-              </AdminBadge>
-              <span className="text-[var(--admin-text-muted)]" dir="ltr">
-                کد: {u.referredRecord.referrer.referralCode}
-              </span>
-              <span className="text-xs text-[var(--admin-text-subtle)]">
-                ثبت دعوت: {formatPersianDateTime(u.referredRecord.createdAt)}
-              </span>
+          <AdminCardBody className="space-y-3">
+            {u.referredRecord ? (
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <AdminBadge tone="primary">
+                  <UserPlus className="size-3.5" />
+                  {u.referredRecord.referrer.firstName} {u.referredRecord.referrer.lastName}
+                </AdminBadge>
+                <span className="text-[var(--admin-text-muted)]" dir="ltr">
+                  کد: {u.referredRecord.referrer.referralCode}
+                </span>
+                <span className="text-xs text-[var(--admin-text-subtle)]">
+                  ثبت دعوت: {formatPersianDateTime(u.referredRecord.createdAt)}
+                </span>
+              </div>
+            ) : (
+              <p className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface-elevated)] px-3 py-2 text-xs text-[var(--admin-text-muted)]">
+                کد معرف ثبت‌شده:{" "}
+                <span dir="ltr" className="font-mono text-[var(--admin-text)]">
+                  {u.referredByCode}
+                </span>
+                {" — "}
+                در انتظار اولین پیش‌بینی برای ثبت امتیاز
+              </p>
+            )}
+            <p className="text-sm text-[var(--admin-text-muted)]">
+              برای تغییر معرف، شماره موبایل یا کد دعوت معرف جدید را وارد کنید. در صورت ثبت
+              دعوت قبلی، شمارش دعوت منتقل می‌شود.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <AdminInput
+                value={changeInput}
+                onChange={(e) => setChangeInput(e.target.value)}
+                placeholder="09123456789 یا ABC1234"
+                dir="ltr"
+                className="flex-1"
+              />
+              <AdminButton onClick={handleChangeReferral} disabled={changing || !changeInput.trim()}>
+                <Link2 className="size-3.5" />
+                {changing ? "در حال تغییر..." : "تغییر معرف"}
+              </AdminButton>
             </div>
+            {changeMessage && (
+              <p
+                className={`text-sm ${
+                  changeError ? "text-[var(--admin-danger)]" : "text-[var(--admin-success)]"
+                }`}
+              >
+                {changeMessage}
+              </p>
+            )}
           </AdminCardBody>
         </AdminCard>
       ) : (

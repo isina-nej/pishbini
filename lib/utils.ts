@@ -19,3 +19,13 @@ export function getAppUrl(): string {
 export function getReferralLink(code: string): string {
   return `${getAppUrl()}/ref/${code}`;
 }
+
+export function getPredictionOutcomeStyles(isCorrect: boolean | null): string {
+  if (isCorrect === true) {
+    return "border border-success/30 bg-success/10 backdrop-blur-md";
+  }
+  if (isCorrect === false) {
+    return "border border-danger/30 bg-danger/10 backdrop-blur-md";
+  }
+  return "border border-warning/30 bg-warning/10 backdrop-blur-md";
+}

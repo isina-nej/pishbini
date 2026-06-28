@@ -119,6 +119,8 @@ export const adminAssignReferralSchema = z.object({
   referrerPhoneOrCode: z.string().min(3, "شماره موبایل یا کد دعوت معرف الزامی است"),
 });
 
+export const adminChangeReferrerSchema = adminAssignReferralSchema;
+
 export const claimReferrerSchema = z.object({
   referralCode: z.string().min(5, "کد دعوت‌کننده معتبر نیست").max(12),
 });

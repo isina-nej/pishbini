@@ -1,10 +1,5 @@
-import { PublicPageShell } from "@/components/public/PublicPageShell";
-import { ProfileReferralsPageClient } from "@/components/public/ProfileReferralsPageClient";
+import { redirect } from "next/navigation";
 
-export default function ProfileReferralsPage() {
-  return (
-    <PublicPageShell pageId="profile">
-      <ProfileReferralsPageClient />
-    </PublicPageShell>
-  );
+export default function ProfileReferralsRedirectPage() {
+  redirect("/profile?tab=referrals");
 }

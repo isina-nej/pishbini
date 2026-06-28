@@ -19,6 +19,7 @@ export type ProfilePrediction = {
   startTimeLabel: string;
   predictionLabel: string;
   resultLabel: string;
+  isCorrect: boolean | null;
   matchResultScore: string | null;
   pointsAwarded: number;
   createdAtLabel: string;
@@ -162,6 +163,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
         p.match.awayTeam.nameFa
       ),
       resultLabel: formatPredictionResult(p.isCorrect, p.pointsAwarded),
+      isCorrect: p.isCorrect,
       matchResultScore:
         p.match.homeScore !== null && p.match.awayScore !== null
           ? `${p.match.homeScore.toLocaleString("fa-IR")} – ${p.match.awayScore.toLocaleString("fa-IR")}`
