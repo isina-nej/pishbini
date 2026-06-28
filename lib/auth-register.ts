@@ -5,6 +5,7 @@ export async function createUserFromAuth(input: {
   phone: string;
   firstName: string;
   lastName: string;
+  referredByCode?: string | null;
 }) {
   let code = generateReferralCode();
   let attempts = 0;
@@ -21,6 +22,7 @@ export async function createUserFromAuth(input: {
       lastName: input.lastName.trim(),
       phone: input.phone,
       referralCode: code,
+      referredByCode: input.referredByCode || null,
       basePointsAwarded: true,
     },
     select: { id: true, firstName: true, lastName: true, phone: true },

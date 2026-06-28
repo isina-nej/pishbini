@@ -15,7 +15,7 @@ import { maskPhone } from "@/lib/masking";
 import { normalizePhone } from "@/lib/phone";
 import { getActivePointRule } from "@/lib/points";
 import { generateReferralCode, normalizeReferralCode } from "@/lib/referral";
-import { awardReferralIfEligible } from "@/lib/referral-reward";
+import { awardReferralIfEligible, backfillReferredByCodeIfEmpty } from "@/lib/referral-reward";
 import { sendConfirmationSms } from "@/lib/sms";
 import { getReferralLink } from "@/lib/utils";
 
@@ -141,8 +141,6 @@ export async function processBracketSubmission(
         throw new BracketSubmitError("شما قبلاً پیش‌بینی جدول حذفی ثبت کرده‌اید.", 409);
       }
 
-      const isNewUser = !user;
-
       if (!user) {
         let code = generateReferralCode();
         for (let i = 0; i < 10; i++) {
@@ -157,11 +155,19 @@ export async function processBracketSubmission(
               lastName: input.lastName.trim(),
               phone,
               referralCode: code,
-              referredByCode: referralCodeInput,
+              referredByCode: referralCodeInput || null,
             },
           })),
           bracketSubmission: null,
         };
+      } else if (referralCodeInput) {
+        await backfillReferredByCodeIfEmpty(
+          tx,
+          user.id,
+          user.referredByCode,
+          referralCodeInput
+        );
+        user = { ...user, referredByCode: user.referredByCode ?? referralCodeInput };
       }
 
       if (!user.basePointsAwarded) {
@@ -184,12 +190,12 @@ export async function processBracketSubmission(
         }
       }
 
-      await awardReferralIfEligible(tx, {
-        isNewUser,
-        userId: user.id,
-        phone,
-        referralCodeInput,
-      });
+      if (referralCodeInput) {
+        await awardReferralIfEligible(tx, {
+          userId: user.id,
+          referralCodeInput,
+        });
+      }
 
       await tx.bracketSubmission.create({
         data: {

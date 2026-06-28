@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { logUserActivity } from "@/lib/audit";
 import { createUserFromAuth } from "@/lib/auth-register";
 import { setUserSessionCookie } from "@/lib/auth-user";
@@ -6,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { verifyOtp } from "@/lib/otp-service";
 import { normalizePhone } from "@/lib/phone";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { REFERRAL_COOKIE_NAME, resolveReferralCode } from "@/lib/referral";
 import { authRegisterSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
@@ -59,10 +61,15 @@ export async function POST(request: Request) {
       );
     }
 
+    const cookieStore = await cookies();
+    const referralFromCookie = cookieStore.get(REFERRAL_COOKIE_NAME)?.value;
+    const referredByCode = resolveReferralCode(parsed.data.referralCode, referralFromCookie);
+
     const user = await createUserFromAuth({
       phone,
       firstName: parsed.data.firstName,
       lastName: parsed.data.lastName,
+      referredByCode,
     });
 
     await setUserSessionCookie(user.id);
@@ -73,6 +80,7 @@ export async function POST(request: Request) {
       firstName: user.firstName,
       lastName: user.lastName,
       summary: `ثبت‌نام کاربر: ${user.firstName} ${user.lastName}`,
+      metadata: { referredByCode: referredByCode || null },
       ip,
     }).catch(console.error);
 

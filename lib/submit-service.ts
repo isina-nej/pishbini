@@ -4,7 +4,7 @@ import { isMatchLocked } from "@/lib/matches";
 import { maskPhone } from "@/lib/masking";
 import { normalizePhone } from "@/lib/phone";
 import { generateReferralCode, normalizeReferralCode } from "@/lib/referral";
-import { awardReferralIfEligible } from "@/lib/referral-reward";
+import { awardReferralIfEligible, backfillReferredByCodeIfEmpty } from "@/lib/referral-reward";
 import { sendConfirmationSms } from "@/lib/sms";
 import { computeUserScore, loadActivePointRulesMap } from "@/lib/user-score";
 import type { SubmitInput } from "@/lib/validation";
@@ -64,7 +64,7 @@ export async function processSubmission(
   }
 
   try {
-    const { user, newPredictionsCount, isNewUser } = await prisma.$transaction(async (tx) => {
+    const { user, newPredictionsCount, isNewUser, referralAwarded } = await prisma.$transaction(async (tx) => {
       let user = await tx.user.findUnique({ where: { phone } });
       const isNewUser = !user;
 
@@ -84,7 +84,7 @@ export async function processSubmission(
             lastName: input.lastName.trim(),
             phone,
             referralCode: code,
-            referredByCode: referralCodeInput,
+            referredByCode: referralCodeInput || null,
             basePointsAwarded: true,
           },
         });
@@ -119,17 +119,22 @@ export async function processSubmission(
         });
       }
 
-      if (isNewUser && referralCodeInput) {
-        await awardReferralIfEligible(tx, {
-          isNewUser,
-          userId: user.id,
-          phone,
-          referralCodeInput,
-        });
-      }
+      await backfillReferredByCodeIfEmpty(
+        tx,
+        user.id,
+        user.referredByCode,
+        referralCodeInput
+      );
+
+      const referralAwarded = referralCodeInput
+        ? await awardReferralIfEligible(tx, {
+            userId: user.id,
+            referralCodeInput,
+          })
+        : false;
 
       const updatedUser = await tx.user.findUniqueOrThrow({ where: { id: user.id } });
-      return { user: updatedUser, newPredictionsCount: newPredictions.length, isNewUser };
+      return { user: updatedUser, newPredictionsCount: newPredictions.length, isNewUser, referralAwarded };
     });
 
     const { logUserActivity } = await import("@/lib/audit");
@@ -149,7 +154,11 @@ export async function processSubmission(
       firstName: user.firstName,
       lastName: user.lastName,
       summary: `ثبت ${newPredictionsCount.toLocaleString("fa-IR")} پیش‌بینی جدید`,
-      metadata: { newPredictionsCount },
+      metadata: {
+        newPredictionsCount,
+        referralCodeInput: referralCodeInput || null,
+        referralAwarded,
+      },
     }).catch(console.error);
 
     sendConfirmationSms(user.id, user.phone, user.referralCode).catch(console.error);

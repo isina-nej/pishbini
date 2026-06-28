@@ -49,6 +49,7 @@ export const authRegisterSchema = z.object({
   code: z.string().regex(/^\d{4}$/, "کد تأیید باید ۴ رقم باشد"),
   firstName: nameSchema,
   lastName: nameSchema,
+  referralCode: z.string().nullable().optional(),
 });
 
 export const authLoginSchema = z.object({

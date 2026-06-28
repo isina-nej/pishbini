@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, LogIn, Phone, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getStoredReferralCode } from "@/lib/predictions-storage";
 import { notifySessionUpdated } from "@/lib/session-events";
 
 export const AUTH_INPUT_CLASS =
@@ -138,7 +139,13 @@ export function PhoneAuthFlow({
       const endpoint = registered ? "/api/auth/login" : "/api/auth/register";
       const body = registered
         ? { phone, code }
-        : { phone, code, firstName: firstName.trim(), lastName: lastName.trim() };
+        : {
+            phone,
+            code,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            referralCode: getStoredReferralCode(),
+          };
 
       const res = await fetch(endpoint, {
         method: "POST",
