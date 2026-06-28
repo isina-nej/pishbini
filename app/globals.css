@@ -290,8 +290,9 @@ body {
 }
 
 :root {
-  --tab-nav-exit: 140ms;
-  --tab-nav-enter: 220ms;
+  --tab-nav-exit: 200ms;
+  --tab-nav-enter: 280ms;
+  --tab-nav-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes tab-nav-fade-out {
@@ -303,6 +304,20 @@ body {
 @keyframes tab-nav-fade-in {
   from {
     opacity: 0;
+  }
+}
+
+@keyframes tab-nav-scale-blur-out {
+  to {
+    transform: scale(0.985);
+    filter: blur(4px);
+  }
+}
+
+@keyframes tab-nav-scale-blur-in {
+  from {
+    transform: scale(0.985);
+    filter: blur(4px);
   }
 }
 
@@ -347,26 +362,30 @@ body {
 
 html[data-tab-nav="nav-forward"]::view-transition-old(tab-content) {
   animation:
-    var(--tab-nav-exit) ease-in both tab-nav-fade-out,
-    280ms ease-in-out both tab-nav-slide-out-forward;
+    var(--tab-nav-exit) var(--tab-nav-ease) both tab-nav-fade-out,
+    var(--tab-nav-exit) var(--tab-nav-ease) both tab-nav-slide-out-forward,
+    var(--tab-nav-exit) var(--tab-nav-ease) both tab-nav-scale-blur-out;
 }
 
 html[data-tab-nav="nav-forward"]::view-transition-new(tab-content) {
   animation:
-    var(--tab-nav-enter) ease-out var(--tab-nav-exit) both tab-nav-fade-in,
-    320ms ease-out var(--tab-nav-exit) both tab-nav-slide-in-forward;
+    var(--tab-nav-enter) var(--tab-nav-ease) var(--tab-nav-exit) both tab-nav-fade-in,
+    var(--tab-nav-enter) var(--tab-nav-ease) var(--tab-nav-exit) both tab-nav-slide-in-forward,
+    var(--tab-nav-enter) var(--tab-nav-ease) var(--tab-nav-exit) both tab-nav-scale-blur-in;
 }
 
 html[data-tab-nav="nav-back"]::view-transition-old(tab-content) {
   animation:
-    var(--tab-nav-exit) ease-in both tab-nav-fade-out,
-    280ms ease-in-out both tab-nav-slide-out-back;
+    var(--tab-nav-exit) var(--tab-nav-ease) both tab-nav-fade-out,
+    var(--tab-nav-exit) var(--tab-nav-ease) both tab-nav-slide-out-back,
+    var(--tab-nav-exit) var(--tab-nav-ease) both tab-nav-scale-blur-out;
 }
 
 html[data-tab-nav="nav-back"]::view-transition-new(tab-content) {
   animation:
-    var(--tab-nav-enter) ease-out var(--tab-nav-exit) both tab-nav-fade-in,
-    320ms ease-out var(--tab-nav-exit) both tab-nav-slide-in-back;
+    var(--tab-nav-enter) var(--tab-nav-ease) var(--tab-nav-exit) both tab-nav-fade-in,
+    var(--tab-nav-enter) var(--tab-nav-ease) var(--tab-nav-exit) both tab-nav-slide-in-back,
+    var(--tab-nav-enter) var(--tab-nav-ease) var(--tab-nav-exit) both tab-nav-scale-blur-in;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { PredictionChoice } from "@/generated/prisma";
-import { PublicPageShell } from "@/components/public/PublicPageShell";
 import { EmptyState } from "@/components/public/EmptyState";
 import { ErrorState } from "@/components/public/ErrorState";
 import { LoadingState } from "@/components/public/LoadingState";
@@ -18,59 +17,87 @@ import {
   type StoredPrediction,
 } from "@/lib/predictions-storage";
 import { notifyShowPushPrompt } from "@/lib/push-prompt-events";
+import { useTabData } from "@/hooks/useTabData";
+import { fingerprintMatches, stableFingerprint } from "@/lib/tab-data-cache";
+import { useSetTabPageMeta } from "@/lib/tab-page-meta";
 
 type SavedPick = {
   prediction: PredictionChoice;
   canEdit: boolean;
 };
 
+type HomeData = {
+  matches: MatchData[];
+  predictions: Record<string, PredictionChoice>;
+  savedPicks: Record<string, SavedPick>;
+};
+
+async function fetchHomeData(): Promise<HomeData> {
+  const stored = getStoredPredictions();
+  const map: Record<string, PredictionChoice> = {};
+  stored.forEach((p) => {
+    map[p.matchId] = p.prediction;
+  });
+
+  const [matchesRes, picksRes] = await Promise.all([
+    fetch("/api/matches"),
+    fetch("/api/me/predictions", { credentials: "include" }),
+  ]);
+  const matchesData = await matchesRes.json();
+  const picksData = await picksRes.json();
+  if (matchesData.error) throw new Error(matchesData.error);
+
+  const matches = matchesData.matches ?? [];
+  const saved: Record<string, SavedPick> = {};
+  const merged = { ...map };
+  for (const row of picksData.predictions ?? []) {
+    saved[row.matchId] = {
+      prediction: row.prediction,
+      canEdit: row.canEdit,
+    };
+    merged[row.matchId] = row.prediction;
+  }
+
+  return { matches, predictions: merged, savedPicks: saved };
+}
+
 export default function HomePage() {
   const router = useRouter();
+  const { data, error, isInitialLoad } = useTabData("matches", fetchHomeData, {
+    fingerprint: (home) =>
+      stableFingerprint({
+        matches: fingerprintMatches(home.matches),
+        saved: Object.keys(home.savedPicks).sort(),
+      }),
+  });
+
   const [matches, setMatches] = useState<MatchData[]>([]);
   const [predictions, setPredictions] = useState<Record<string, PredictionChoice>>({});
   const [savedPicks, setSavedPicks] = useState<Record<string, SavedPick>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [patchError, setPatchError] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = getStoredPredictions();
-    const map: Record<string, PredictionChoice> = {};
-    stored.forEach((p) => {
-      map[p.matchId] = p.prediction;
-    });
+    if (!data) return;
+    setMatches(data.matches);
+    setPredictions(data.predictions);
+    setSavedPicks(data.savedPicks);
+  }, [data]);
 
-    Promise.all([
-      fetch("/api/matches").then((r) => r.json()),
-      fetch("/api/me/predictions", { credentials: "include" }).then((r) => r.json()),
-    ])
-      .then(([matchesData, picksData]) => {
-        if (matchesData.error) throw new Error(matchesData.error);
-        setMatches(matchesData.matches ?? []);
+  useSetTabPageMeta({
+    tourReady: !isInitialLoad && !error,
+    tourHasMatches: matches.length > 0,
+  });
 
-        const saved: Record<string, SavedPick> = {};
-        const merged = { ...map };
-        for (const row of picksData.predictions ?? []) {
-          saved[row.matchId] = {
-            prediction: row.prediction,
-            canEdit: row.canEdit,
-          };
-          merged[row.matchId] = row.prediction;
-        }
-        setSavedPicks(saved);
-        setPredictions(merged);
-      })
-      .catch(() => setError("خطا در دریافت بازی‌ها"))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const persistDraft = useCallback((next: Record<string, PredictionChoice>) => {
-    const list: StoredPrediction[] = Object.entries(next)
-      .filter(([matchId]) => !savedPicks[matchId])
-      .map(([matchId, prediction]) => ({ matchId, prediction }));
-    setStoredPredictions(list);
-  }, [savedPicks]);
+  const persistDraft = useCallback(
+    (next: Record<string, PredictionChoice>) => {
+      const list: StoredPrediction[] = Object.entries(next)
+        .filter(([matchId]) => !savedPicks[matchId])
+        .map(([matchId, prediction]) => ({ matchId, prediction }));
+      setStoredPredictions(list);
+    },
+    [savedPicks]
+  );
 
   const handleSelect = async (matchId: string, choice: PredictionChoice) => {
     setPatchError(null);
@@ -88,9 +115,9 @@ export default function HomePage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ matchId, prediction: choice }),
         });
-        const data = await res.json();
+        const resData = await res.json();
         if (!res.ok) {
-          setPatchError(data.error ?? "خطا در ویرایش پیش‌بینی");
+          setPatchError(resData.error ?? "خطا در ویرایش پیش‌بینی");
           setPredictions((prev) => ({
             ...prev,
             [matchId]: savedPicks[matchId].prediction,
@@ -126,30 +153,25 @@ export default function HomePage() {
 
   return (
     <>
-      <PublicPageShell
-        pageId="predictions"
-        tourReady={!loading && !error}
-        tourHasMatches={matches.length > 0}
-      >
-        <PredictionsHero />
-        <GlassTopNav />
+      <PredictionsHero />
+      <GlassTopNav />
 
-        <div className="relative z-10">
-          <div className="predictions-hero-spacer" aria-hidden />
+      <div className="relative z-10">
+        <div className="predictions-hero-spacer" aria-hidden />
 
-          <div className="predictions-content-scrim pb-32">
-            <p className="mb-4 px-4 text-center text-sm text-white/65">
-              بازی‌های ۲۴ ساعت آینده
-            </p>
+        <div className="predictions-content-scrim pb-32">
+          <p className="mb-4 px-4 text-center text-sm text-white/65">
+            بازی‌های ۲۴ ساعت آینده
+          </p>
 
-          {loading && <LoadingState />}
+          {isInitialLoad && <LoadingState />}
           {error && <ErrorState message={error} />}
           {patchError && (
             <p className="mx-4 mb-4 rounded-xl border border-danger/30 bg-danger/10 px-3 py-2 text-center text-sm text-danger">
               {patchError}
             </p>
           )}
-          {!loading && !error && matches.length === 0 && (
+          {!isInitialLoad && !error && matches.length === 0 && (
             <EmptyState
               title="بازی فعالی وجود ندارد"
               description="در حال حاضر بازی فعالی برای پیش‌بینی وجود ندارد. لطفاً نزدیک زمان بازی‌های بعدی دوباره مراجعه کنید."
@@ -190,15 +212,14 @@ export default function HomePage() {
               </motion.button>
             </div>
           )}
-          </div>
         </div>
-      </PublicPageShell>
+      </div>
 
       <SubmitOtpModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSuccess={(data) => {
-          sessionStorage.setItem("wc_success", JSON.stringify(data));
+        onSuccess={(successData) => {
+          sessionStorage.setItem("wc_success", JSON.stringify(successData));
           router.push("/success");
         }}
       />

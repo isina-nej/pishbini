@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Trophy,
@@ -17,9 +15,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { LoadingState } from "@/components/public/LoadingState";
-import { TourPageReady } from "@/components/public/TourPageReady";
 import { ErrorState } from "@/components/public/ErrorState";
 import type { CampaignInfoContent, CampaignInfoSectionIcon } from "@/lib/campaign-info";
+import { useTabData } from "@/hooks/useTabData";
+import { useTabNavigate } from "@/hooks/useTabNavigate";
+import { useSetTabPageMeta } from "@/lib/tab-page-meta";
 
 const ICONS: Record<CampaignInfoSectionIcon, LucideIcon> = {
   trophy: Trophy,
@@ -45,36 +45,35 @@ const ICON_COLORS: Record<CampaignInfoSectionIcon, string> = {
 
 type PointRule = { key: string; label: string; points: number; description: string | null };
 
+type PrizesData = {
+  content: CampaignInfoContent;
+  pointRules: PointRule[];
+};
+
+async function fetchPrizes(): Promise<PrizesData> {
+  const res = await fetch("/api/campaign-info");
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  if (!data.published) {
+    throw new Error("این صفحه در حال حاضر غیرفعال است.");
+  }
+  return { content: data.content, pointRules: data.pointRules ?? [] };
+}
+
 export function PrizesPageClient() {
-  const [content, setContent] = useState<CampaignInfoContent | null>(null);
-  const [pointRules, setPointRules] = useState<PointRule[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { navigateToTab } = useTabNavigate();
+  const { data, error, isInitialLoad } = useTabData("prizes", fetchPrizes);
 
-  useEffect(() => {
-    fetch("/api/campaign-info")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.error) throw new Error(data.error);
-        if (!data.published) {
-          setError("این صفحه در حال حاضر غیرفعال است.");
-          return;
-        }
-        setContent(data.content);
-        setPointRules(data.pointRules ?? []);
-      })
-      .catch(() => setError("خطا در بارگذاری اطلاعات"))
-      .finally(() => setLoading(false));
-  }, []);
+  const content = data?.content ?? null;
+  const pointRules = data?.pointRules ?? [];
 
-  const pageReady = !loading && !error && Boolean(content);
+  useSetTabPageMeta({ tourReady: !isInitialLoad && !error && Boolean(content) });
 
   return (
     <>
-      <TourPageReady ready={pageReady} />
-      {loading && <LoadingState />}
+      {isInitialLoad && <LoadingState />}
       {error && <ErrorState message={error} />}
-      {!loading && !error && content && (
+      {!isInitialLoad && !error && content && (
     <div className="pb-32 pt-4">
       <motion.header
         initial={{ opacity: 0, y: -16 }}
@@ -179,14 +178,15 @@ export function PrizesPageClient() {
       )}
 
       <div className="mx-4" data-tour="prizes-leaderboard-cta">
-        <Link
-          href="/leaderboard"
-          className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-secondary py-4 text-sm font-bold text-[#10111f]"
+        <button
+          type="button"
+          onClick={() => navigateToTab("leaderboard")}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-secondary py-4 text-sm font-bold text-[#10111f]"
         >
           <Trophy className="size-4" />
           مشاهده جدول امتیازات
           <ChevronLeft className="size-4" />
-        </Link>
+        </button>
       </div>
       </div>
       )}

@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -26,9 +25,12 @@ import {
   type ReferralListItem,
 } from "@/components/public/ProfileReferralsList";
 import { PushNotificationSettings } from "@/components/public/PushNotificationSettings";
-import { TourPageReady } from "@/components/public/TourPageReady";
 import { restartTour } from "@/lib/product-tour";
 import { cn, getPredictionOutcomeStyles } from "@/lib/utils";
+import { useTabData } from "@/hooks/useTabData";
+import { useTabNavigate } from "@/hooks/useTabNavigate";
+import { invalidateTabCache } from "@/lib/tab-data-cache";
+import { useSetTabPageMeta } from "@/lib/tab-page-meta";
 
 type ProfileTab = "predictions" | "referrals";
 type PredictionFilter = "all" | "correct" | "wrong" | "pending";
@@ -47,17 +49,53 @@ function matchesFilter(p: ProfilePrediction, filter: PredictionFilter): boolean 
   return p.isCorrect === null;
 }
 
+type ProfileSessionData = {
+  loggedIn: boolean;
+  profile: UserProfile | null;
+};
+
+async function fetchProfileSession(): Promise<ProfileSessionData> {
+  const sessionRes = await fetch("/api/me/session", { credentials: "include" });
+  const sessionData = await sessionRes.json();
+  if (!sessionData.loggedIn) {
+    return { loggedIn: false, profile: null };
+  }
+
+  const res = await fetch("/api/profile");
+  const data = await res.json();
+  if (res.status === 401) {
+    return { loggedIn: false, profile: null };
+  }
+  if (!res.ok) throw new Error(data.error ?? "خطا");
+  return { loggedIn: true, profile: data.profile };
+}
+
+async function fetchReferrals(): Promise<ReferralListItem[]> {
+  const res = await fetch("/api/me/referrals");
+  const data = await res.json();
+  if (res.status === 401) return [];
+  if (!res.ok) throw new Error(data.error ?? "خطا");
+  return data.referrals ?? [];
+}
+
 export function ProfilePageClient() {
   const router = useRouter();
+  const { navigateToTab } = useTabNavigate();
   const searchParams = useSearchParams();
   const initialTab: ProfileTab =
     searchParams.get("tab") === "referrals" ? "referrals" : "predictions";
 
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: sessionData,
+    error,
+    isInitialLoad,
+    reload: reloadProfile,
+  } = useTabData("profile", fetchProfileSession);
+
+  const loggedIn = sessionData?.loggedIn ?? false;
+  const profile = sessionData?.profile ?? null;
+  const authChecked = !isInitialLoad;
+
   const [copied, setCopied] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [editing, setEditing] = useState<ProfilePrediction | null>(null);
@@ -66,96 +104,35 @@ export function ProfilePageClient() {
   const [claimError, setClaimError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
   const [predictionFilter, setPredictionFilter] = useState<PredictionFilter>("all");
-  const [referrals, setReferrals] = useState<ReferralListItem[]>([]);
-  const [referralsLoading, setReferralsLoading] = useState(false);
-  const [referralsError, setReferralsError] = useState<string | null>(null);
-  const [referralsLoaded, setReferralsLoaded] = useState(false);
-
-  const loadProfile = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/profile");
-      const data = await res.json();
-      if (res.status === 401) {
-        setLoggedIn(false);
-        setProfile(null);
-        return;
-      }
-      if (!res.ok) throw new Error(data.error ?? "خطا");
-      setProfile(data.profile);
-      setLoggedIn(true);
-    } catch {
-      setError("خطا در دریافت اطلاعات حساب");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const loadReferrals = useCallback(async () => {
-    setReferralsLoading(true);
-    setReferralsError(null);
-    try {
-      const res = await fetch("/api/me/referrals");
-      const data = await res.json();
-      if (res.status === 401) {
-        setLoggedIn(false);
-        return;
-      }
-      if (!res.ok) throw new Error(data.error ?? "خطا");
-      setReferrals(data.referrals ?? []);
-      setReferralsLoaded(true);
-    } catch {
-      setReferralsError("خطا در دریافت لیست دعوت‌شدگان");
-    } finally {
-      setReferralsLoading(false);
-    }
-  }, []);
+  const [pushOptIn, setPushOptIn] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/me/session", { credentials: "include" });
-        const data = await res.json();
-        if (cancelled) return;
-        if (!data.loggedIn) {
-          setLoggedIn(false);
-          setLoading(false);
-          setAuthChecked(true);
-          return;
-        }
-        setLoggedIn(true);
-        setAuthChecked(true);
-        await loadProfile();
-      } catch {
-        if (!cancelled) {
-          setAuthChecked(true);
-          setLoading(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [loadProfile]);
+    if (profile) setPushOptIn(profile.pushOptIn);
+  }, [profile]);
 
-  useEffect(() => {
-    if (activeTab === "referrals" && loggedIn && !referralsLoaded && !referralsLoading) {
-      loadReferrals();
-    }
-  }, [activeTab, loggedIn, referralsLoaded, referralsLoading, loadReferrals]);
+  const {
+    data: referrals = [],
+    error: referralsError,
+    isInitialLoad: referralsInitial,
+  } = useTabData("referrals", fetchReferrals, {
+    enabled: loggedIn && activeTab === "referrals",
+  });
+
+  useSetTabPageMeta({
+    tourReady: authChecked && !(loggedIn && isInitialLoad) && !error && Boolean(profile),
+  });
 
   const handleAuthSuccess = () => {
-    setLoggedIn(true);
-    loadProfile();
+    invalidateTabCache("profile");
+    void reloadProfile();
     router.refresh();
   };
 
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
-    setProfile(null);
-    setLoggedIn(false);
+    invalidateTabCache("profile");
+    invalidateTabCache("referrals");
+    await reloadProfile();
     router.refresh();
   };
 
@@ -200,7 +177,8 @@ export function ProfilePageClient() {
         return;
       }
       setClaimReferralCode("");
-      await loadProfile();
+      invalidateTabCache("profile");
+      await reloadProfile();
     } catch {
       setClaimError("خطا در ارتباط با سرور");
     } finally {
@@ -213,47 +191,32 @@ export function ProfilePageClient() {
     return profile.predictions.filter((p) => matchesFilter(p, predictionFilter));
   }, [profile, predictionFilter]);
 
-  if (!authChecked || (loggedIn && loading)) {
-    return (
-      <>
-        <TourPageReady ready={false} />
-        <LoadingState />
-      </>
-    );
+  if (!authChecked || (loggedIn && isInitialLoad)) {
+    return <LoadingState />;
   }
 
   if (!loggedIn) {
     return (
-      <>
-        <TourPageReady ready={false} />
-        <div className="pb-32 pt-6">
-          <PhoneAuthFlow
-            title="حساب کاربری"
-            subtitle="برای مشاهده پروفایل وارد شوید یا ثبت‌نام کنید"
-            onSuccess={handleAuthSuccess}
-            onCancel={() => router.replace("/")}
-            showCancel
-          />
-        </div>
-      </>
+      <div className="pb-32 pt-6">
+        <PhoneAuthFlow
+          title="حساب کاربری"
+          subtitle="برای مشاهده پروفایل وارد شوید یا ثبت‌نام کنید"
+          onSuccess={handleAuthSuccess}
+          onCancel={() => navigateToTab("predictions")}
+          showCancel
+        />
+      </div>
     );
   }
 
   if (error || !profile) {
-    return (
-      <>
-        <TourPageReady ready={false} />
-        <ErrorState message={error ?? "خطا در بارگذاری"} />
-      </>
-    );
+    return <ErrorState message={error ?? "خطا در بارگذاری"} />;
   }
 
   const editablePrediction = profile.predictions.find((p) => p.canEdit);
 
   return (
-    <>
-      <TourPageReady ready />
-      <div className="pb-32 pt-4">
+    <div className="pb-32 pt-4">
         <motion.header
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -305,10 +268,8 @@ export function ProfilePageClient() {
         </div>
 
         <PushNotificationSettings
-          pushOptIn={profile.pushOptIn}
-          onPushOptInChange={(enabled) =>
-            setProfile((prev) => (prev ? { ...prev, pushOptIn: enabled } : prev))
-          }
+          pushOptIn={pushOptIn}
+          onPushOptInChange={setPushOptIn}
         />
 
         {profile.canClaimReferrer && (
@@ -460,9 +421,13 @@ export function ProfilePageClient() {
               {profile.predictions.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-white/10 py-8 text-center text-sm text-white/45">
                   هنوز پیش‌بینی ثبت نکرده‌اید.
-                  <Link href="/" className="mt-2 block text-primary">
+                  <button
+                    type="button"
+                    onClick={() => navigateToTab("predictions")}
+                    className="mt-2 block w-full text-primary"
+                  >
                     رفتن به پیش‌بینی
-                  </Link>
+                  </button>
                 </p>
               ) : filteredPredictions.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-white/10 py-8 text-center text-sm text-white/45">
@@ -520,7 +485,7 @@ export function ProfilePageClient() {
               </div>
               <ProfileReferralsList
                 referrals={referrals}
-                loading={referralsLoading}
+                loading={referralsInitial && referrals.length === 0}
                 error={referralsError}
               />
             </>
@@ -553,10 +518,12 @@ export function ProfilePageClient() {
         <EditPredictionSheet
           prediction={editing}
           onClose={() => setEditing(null)}
-          onSaved={loadProfile}
+          onSaved={() => {
+            invalidateTabCache("profile");
+            void reloadProfile();
+          }}
         />
       </div>
-    </>
   );
 }
 
