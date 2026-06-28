@@ -1,6 +1,9 @@
 import { MatchStatus, PrismaClient } from "../generated/prisma";
 import { flagUrlForTeam } from "@/lib/team-flag";
 import { WC2026_FIXTURES, WC2026_TEAM_CODES, WC2026_TEAMS } from "@/lib/world-cup-2026";
+import { WC2026_ROUND_OF_32 } from "@/lib/world-cup-knockout";
+
+const ALL_FIXTURES = [...WC2026_FIXTURES, ...WC2026_ROUND_OF_32];
 
 const LEGACY_CODES = ["IRI", "DEN", "POL", "WAL", "CMR", "SRB", "CRC", "ITA"];
 
@@ -53,7 +56,7 @@ export async function seedWorldCup2026(prisma: PrismaClient) {
   let created = 0;
   let updated = 0;
 
-  for (const fixture of WC2026_FIXTURES) {
+  for (const fixture of ALL_FIXTURES) {
     const homeTeamId = teamByCode[fixture.homeCode];
     const awayTeamId = teamByCode[fixture.awayCode];
     if (!homeTeamId || !awayTeamId) {
@@ -82,5 +85,28 @@ export async function seedWorldCup2026(prisma: PrismaClient) {
     }
   }
 
-  console.log(`World Cup 2026: ${WC2026_TEAMS.length} teams, ${created} matches created, ${updated} updated`);
+  console.log(
+    `World Cup 2026: ${WC2026_TEAMS.length} teams, ${created} matches created, ${updated} updated (${ALL_FIXTURES.length} fixtures)`
+  );
+
+  const officialKeys = new Set(
+    ALL_FIXTURES.map((f) => `${f.homeCode}:${f.awayCode}:${f.startTime}`)
+  );
+  const allMatches = await prisma.match.findMany({
+    include: { homeTeam: true, awayTeam: true },
+  });
+  let removed = 0;
+  for (const m of allMatches) {
+    const key = `${m.homeTeam.code}:${m.awayTeam.code}:${m.startTime.toISOString()}`;
+    const legacyTeam =
+      LEGACY_CODES.includes(m.homeTeam.code) || LEGACY_CODES.includes(m.awayTeam.code);
+    if (legacyTeam || !officialKeys.has(key)) {
+      await prisma.prediction.deleteMany({ where: { matchId: m.id } });
+      await prisma.match.delete({ where: { id: m.id } });
+      removed++;
+    }
+  }
+  if (removed > 0) {
+    console.log(`Removed ${removed} orphan/legacy matches`);
+  }
 }

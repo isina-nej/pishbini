@@ -38,7 +38,8 @@ if (await splashOverlay.isVisible().catch(() => false)) {
   await splashOverlay.waitFor({ state: "hidden", timeout: 5_000 }).catch(() => {});
 }
 
-await page.waitForSelector("text=پیش‌بینی جام جهانی", { timeout: 15_000 });
+await page.waitForSelector("text=بازی‌های ۲۴ ساعت آینده", { timeout: 15_000 });
+await page.waitForSelector(".team-flag", { timeout: 15_000 });
 await page.waitForTimeout(1500);
 
 const flags = await page.$$eval(".team-flag", (els) =>

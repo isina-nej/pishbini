@@ -18,8 +18,6 @@ export type WcFixture = {
   group: string;
   matchday: 1 | 2 | 3;
 };
-
-/** EDT (UTC−4) → UTC */
 export function wcKickoffUtc(monthDay: number, hourEt: number, minuteEt = 0): string {
   const d = new Date(Date.UTC(2026, 5, monthDay, hourEt + 4, minuteEt, 0));
   return d.toISOString();
