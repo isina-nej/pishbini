@@ -18,8 +18,9 @@ model User {
   correctCount      Int      @default(0)
   wrongCount        Int      @default(0)
   referralCount     Int      @default(0)
-  basePointsAwarded Boolean  @default(false)
-  hidden            Boolean  @default(false)
+  basePointsAwarded         Boolean  @default(false)
+  selfReferrerBonusAwarded  Boolean  @default(false)
+  hidden                    Boolean  @default(false)
   pushOptIn         Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -304,6 +305,7 @@ enum PointRuleKey {
   CORRECT_PREDICTION
   WRONG_PREDICTION
   REFERRAL_SUCCESS
+  SELF_REFERRER_CLAIM
   CANCELLED_MATCH
 }
 
@@ -312,6 +314,7 @@ enum PointTransactionType {
   CORRECT_PREDICTION
   WRONG_PREDICTION
   REFERRAL_SUCCESS
+  SELF_REFERRER_CLAIM
   ADMIN_ADJUSTMENT
   RESETTLEMENT
 }

@@ -1,19 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { normalizeReferralCode } from "@/lib/referral";
+import { findReferrerByCode } from "@/lib/referral-server";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const code = normalizeReferralCode(searchParams.get("code") ?? "");
-
-  if (!code) {
-    return NextResponse.json({ valid: false });
-  }
-
-  const referrer = await prisma.user.findUnique({
-    where: { referralCode: code },
-    select: { firstName: true },
-  });
+  const referrer = await findReferrerByCode(searchParams.get("code") ?? "");
 
   if (!referrer) {
     return NextResponse.json({ valid: false });
@@ -21,6 +11,8 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     valid: true,
+    referralCode: referrer.referralCode,
     referrerFirstName: referrer.firstName,
+    referrerLastName: referrer.lastName,
   });
 }

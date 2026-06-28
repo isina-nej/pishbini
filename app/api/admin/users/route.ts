@@ -26,8 +26,9 @@ export async function GET(request: Request) {
     let result = users.map((u) => {
       const computedScore = computeUserScore(
         {
-          basePointsAwarded: u.basePointsAwarded,
-          correctCount: u.correctCount,
+        basePointsAwarded: u.basePointsAwarded,
+        selfReferrerBonusAwarded: u.selfReferrerBonusAwarded,
+        correctCount: u.correctCount,
           wrongCount: u.wrongCount,
           referralCount: u.referralCount,
         },

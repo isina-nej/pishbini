@@ -56,3 +56,17 @@ export async function backfillReferredByCodeIfEmpty(
     data: { referredByCode: referralCodeInput },
   });
 }
+
+/** Backfill attribution and award referral if eligible (idempotent). */
+export async function assignReferralToUser(
+  tx: Prisma.TransactionClient,
+  opts: { userId: string; referralCode: string }
+): Promise<boolean> {
+  const user = await tx.user.findUnique({ where: { id: opts.userId } });
+  if (!user) return false;
+  await backfillReferredByCodeIfEmpty(tx, opts.userId, user.referredByCode, opts.referralCode);
+  return awardReferralIfEligible(tx, {
+    userId: opts.userId,
+    referralCodeInput: opts.referralCode,
+  });
+}

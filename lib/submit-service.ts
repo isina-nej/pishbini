@@ -167,6 +167,7 @@ export async function processSubmission(
     const computedScore = computeUserScore(
       {
         basePointsAwarded: user.basePointsAwarded,
+        selfReferrerBonusAwarded: user.selfReferrerBonusAwarded,
         correctCount: user.correctCount,
         wrongCount: user.wrongCount,
         referralCount: user.referralCount,

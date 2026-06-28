@@ -7,7 +7,8 @@ import { prisma } from "@/lib/db";
 import { verifyOtp } from "@/lib/otp-service";
 import { normalizePhone } from "@/lib/phone";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { REFERRAL_COOKIE_NAME, resolveReferralCode } from "@/lib/referral";
+import { resolveReferralCodeForRegistration } from "@/lib/referral-server";
+import { REFERRAL_COOKIE_NAME } from "@/lib/referral";
 import { authRegisterSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
@@ -63,7 +64,11 @@ export async function POST(request: Request) {
 
     const cookieStore = await cookies();
     const referralFromCookie = cookieStore.get(REFERRAL_COOKIE_NAME)?.value;
-    const referredByCode = resolveReferralCode(parsed.data.referralCode, referralFromCookie);
+    const referredByCode = await resolveReferralCodeForRegistration(
+      parsed.data.referralCode,
+      referralFromCookie,
+      phone
+    );
 
     const user = await createUserFromAuth({
       phone,

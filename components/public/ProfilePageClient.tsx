@@ -5,19 +5,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
+  CheckCircle2,
   Copy,
   GitBranch,
   LogOut,
   Target,
   Trophy,
   User,
+  UserPlus,
   Users,
 } from "lucide-react";
 import type { UserProfile, ProfilePrediction } from "@/lib/profile-service";
 import { ErrorState } from "@/components/public/ErrorState";
 import { LoadingState } from "@/components/public/LoadingState";
 import { EditPredictionSheet } from "@/components/public/EditPredictionSheet";
-import { PhoneAuthFlow } from "@/components/public/PhoneAuthFlow";
+import { PhoneAuthFlow, AUTH_INPUT_CLASS } from "@/components/public/PhoneAuthFlow";
+import { ReferralCodeField } from "@/components/public/ReferralCodeField";
 import { PushNotificationSettings } from "@/components/public/PushNotificationSettings";
 import { TourPageReady } from "@/components/public/TourPageReady";
 import { restartTour } from "@/lib/product-tour";
@@ -31,7 +34,11 @@ export function ProfilePageClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
   const [editing, setEditing] = useState<ProfilePrediction | null>(null);
+  const [claimReferralCode, setClaimReferralCode] = useState("");
+  const [claimLoading, setClaimLoading] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -106,6 +113,44 @@ export function ProfilePageClient() {
     }
   };
 
+  const copyReferralCode = async () => {
+    if (!profile?.referralCode) return;
+    try {
+      await navigator.clipboard.writeText(profile.referralCode);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const claimReferrer = async () => {
+    if (!claimReferralCode) {
+      setClaimError("کد دعوت‌کننده معتبر وارد کنید.");
+      return;
+    }
+    setClaimLoading(true);
+    setClaimError(null);
+    try {
+      const res = await fetch("/api/me/claim-referrer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referralCode: claimReferralCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setClaimError(data.error ?? "خطا در ثبت دعوت‌کننده");
+        return;
+      }
+      setClaimReferralCode("");
+      await loadProfile();
+    } catch {
+      setClaimError("خطا در ارتباط با سرور");
+    } finally {
+      setClaimLoading(false);
+    }
+  };
+
   if (!authChecked || (loggedIn && loading)) {
     return (
       <>
@@ -165,6 +210,12 @@ export function ProfilePageClient() {
         <p className="mt-1 text-[11px] text-white/35">
           عضو از {profile.memberSinceLabel}
         </p>
+        {profile.referrer && (
+          <p className="mt-1.5 flex items-center justify-center gap-1 text-[11px] text-white/35">
+            <CheckCircle2 className="size-3 shrink-0 text-primary/70" />
+            معرف: {profile.referrer.firstName} {profile.referrer.lastName}
+          </p>
+        )}
       </motion.header>
 
       <div className="mx-4 mb-4 grid grid-cols-2 gap-2" data-tour="profile-stats">
@@ -198,6 +249,45 @@ export function ProfilePageClient() {
         }
       />
 
+      {profile.canClaimReferrer && (
+        <div className="glass-card mx-4 mb-4 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <UserPlus className="size-4 text-primary" />
+            <p className="text-sm font-medium">ثبت دعوت‌کننده</p>
+          </div>
+          <p className="mb-3 text-xs leading-relaxed text-white/50">
+            اگر با لینک دعوت وارد نشده‌اید، می‌توانید یک‌بار کد دعوت‌کننده را ثبت کنید.
+          </p>
+          {profile.selfReferrerClaimPoints > 0 && (
+            <p className="mb-3 text-xs text-primary">
+              با ثبت دعوت‌کننده،{" "}
+              {profile.selfReferrerClaimPoints.toLocaleString("fa-IR")} امتیاز دریافت می‌کنید.
+            </p>
+          )}
+          <ReferralCodeField
+            value={claimReferralCode}
+            onChange={setClaimReferralCode}
+            inputClassName={AUTH_INPUT_CLASS}
+            skipStoredPrefill
+            label="کد دعوت‌کننده"
+            inputId="claim-referrer-code"
+          />
+          {claimError && (
+            <p role="alert" className="mt-3 text-xs text-danger">
+              {claimError}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={claimReferrer}
+            disabled={claimLoading || !claimReferralCode}
+            className="mt-4 w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3 text-sm font-bold text-[#10111f] disabled:opacity-50"
+          >
+            {claimLoading ? "در حال ثبت..." : "ثبت دعوت‌کننده"}
+          </button>
+        </div>
+      )}
+
       <div className="glass-card mx-4 mb-4 p-4" data-tour="profile-referral">
         <p className="mb-2 text-xs text-white/50">لینک دعوت شما</p>
         <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-3">
@@ -214,7 +304,31 @@ export function ProfilePageClient() {
             <Copy className="size-4" />
           </button>
         </div>
-        {copied && <p className="mt-2 text-center text-xs text-success">کپی شد</p>}
+        {copied && <p className="mt-2 text-center text-xs text-success">لینک کپی شد</p>}
+
+        <p className="mb-2 mt-4 text-xs text-white/50">کد دعوت شما</p>
+        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-3">
+          <p dir="ltr" className="min-w-0 flex-1 text-left text-sm font-medium tracking-wider text-white/90">
+            {profile.referralCode}
+          </p>
+          <button
+            type="button"
+            onClick={copyReferralCode}
+            className="shrink-0 rounded-lg bg-primary/15 p-2 text-primary"
+            aria-label="کپی کد"
+          >
+            <Copy className="size-4" />
+          </button>
+        </div>
+        {codeCopied && <p className="mt-2 text-center text-xs text-success">کد کپی شد</p>}
+
+        <Link
+          href="/profile/referrals"
+          className="mt-4 flex items-center justify-center gap-1.5 text-xs text-secondary hover:underline"
+        >
+          <Users className="size-3.5" />
+          دعوت‌شدگان من ({profile.referralCount.toLocaleString("fa-IR")})
+        </Link>
       </div>
 
       {profile.bracketSubmitted && (

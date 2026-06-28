@@ -47,6 +47,7 @@ export async function GET(_request: Request, { params }: Params) {
     const computedScore = computeUserScore(
       {
         basePointsAwarded: user.basePointsAwarded,
+        selfReferrerBonusAwarded: user.selfReferrerBonusAwarded,
         correctCount: user.correctCount,
         wrongCount: user.wrongCount,
         referralCount: user.referralCount,

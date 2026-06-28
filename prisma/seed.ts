@@ -56,6 +56,12 @@ async function main() {
       description: "امتیاز دعوت دوست",
     },
     {
+      key: PointRuleKey.SELF_REFERRER_CLAIM,
+      label: "امتیاز ثبت دعوت‌کننده",
+      points: 0,
+      description: "امتیاز ثبت یک‌باره کد دعوت‌کننده در پروفایل",
+    },
+    {
       key: PointRuleKey.CANCELLED_MATCH,
       label: "بازی لغو شده",
       points: 0,

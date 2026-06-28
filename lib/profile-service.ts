@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { getUserRankByUserId } from "@/lib/leaderboard-service";
 import { isMatchLocked } from "@/lib/matches";
 import { maskPhone } from "@/lib/masking";
-import { PredictionChoice } from "@/generated/prisma";
+import { PredictionChoice, PointRuleKey } from "@/generated/prisma";
 import { formatPredictionChoice, formatPredictionResult } from "@/lib/prediction-labels";
 import { computeUserScore, loadActivePointRulesMap } from "@/lib/user-score";
 import { getReferralLink } from "@/lib/utils";
@@ -31,6 +31,9 @@ export type UserProfile = {
   maskedPhone: string;
   referralCode: string;
   referralLink: string;
+  referrer: { firstName: string; lastName: string } | null;
+  canClaimReferrer: boolean;
+  selfReferrerClaimPoints: number;
   computedScore: number;
   rank: number | null;
   correctCount: number;
@@ -53,7 +56,9 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
       lastName: true,
       phone: true,
       referralCode: true,
+      referredByCode: true,
       basePointsAwarded: true,
+      selfReferrerBonusAwarded: true,
       correctCount: true,
       wrongCount: true,
       referralCount: true,
@@ -64,7 +69,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 
   if (!user) return null;
 
-  const [rules, predictions, bracketSubmission, rank] = await Promise.all([
+  const [rules, predictions, bracketSubmission, rank, referredRecord] = await Promise.all([
     loadActivePointRulesMap(),
     prisma.prediction.findMany({
       where: { userId: user.id },
@@ -88,11 +93,18 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
       include: { championTeam: { select: { nameFa: true } } },
     }),
     getUserRankByUserId(user.id),
+    prisma.referral.findUnique({
+      where: { referredUserId: user.id },
+      include: {
+        referrer: { select: { firstName: true, lastName: true } },
+      },
+    }),
   ]);
 
   const computedScore = computeUserScore(
     {
       basePointsAwarded: user.basePointsAwarded,
+      selfReferrerBonusAwarded: user.selfReferrerBonusAwarded,
       correctCount: user.correctCount,
       wrongCount: user.wrongCount,
       referralCount: user.referralCount,
@@ -100,7 +112,21 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     rules
   );
 
+  const selfReferrerClaimPoints = rules.get(PointRuleKey.SELF_REFERRER_CLAIM) ?? 0;
+  const canClaimReferrer = !user.referredByCode && !referredRecord;
+
   const now = new Date();
+
+  let referrer: { firstName: string; lastName: string } | null =
+    referredRecord?.referrer ?? null;
+
+  if (!referrer && user.referredByCode) {
+    const referrerUser = await prisma.user.findUnique({
+      where: { referralCode: user.referredByCode },
+      select: { firstName: true, lastName: true },
+    });
+    referrer = referrerUser;
+  }
 
   return {
     firstName: user.firstName,
@@ -108,6 +134,9 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     maskedPhone: maskPhone(user.phone),
     referralCode: user.referralCode,
     referralLink: getReferralLink(user.referralCode),
+    referrer,
+    canClaimReferrer,
+    selfReferrerClaimPoints,
     computedScore,
     rank,
     correctCount: user.correctCount,

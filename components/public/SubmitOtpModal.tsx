@@ -4,12 +4,12 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, X } from "lucide-react";
 import { AUTH_INPUT_CLASS } from "@/components/public/PhoneAuthFlow";
+import { ReferralCodeField } from "@/components/public/ReferralCodeField";
 import { cn } from "@/lib/utils";
 import { notifySessionUpdated } from "@/lib/session-events";
 import {
   clearStoredPredictions,
   getStoredPredictions,
-  getStoredReferralCode,
 } from "@/lib/predictions-storage";
 
 type Step = "info" | "otp" | "loading";
@@ -36,6 +36,7 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [loggedIn, setLoggedIn] = useState(false);
@@ -43,6 +44,7 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
   const reset = useCallback(() => {
     setStep("info");
     setCode("");
+    setReferralCode("");
     setError(null);
     setCountdown(0);
     setLoggedIn(false);
@@ -145,7 +147,6 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
 
     setStep("loading");
     const predictions = getStoredPredictions();
-    const referralCode = getStoredReferralCode();
 
     try {
       const payload: Record<string, unknown> = {
@@ -153,7 +154,7 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
         lastName,
         phone,
         predictions,
-        referralCode,
+        referralCode: referralCode || null,
       };
       if (!loggedIn) payload.code = code;
 
@@ -297,6 +298,11 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
                       placeholder="09123456789"
                     />
                   </div>
+                  <ReferralCodeField
+                    value={referralCode}
+                    onChange={setReferralCode}
+                    inputClassName={inputClassName}
+                  />
                   <button
                     type="button"
                     onClick={sendOtp}

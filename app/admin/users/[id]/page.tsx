@@ -13,7 +13,7 @@ import { AdminLoading } from "@/components/admin/ui/AdminLoading";
 import { AdminMetricCard } from "@/components/admin/AdminMetricCard";
 import { AdminToggle } from "@/components/admin/ui/AdminToggle";
 import { formatPersianDateTime } from "@/lib/dates";
-import { ArrowRight, Save, Trash2, ScrollText, EyeOff } from "lucide-react";
+import { ArrowRight, Save, Trash2, ScrollText, EyeOff, UserPlus, Link2 } from "lucide-react";
 
 export default function AdminUserDetailPage() {
   const params = useParams();
@@ -26,6 +26,10 @@ export default function AdminUserDetailPage() {
   const [hidden, setHidden] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [assignInput, setAssignInput] = useState("");
+  const [assigning, setAssigning] = useState(false);
+  const [assignMessage, setAssignMessage] = useState<string | null>(null);
+  const [assignError, setAssignError] = useState(false);
   const [activity, setActivity] = useState<
     Array<{ id: string; actionLabel: string; summary: string | null; createdAt: string }>
   >([]);
@@ -82,6 +86,32 @@ export default function AdminUserDetailPage() {
     }
   };
 
+  const handleAssignReferral = async () => {
+    setAssigning(true);
+    setAssignMessage(null);
+    setAssignError(false);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${id}/assign-referral`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referrerPhoneOrCode: assignInput.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAssignError(true);
+        setAssignMessage(data.error ?? "خطا در ثبت معرف");
+        return;
+      }
+      setAssignError(false);
+      setAssignMessage(data.message ?? "معرف با موفقیت ثبت شد.");
+      setAssignInput("");
+      await load();
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   if (!user) {
     return (
       <AdminLayout>
@@ -104,7 +134,15 @@ export default function AdminUserDetailPage() {
     }>;
     smsLogs: Array<{ message: string; status: string; createdAt: string }>;
     pointTransactions: Array<{ type: string; points: number; reason: string | null; createdAt: string }>;
-    referralsMade: Array<{ referred: { firstName: string; lastName: string } }>;
+    referralsMade: Array<{
+      createdAt: string;
+      referred: { firstName: string; lastName: string; phone: string; createdAt: string };
+    }>;
+    referredRecord: {
+      referralCode: string;
+      createdAt: string;
+      referrer: { firstName: string; lastName: string; referralCode: string };
+    } | null;
   };
 
   return (
@@ -176,6 +214,111 @@ export default function AdminUserDetailPage() {
               حذف کاربر
             </AdminButton>
           </div>
+        </AdminCardBody>
+      </AdminCard>
+
+      {u.referredRecord ? (
+        <AdminCard className="mb-6">
+          <AdminCardHeader title="معرف این کاربر" />
+          <AdminCardBody>
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <AdminBadge tone="primary">
+                <UserPlus className="size-3.5" />
+                {u.referredRecord.referrer.firstName} {u.referredRecord.referrer.lastName}
+              </AdminBadge>
+              <span className="text-[var(--admin-text-muted)]" dir="ltr">
+                کد: {u.referredRecord.referrer.referralCode}
+              </span>
+              <span className="text-xs text-[var(--admin-text-subtle)]">
+                ثبت دعوت: {formatPersianDateTime(u.referredRecord.createdAt)}
+              </span>
+            </div>
+          </AdminCardBody>
+        </AdminCard>
+      ) : (
+        <AdminCard className="mb-6">
+          <AdminCardHeader title="اختصاص دستی معرف" />
+          <AdminCardBody className="space-y-3">
+            {u.referredByCode && (
+              <p className="rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface-elevated)] px-3 py-2 text-xs text-[var(--admin-text-muted)]">
+                کد معرف ثبت‌شده:{" "}
+                <span dir="ltr" className="font-mono text-[var(--admin-text)]">
+                  {u.referredByCode}
+                </span>
+                {" — "}
+                در انتظار اولین پیش‌بینی برای ثبت امتیاز
+              </p>
+            )}
+            <p className="text-sm text-[var(--admin-text-muted)]">
+              شماره موبایل یا کد دعوت معرف را وارد کنید.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <AdminInput
+                value={assignInput}
+                onChange={(e) => setAssignInput(e.target.value)}
+                placeholder="09123456789 یا ABC1234"
+                dir="ltr"
+                className="flex-1"
+              />
+              <AdminButton onClick={handleAssignReferral} disabled={assigning || !assignInput.trim()}>
+                <Link2 className="size-3.5" />
+                {assigning ? "در حال ثبت..." : "ثبت معرف"}
+              </AdminButton>
+            </div>
+            {assignMessage && (
+              <p
+                className={`text-sm ${
+                  assignError ? "text-[var(--admin-danger)]" : "text-[var(--admin-success)]"
+                }`}
+              >
+                {assignMessage}
+              </p>
+            )}
+          </AdminCardBody>
+        </AdminCard>
+      )}
+
+      <AdminCard className="mb-6">
+        <AdminCardHeader
+          title="دعوت‌های موفق"
+          description="کاربرانی که با لینک این شخص ثبت‌نام کرده‌اند"
+        />
+        <AdminCardBody className="overflow-x-auto">
+          {u.referralsMade.length === 0 ? (
+            <p className="text-sm text-[var(--admin-text-muted)]">هنوز دعوت موفقی ثبت نشده است.</p>
+          ) : (
+            <table className="w-full min-w-[520px] text-sm">
+              <thead>
+                <tr className="border-b border-[var(--admin-border)] text-right text-xs text-[var(--admin-text-muted)]">
+                  <th className="px-3 py-2 font-medium">نام</th>
+                  <th className="px-3 py-2 font-medium">موبایل</th>
+                  <th className="px-3 py-2 font-medium">تاریخ ثبت‌نام</th>
+                  <th className="px-3 py-2 font-medium">تاریخ ثبت دعوت</th>
+                </tr>
+              </thead>
+              <tbody>
+                {u.referralsMade.map((r) => (
+                  <tr
+                    key={`${r.referred.phone}-${r.createdAt}`}
+                    className="border-b border-[var(--admin-border)]/60 last:border-0"
+                  >
+                    <td className="px-3 py-2.5 font-medium">
+                      {r.referred.firstName} {r.referred.lastName}
+                    </td>
+                    <td className="px-3 py-2.5 font-mono text-xs" dir="ltr">
+                      {r.referred.phone}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-[var(--admin-text-muted)]">
+                      {formatPersianDateTime(r.referred.createdAt)}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-[var(--admin-text-muted)]">
+                      {formatPersianDateTime(r.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </AdminCardBody>
       </AdminCard>
 

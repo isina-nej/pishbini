@@ -2,6 +2,7 @@ import { PointRuleKey } from "@/generated/prisma";
 
 export type UserScoreInput = {
   basePointsAwarded: boolean;
+  selfReferrerBonusAwarded: boolean;
   correctCount: number;
   wrongCount: number;
   referralCount: number;
@@ -13,6 +14,9 @@ export function computeUserScore(user: UserScoreInput, rules: PointRulesMap): nu
   let score = 0;
   if (user.basePointsAwarded) {
     score += rules.get(PointRuleKey.BASE_REGISTRATION) ?? 0;
+  }
+  if (user.selfReferrerBonusAwarded) {
+    score += rules.get(PointRuleKey.SELF_REFERRER_CLAIM) ?? 0;
   }
   score += user.correctCount * (rules.get(PointRuleKey.CORRECT_PREDICTION) ?? 0);
   score += user.wrongCount * (rules.get(PointRuleKey.WRONG_PREDICTION) ?? 0);
@@ -27,5 +31,6 @@ export async function loadActivePointRulesMap(): Promise<PointRulesMap> {
     PointRuleKey.CORRECT_PREDICTION,
     PointRuleKey.WRONG_PREDICTION,
     PointRuleKey.REFERRAL_SUCCESS,
+    PointRuleKey.SELF_REFERRER_CLAIM,
   ]);
 }

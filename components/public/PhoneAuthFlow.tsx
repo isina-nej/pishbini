@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, LogIn, Phone, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getStoredReferralCode } from "@/lib/predictions-storage";
+import { ReferralCodeField } from "@/components/public/ReferralCodeField";
 import { notifySessionUpdated } from "@/lib/session-events";
 
 export const AUTH_INPUT_CLASS =
@@ -35,6 +35,7 @@ export function PhoneAuthFlow({
   const [lastName, setLastName] = useState("");
   const [registered, setRegistered] = useState<boolean | null>(null);
   const [code, setCode] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(0);
 
@@ -144,7 +145,7 @@ export function PhoneAuthFlow({
             code,
             firstName: firstName.trim(),
             lastName: lastName.trim(),
-            referralCode: getStoredReferralCode(),
+            referralCode: referralCode || null,
           };
 
       const res = await fetch(endpoint, {
@@ -169,6 +170,7 @@ export function PhoneAuthFlow({
   const resetToPhone = () => {
     setStep("phone");
     setCode("");
+    setReferralCode("");
     setRegistered(null);
     setError(null);
   };
@@ -259,6 +261,11 @@ export function PhoneAuthFlow({
               autoComplete="family-name"
             />
           </div>
+          <ReferralCodeField
+            value={referralCode}
+            onChange={setReferralCode}
+            inputClassName={AUTH_INPUT_CLASS}
+          />
           <button
             type="button"
             onClick={continueFromNames}

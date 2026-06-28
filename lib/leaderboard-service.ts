@@ -25,6 +25,7 @@ type UserRow = {
   phone: string;
   referralCode: string;
   basePointsAwarded: boolean;
+  selfReferrerBonusAwarded: boolean;
   correctCount: number;
   wrongCount: number;
   referralCount: number;
@@ -68,6 +69,7 @@ export async function getLeaderboardData(limit = PUBLIC_LEADERBOARD_LIMIT): Prom
         phone: true,
         referralCode: true,
         basePointsAwarded: true,
+        selfReferrerBonusAwarded: true,
         correctCount: true,
         wrongCount: true,
         referralCount: true,
@@ -82,6 +84,7 @@ export async function getLeaderboardData(limit = PUBLIC_LEADERBOARD_LIMIT): Prom
       toEntry(u, computeUserScore(
         {
           basePointsAwarded: u.basePointsAwarded,
+          selfReferrerBonusAwarded: u.selfReferrerBonusAwarded,
           correctCount: u.correctCount,
           wrongCount: u.wrongCount,
           referralCount: u.referralCount,
@@ -107,6 +110,7 @@ export async function getUserRankByReferralCode(
         phone: true,
         referralCode: true,
         basePointsAwarded: true,
+        selfReferrerBonusAwarded: true,
         correctCount: true,
         wrongCount: true,
         referralCount: true,
@@ -121,6 +125,7 @@ export async function getUserRankByReferralCode(
       toEntry(u, computeUserScore(
         {
           basePointsAwarded: u.basePointsAwarded,
+          selfReferrerBonusAwarded: u.selfReferrerBonusAwarded,
           correctCount: u.correctCount,
           wrongCount: u.wrongCount,
           referralCount: u.referralCount,
@@ -149,6 +154,7 @@ export async function getUserRankByUserId(userId: string): Promise<number | null
         phone: true,
         referralCode: true,
         basePointsAwarded: true,
+        selfReferrerBonusAwarded: true,
         correctCount: true,
         wrongCount: true,
         referralCount: true,
@@ -165,6 +171,7 @@ export async function getUserRankByUserId(userId: string): Promise<number | null
         computeUserScore(
           {
             basePointsAwarded: u.basePointsAwarded,
+            selfReferrerBonusAwarded: u.selfReferrerBonusAwarded,
             correctCount: u.correctCount,
             wrongCount: u.wrongCount,
             referralCount: u.referralCount,

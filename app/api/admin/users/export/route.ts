@@ -30,6 +30,7 @@ export async function GET() {
       points: computeUserScore(
         {
           basePointsAwarded: u.basePointsAwarded,
+          selfReferrerBonusAwarded: u.selfReferrerBonusAwarded,
           correctCount: u.correctCount,
           wrongCount: u.wrongCount,
           referralCount: u.referralCount,

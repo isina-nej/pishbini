@@ -4,6 +4,14 @@ export const REFERRAL_COOKIE_NAME = "wc_referral";
 export const REFERRAL_STORAGE_KEY = "wc_referral_code";
 export const REFERRAL_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 
+export type ReferrerInfo = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  referralCode: string;
+  phone: string;
+};
+
 export function generateReferralCode(length = 7): string {
   let code = "";
   for (let i = 0; i < length; i++) {

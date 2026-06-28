@@ -20,6 +20,7 @@ type User = {
   points: number;
   totalPredictions: number;
   correctPredictions: number;
+  wrongPredictions: number;
   referralCount: number;
   hidden: boolean;
   createdAt: string;
@@ -96,6 +97,7 @@ export default function AdminUsersPage() {
                   <th>امتیاز</th>
                   <th>پیش‌بینی</th>
                   <th>درست</th>
+                  <th>غلط</th>
                   <th>دعوت</th>
                   <th></th>
                 </tr>
@@ -121,6 +123,7 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="tabular-nums">{u.totalPredictions}</td>
                     <td className="tabular-nums">{u.correctPredictions}</td>
+                    <td className="tabular-nums">{u.wrongPredictions}</td>
                     <td className="tabular-nums">{u.referralCount}</td>
                     <td>
                       <div className="flex gap-1">
