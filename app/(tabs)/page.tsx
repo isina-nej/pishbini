@@ -194,12 +194,12 @@ export default function HomePage() {
             );
           })}
 
-          <SubmitPredictionsBarSpacer visible={newPicksCount > 0} />
+          <SubmitPredictionsBarSpacer visible={newPicksCount > 0 && !modalOpen} />
         </div>
       </div>
 
       <SubmitPredictionsBar
-        count={newPicksCount}
+        count={modalOpen ? 0 : newPicksCount}
         onSubmit={() => {
           if (document.documentElement.dataset.tourStep === "submit") return;
           setModalOpen(true);

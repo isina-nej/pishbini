@@ -28,6 +28,8 @@ type Props = {
 
 const inputClassName = AUTH_INPUT_CLASS;
 
+const SHEET_BOTTOM = "calc(5rem + env(safe-area-inset-bottom, 0px))";
+
 export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
   const titleId = useId();
   const otpRef = useRef<HTMLInputElement>(null);
@@ -188,7 +190,7 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[120] flex items-end justify-center">
+        <div className="fixed inset-0 z-[130]">
           <motion.button
             type="button"
             aria-label="بستن"
@@ -208,19 +210,16 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 420, damping: 36 }}
+            style={{ bottom: SHEET_BOTTOM }}
             className={cn(
-              "relative z-10 flex w-full max-w-[430px] flex-col",
-              "max-h-[min(92dvh,720px)]",
+              "absolute inset-x-0 z-10 mx-auto flex w-full max-w-[430px] flex-col",
+              "max-h-[min(78dvh,640px)]",
               "rounded-t-[1.75rem] border border-white/10 border-b-0 glass-panel",
-              "shadow-[0_-12px_48px_rgba(0,0,0,0.55)]",
-              "pb-[max(1rem,env(safe-area-inset-bottom))]"
+              "shadow-[0_-12px_48px_rgba(0,0,0,0.55)]"
             )}
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="sticky top-0 z-10 shrink-0 rounded-t-[1.75rem] glass-surface px-5 pt-3"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="shrink-0 rounded-t-[1.75rem] glass-surface px-5 pt-3">
               <div
                 className="mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-white/25 sm:hidden"
                 aria-hidden
@@ -250,9 +249,9 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-2 [-webkit-overflow-scrolling:touch]">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-1 [-webkit-overflow-scrolling:touch]">
               {step === "info" && (
-                <div className="space-y-3">
+                <div className="space-y-3 pb-2">
                   <div>
                     <label htmlFor="otp-first-name" className="mb-1.5 block text-xs text-white/60">
                       نام
@@ -303,35 +302,19 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
                     onChange={setReferralCode}
                     inputClassName={inputClassName}
                   />
-                  <button
-                    type="button"
-                    onClick={sendOtp}
-                    className="mt-1 w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 text-base font-bold text-[#10111f] active:scale-[0.99]"
-                  >
-                    دریافت کد تأیید
-                  </button>
                 </div>
               )}
 
               {step === "otp" && (
-                <div className="space-y-4">
+                <div className="space-y-4 pb-2">
                   {loggedIn ? (
-                    <>
-                      <p className="text-center text-sm text-white/60">
-                        {firstName} {lastName}
-                        <br />
-                        <span dir="ltr" className="text-white/80">
-                          {phone}
-                        </span>
-                      </p>
-                      <button
-                        type="button"
-                        onClick={submitPredictions}
-                        className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 text-base font-bold text-[#10111f] active:scale-[0.99]"
-                      >
-                        ثبت پیش‌بینی
-                      </button>
-                    </>
+                    <p className="text-center text-sm text-white/60">
+                      {firstName} {lastName}
+                      <br />
+                      <span dir="ltr" className="text-white/80">
+                        {phone}
+                      </span>
+                    </p>
                   ) : (
                     <>
                       <p className="text-center text-sm text-white/60">
@@ -358,26 +341,6 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
                         maxLength={4}
                         aria-label="کد تأیید ۴ رقمی"
                       />
-                      <button
-                        type="button"
-                        onClick={submitPredictions}
-                        className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 text-base font-bold text-[#10111f] active:scale-[0.99]"
-                      >
-                        تأیید و ثبت پیش‌بینی
-                      </button>
-                      <button
-                        type="button"
-                        onClick={resendOtp}
-                        disabled={countdown > 0}
-                        className={cn(
-                          "w-full py-2.5 text-sm",
-                          countdown > 0 ? "text-white/30" : "text-primary hover:underline"
-                        )}
-                      >
-                        {countdown > 0
-                          ? `ارسال مجدد (${countdown.toLocaleString("fa-IR")} ثانیه)`
-                          : "ارسال مجدد کد"}
-                      </button>
                     </>
                   )}
                 </div>
@@ -389,16 +352,65 @@ export function SubmitOtpModal({ open, onClose, onSuccess }: Props) {
                   <p className="text-sm">لطفاً صبر کنید...</p>
                 </div>
               )}
-
-              {error && (
-                <p
-                  role="alert"
-                  className="mt-4 rounded-xl border border-danger/30 bg-danger/10 px-3 py-2.5 text-center text-sm text-danger"
-                >
-                  {error}
-                </p>
-              )}
             </div>
+
+            {step !== "loading" && (
+              <div className="shrink-0 border-t border-white/8 glass-surface px-5 py-4">
+                {error && (
+                  <p
+                    role="alert"
+                    className="mb-3 rounded-xl border border-danger/30 bg-danger/10 px-3 py-2.5 text-center text-sm text-danger"
+                  >
+                    {error}
+                  </p>
+                )}
+
+                {step === "info" && (
+                  <button
+                    type="button"
+                    onClick={sendOtp}
+                    className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 text-base font-bold text-[#10111f] active:scale-[0.99]"
+                  >
+                    دریافت کد تأیید
+                  </button>
+                )}
+
+                {step === "otp" && loggedIn && (
+                  <button
+                    type="button"
+                    onClick={submitPredictions}
+                    className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 text-base font-bold text-[#10111f] active:scale-[0.99]"
+                  >
+                    ثبت پیش‌بینی
+                  </button>
+                )}
+
+                {step === "otp" && !loggedIn && (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={submitPredictions}
+                      className="w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-3.5 text-base font-bold text-[#10111f] active:scale-[0.99]"
+                    >
+                      تأیید و ثبت پیش‌بینی
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resendOtp}
+                      disabled={countdown > 0}
+                      className={cn(
+                        "w-full py-2.5 text-sm",
+                        countdown > 0 ? "text-white/30" : "text-primary hover:underline"
+                      )}
+                    >
+                      {countdown > 0
+                        ? `ارسال مجدد (${countdown.toLocaleString("fa-IR")} ثانیه)`
+                        : "ارسال مجدد کد"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </motion.div>
         </div>
       )}
