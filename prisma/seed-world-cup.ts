@@ -18,7 +18,11 @@ function statusForKickoff(startTime: Date, now: Date): MatchStatus {
   return MatchStatus.SCHEDULED;
 }
 
-export async function seedWorldCup2026(prisma: PrismaClient) {
+export async function seedWorldCup2026(
+  prisma: PrismaClient,
+  options: { cleanupOrphans?: boolean; touchStatus?: boolean } = {}
+) {
+  const { cleanupOrphans = false, touchStatus = true } = options;
   for (const team of WC2026_TEAMS) {
     await prisma.team.upsert({
       where: { code: team.code },
@@ -72,10 +76,19 @@ export async function seedWorldCup2026(prisma: PrismaClient) {
     });
 
     if (existing) {
-      await prisma.match.update({
-        where: { id: existing.id },
-        data: { status },
-      });
+      const data: { status?: MatchStatus } = {};
+      if (touchStatus) {
+        const nextStatus = statusForKickoff(startTime, now);
+        if (
+          existing.status === MatchStatus.SCHEDULED ||
+          existing.status === MatchStatus.ACTIVE
+        ) {
+          data.status = nextStatus;
+        }
+      }
+      if (Object.keys(data).length > 0) {
+        await prisma.match.update({ where: { id: existing.id }, data });
+      }
       updated++;
     } else {
       await prisma.match.create({
@@ -88,6 +101,8 @@ export async function seedWorldCup2026(prisma: PrismaClient) {
   console.log(
     `World Cup 2026: ${WC2026_TEAMS.length} teams, ${created} matches created, ${updated} updated (${ALL_FIXTURES.length} fixtures)`
   );
+
+  if (!cleanupOrphans) return;
 
   const officialKeys = new Set(
     ALL_FIXTURES.map((f) => `${f.homeCode}:${f.awayCode}:${f.startTime}`)

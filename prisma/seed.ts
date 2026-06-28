@@ -77,7 +77,7 @@ async function main() {
     });
   }
 
-  await seedWorldCup2026(prisma);
+  await seedWorldCup2026(prisma, { cleanupOrphans: true, touchStatus: true });
 
   const existingUser = await prisma.user.findFirst();
   if (!existingUser) {

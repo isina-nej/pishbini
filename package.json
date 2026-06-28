@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "db:seed": "tsx prisma/seed.ts",
+    "seed:production": "tsx scripts/seed-production-safe.ts",
     "flags:download": "tsx scripts/download-flags.ts",
     "icons:generate": "node scripts/generate-pwa-icons.mjs",
     "og:generate": "node scripts/generate-og-image.mjs",
