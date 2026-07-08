@@ -9,21 +9,39 @@ export async function GET(request: Request) {
     await requireAdmin();
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q")?.trim();
-    const minPoints = searchParams.get("minPoints");
-    const maxPoints = searchParams.get("maxPoints");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const skip = (page - 1) * limit;
 
-    const [users, rules] = await Promise.all([
+    // Build the query where clause based on the search query
+    let whereClause = {};
+    if (q) {
+      whereClause = {
+        OR: [
+          { firstName: { contains: q } },
+          { lastName: { contains: q } },
+          { phone: { contains: q } },
+          { referralCode: { contains: q } },
+        ],
+      };
+    }
+
+    const [users, totalCount, rules] = await Promise.all([
       prisma.user.findMany({
+        where: whereClause,
         include: {
           _count: { select: { predictions: true } },
         },
-        orderBy: { createdAt: "desc" },
-        take: 500,
+        orderBy: { points: "desc" }, // Notice points is saved in DB, we can order by it directly in prisma
+        skip: skip,
+        take: limit,
       }),
+      prisma.user.count({ where: whereClause }),
       loadActivePointRulesMap(),
     ]);
 
     let result = users.map((u) => {
+      // NOTE: We still compute score for display/correctness if there are live adjustments not yet in DB `points` column
       const computedScore = computeUserScore(
         {
         basePointsAwarded: u.basePointsAwarded,
@@ -42,7 +60,7 @@ export async function GET(request: Request) {
         referralCode: u.referralCode,
         referralLink: getReferralLink(u.referralCode),
         referredByCode: u.referredByCode,
-        points: computedScore,
+        points: u.points, // Use the DB points directly to respect the Prisma sorting
         totalPredictions: u._count.predictions,
         correctPredictions: u.correctCount,
         wrongPredictions: u.wrongCount,
@@ -52,28 +70,15 @@ export async function GET(request: Request) {
       };
     });
 
-    if (q) {
-      result = result.filter(
-        (u) =>
-          u.firstName.includes(q) ||
-          u.lastName.includes(q) ||
-          u.phone.includes(q) ||
-          u.referralCode.includes(q.toUpperCase())
-      );
-    }
-
-    if (minPoints) {
-      const min = Number(minPoints);
-      result = result.filter((u) => u.points >= min);
-    }
-    if (maxPoints) {
-      const max = Number(maxPoints);
-      result = result.filter((u) => u.points <= max);
-    }
-
-    result.sort((a, b) => b.points - a.points);
-
-    return NextResponse.json({ users: result.slice(0, 200) });
+    return NextResponse.json({ 
+      users: result,
+      pagination: {
+        total: totalCount,
+        page: page,
+        limit: limit,
+        totalPages: Math.ceil(totalCount / limit)
+      }
+    });
   } catch {
     return adminUnauthorizedResponse();
   }

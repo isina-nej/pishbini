@@ -30,19 +30,41 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
+  
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 50;
 
-  const load = (search = "") => {
+  const load = (search = "", currentPage = 1) => {
     setLoading(true);
-    const params = search ? `?q=${encodeURIComponent(search)}` : "";
-    fetch(`/api/admin/users${params}`)
+    
+    const params = new URLSearchParams();
+    if (search) params.append("q", search);
+    params.append("page", currentPage.toString());
+    params.append("limit", limit.toString());
+
+    fetch(`/api/admin/users?${params.toString()}`)
       .then((r) => r.json())
-      .then((d) => setUsers(d.users ?? []))
+      .then((d) => {
+        setUsers(d.users ?? []);
+        if (d.pagination) {
+          setTotalPages(d.pagination.totalPages);
+        }
+      })
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    load();
-  }, []);
+    load(q, page);
+  }, [page]);
+
+  const handleSearch = () => {
+    if (page === 1) {
+      load(q, 1);
+    } else {
+      setPage(1); // Changing page will trigger useEffect
+    }
+  };
 
   const toggleHide = async (u: User) => {
     await fetch(`/api/admin/users/${u.id}`, {
@@ -74,9 +96,9 @@ export default function AdminUsersPage() {
           onChange={(e) => setQ(e.target.value)}
           placeholder="جستجو با نام، موبایل یا کد دعوت..."
           className="flex-1"
-          onKeyDown={(e) => e.key === "Enter" && load(q)}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
         />
-        <AdminButton onClick={() => load(q)}>
+        <AdminButton onClick={handleSearch}>
           <Search className="size-4" />
           جستجو
         </AdminButton>
@@ -153,6 +175,31 @@ export default function AdminUsersPage() {
           </div>
         )}
       </AdminCard>
+
+      {/* Pagination Controls */}
+      {!loading && totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <AdminButton
+            variant="secondary"
+            size="sm"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            قبلی
+          </AdminButton>
+          <span className="text-sm px-2">
+            صفحه {page.toLocaleString("fa-IR")} از {totalPages.toLocaleString("fa-IR")}
+          </span>
+          <AdminButton
+            variant="secondary"
+            size="sm"
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+          >
+            بعدی
+          </AdminButton>
+        </div>
+      )}
     </AdminLayout>
   );
 }
