@@ -1,85 +1,60 @@
 import { NextResponse } from "next/server";
 import { adminUnauthorizedResponse, requireAdmin } from "@/lib/auth-admin";
-import { prisma } from "@/lib/db";
-import { computeUserScore, loadActivePointRulesMap } from "@/lib/user-score";
-import { getReferralLink } from "@/lib/utils";
+import { getCachedUsers, updateAdminUsersCache } from "@/lib/admin-cache";
 
 export async function GET(request: Request) {
   try {
     await requireAdmin();
     const { searchParams } = new URL(request.url);
-    const q = searchParams.get("q")?.trim();
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
-    const skip = (page - 1) * limit;
+    const q = searchParams.get("q")?.trim().toLowerCase();
+    const sortBy = searchParams.get("sortBy") || "points";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
+    const refresh = searchParams.get("refresh") === "true";
 
-    // Build the query where clause based on the search query
-    let whereClause = {};
-    if (q) {
-      whereClause = {
-        OR: [
-          { firstName: { contains: q } },
-          { lastName: { contains: q } },
-          { phone: { contains: q } },
-          { referralCode: { contains: q } },
-        ],
-      };
+    if (refresh) {
+      await updateAdminUsersCache();
     }
 
-    const [users, totalCount, rules] = await Promise.all([
-      prisma.user.findMany({
-        where: whereClause,
-        include: {
-          _count: { select: { predictions: true } },
-        },
-        orderBy: { points: "desc" }, // Notice points is saved in DB, we can order by it directly in prisma
-        skip: skip,
-        take: limit,
-      }),
-      prisma.user.count({ where: whereClause }),
-      loadActivePointRulesMap(),
-    ]);
+    let result = await getCachedUsers();
 
-    let result = users.map((u) => {
-      // NOTE: We still compute score for display/correctness if there are live adjustments not yet in DB `points` column
-      const computedScore = computeUserScore(
-        {
-        basePointsAwarded: u.basePointsAwarded,
-        selfReferrerBonusAwarded: u.selfReferrerBonusAwarded,
-        correctCount: u.correctCount,
-          wrongCount: u.wrongCount,
-          referralCount: u.referralCount,
-        },
-        rules
+    // Filtering
+    if (q) {
+      result = result.filter(
+        (u) =>
+          u.firstName.toLowerCase().includes(q) ||
+          u.lastName.toLowerCase().includes(q) ||
+          u.phone.includes(q) ||
+          u.referralCode.toLowerCase().includes(q)
       );
-      return {
-        id: u.id,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        phone: u.phone,
-        referralCode: u.referralCode,
-        referralLink: getReferralLink(u.referralCode),
-        referredByCode: u.referredByCode,
-        points: u.points, // Use the DB points directly to respect the Prisma sorting
-        totalPredictions: u._count.predictions,
-        correctPredictions: u.correctCount,
-        wrongPredictions: u.wrongCount,
-        referralCount: u.referralCount,
-        hidden: u.hidden,
-        createdAt: u.createdAt.toISOString(),
-      };
-    });
+    }
 
-    return NextResponse.json({ 
-      users: result,
-      pagination: {
-        total: totalCount,
-        page: page,
-        limit: limit,
-        totalPages: Math.ceil(totalCount / limit)
-      }
-    });
-  } catch {
+    // Sorting
+    if (sortBy !== "points" || sortOrder !== "desc") {
+      result = [...result].sort((a, b) => {
+        const valA = a[sortBy as keyof typeof a];
+        const valB = b[sortBy as keyof typeof b];
+
+        if (typeof valA === "string" && typeof valB === "string") {
+          return sortOrder === "asc"
+            ? valA.localeCompare(valB)
+            : valB.localeCompare(valA);
+        }
+        if (typeof valA === "number" && typeof valB === "number") {
+          return sortOrder === "asc" ? valA - valB : valB - valA;
+        }
+        if (typeof valA === "boolean" && typeof valB === "boolean") {
+          const numA = valA ? 1 : 0;
+          const numB = valB ? 1 : 0;
+          return sortOrder === "asc" ? numA - numB : numB - numA;
+        }
+        return 0;
+      });
+    }
+
+    // Return the full list without limits
+    return NextResponse.json({ users: result });
+  } catch (error) {
+    console.error("Admin API Error:", error);
     return adminUnauthorizedResponse();
   }
 }
