@@ -676,35 +676,6 @@ export function MatchCard({
               />
             </div>
 
-            <AnimatePresence mode="popLayout" initial={false}>
-              {!drawSelected && (
-                <motion.button
-                  key="draw-button"
-                  layout
-                  type="button"
-                  data-tour={tourTargets ? "match-draw" : undefined}
-                  onClick={() => onSelect(PredictionChoice.DRAW)}
-                  whileTap={reduceMotion ? undefined : { scale: 0.99 }}
-                  className={cn(
-                    FLAGS_BOX_LAYOUT,
-                    "mt-2 flex h-11 items-center justify-center rounded-2xl text-sm font-bold text-white/90 transition-shadow glass-pill hover:bg-white/[0.12]"
-                  )}
-                >
-                  {drawLayoutId ? (
-                    <motion.div
-                      layoutId={drawLayoutId}
-                      transition={DRAW_MORPH_TRANSITION}
-                      className="flex h-full w-full items-center justify-center rounded-2xl"
-                    >
-                      مساوی
-                    </motion.div>
-                  ) : (
-                    <span>مساوی</span>
-                  )}
-                </motion.button>
-              )}
-            </AnimatePresence>
-
             <motion.div
               layout
               transition={DRAW_MORPH_TRANSITION}

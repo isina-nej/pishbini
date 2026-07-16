@@ -9,10 +9,8 @@ export function isMatchAvailableForPrediction(
   match: { startTime: Date; status: MatchStatus },
   now = new Date()
 ): boolean {
-  const { windowEnd } = getMatchAvailabilityWindow(now);
   return (
     match.startTime > now &&
-    match.startTime <= windowEnd &&
     (match.status === MatchStatus.SCHEDULED || match.status === MatchStatus.ACTIVE)
   );
 }
@@ -30,9 +28,8 @@ export function isMatchLocked(
 }
 
 export const availableMatchWhere = (now = new Date()) => {
-  const windowEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   return {
-    startTime: { gt: now, lte: windowEnd },
+    startTime: { gt: now },
     status: { in: [MatchStatus.SCHEDULED, MatchStatus.ACTIVE] as MatchStatus[] },
   };
 };

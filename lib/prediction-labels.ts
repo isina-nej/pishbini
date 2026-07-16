@@ -48,10 +48,6 @@ export function getMatchOutcomeOptions(homeNameFa: string, awayNameFa: string) {
       label: formatPredictionChoice(PredictionChoice.HOME_WIN, homeNameFa, awayNameFa),
     },
     {
-      value: PredictionChoice.DRAW,
-      label: formatPredictionChoice(PredictionChoice.DRAW, homeNameFa, awayNameFa),
-    },
-    {
       value: PredictionChoice.AWAY_WIN,
       label: formatPredictionChoice(PredictionChoice.AWAY_WIN, homeNameFa, awayNameFa),
     },

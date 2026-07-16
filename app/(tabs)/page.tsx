@@ -161,7 +161,7 @@ export default function HomePage() {
 
         <div className="predictions-content-scrim pb-32">
           <p className="mb-4 px-4 text-center text-sm text-white/65">
-            بازی‌های ۲۴ ساعت آینده
+            بازی‌های قابل پیش‌بینی
           </p>
 
           {isInitialLoad && <LoadingState />}

@@ -50,7 +50,7 @@ export const DEFAULT_CAMPAIGN_INFO: CampaignInfoContent = {
       id: "predict",
       icon: "target",
       title: "پیش‌بینی بازی‌ها",
-      body: "برای هر بازی در بازه ۲۴ ساعته قبل از شروع، یکی از گزینه‌های برد میزبان، مساوی یا برد مهمان را انتخاب کنید.",
+      body: "برای هر بازی باز، یکی از گزینه‌های برد میزبان یا برد مهمان را انتخاب کنید.",
     },
     {
       id: "referral",

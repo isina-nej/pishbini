@@ -56,7 +56,7 @@ export function tourKeyForRoute(pageId: PageId, pathname: string): TourKey {
 }
 
 const NAV_DESCRIPTIONS: Record<PageId, string> = {
-  predictions: "بازی‌های ۲۴ ساعت آینده را اینجا می‌بینید و پیش‌بینی می‌کنید.",
+  predictions: "بازی‌های قابل پیش‌بینی را اینجا می‌بینید و نتیجه را انتخاب می‌کنید.",
   bracket: "جدول حذفی جام جهانی — مسیر قهرمانی را مرحله‌به‌مرحله پیش‌بینی کنید.",
   leaderboard: "رتبه‌بندی شرکت‌کنندگان و امتیازات زنده را اینجا ببینید.",
   prizes: "جوایز کمپین و قوانین امتیازدهی در این بخش توضیح داده شده است.",
@@ -72,7 +72,7 @@ export function predictionsTourSteps(
       id: "home-header",
       target: "home-header",
       title: "صفحه پیش‌بینی",
-      description: "اینجا بازی‌های ۲۴ ساعت آینده را می‌بینید و پیش‌بینی می‌کنید.",
+      description: "اینجا بازی‌های قابل پیش‌بینی را می‌بینید و نتیجه را انتخاب می‌کنید.",
       advance: "next-button",
     },
   ];
@@ -86,14 +86,6 @@ export function predictionsTourSteps(
         description:
           "روی پرچم یکی از تیم‌ها بزنید تا آن تیم به‌عنوان برنده انتخاب شود.",
         advance: "click-target",
-      },
-      {
-        id: "pick-draw",
-        target: "match-draw",
-        title: "انتخاب مساوی",
-        description: "اگر فکر می‌کنید بازی مساوی تمام می‌شود، این دکمه را بزنید.",
-        advance: "click-target",
-        optional: true,
       },
       {
         id: "match-timer",
