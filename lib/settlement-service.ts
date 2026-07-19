@@ -5,6 +5,7 @@ import {
   PredictionChoice,
 } from "@/generated/prisma";
 import { prisma } from "@/lib/db";
+import { isCampaignFrozen } from "@/lib/campaign";
 import { getActivePointRules } from "@/lib/points";
 import type { Prisma } from "@/generated/prisma";
 
@@ -136,13 +137,14 @@ export async function applyMatchResult(
   const isResettlement = match.settledAt !== null;
   const outcomeChanged =
     isResettlement && match.correctPrediction !== input.correctPrediction;
+  const frozen = await isCampaignFrozen();
 
   const rules = await getActivePointRules([
     PointRuleKey.CORRECT_PREDICTION,
     PointRuleKey.WRONG_PREDICTION,
   ]);
-  const correctPoints = rules.get(PointRuleKey.CORRECT_PREDICTION)!;
-  const wrongPoints = rules.get(PointRuleKey.WRONG_PREDICTION)!;
+  const correctPoints = frozen ? 0 : rules.get(PointRuleKey.CORRECT_PREDICTION)!;
+  const wrongPoints = frozen ? 0 : rules.get(PointRuleKey.WRONG_PREDICTION)!;
 
   const pushScheduledAt = new Date(now.getTime() + SETTLEMENT_PUSH_DELAY_MS);
 

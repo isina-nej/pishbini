@@ -184,7 +184,7 @@ export function PrizesPageClient() {
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-secondary py-4 text-sm font-bold text-[#10111f]"
         >
           <Trophy className="size-4" />
-          مشاهده جدول امتیازات
+          مشاهده برترین‌های نهایی
           <ChevronLeft className="size-4" />
         </button>
       </div>

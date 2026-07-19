@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { PredictionChoice } from "@/generated/prisma";
 import { EmptyState } from "@/components/public/EmptyState";
 import { ErrorState } from "@/components/public/ErrorState";
+import { LeaderboardPodium } from "@/components/public/LeaderboardPodium";
+import type { LeaderboardUser } from "@/components/public/LeaderboardCard";
 import { LoadingState } from "@/components/public/LoadingState";
 import { MatchCard, type MatchData } from "@/components/public/MatchCard";
 import { GlassTopNav } from "@/components/public/GlassTopNav";
@@ -28,6 +30,7 @@ type SavedPick = {
 
 type HomeData = {
   matches: MatchData[];
+  leaderboard: LeaderboardUser[];
   predictions: Record<string, PredictionChoice>;
   savedPicks: Record<string, SavedPick>;
 };
@@ -39,15 +42,19 @@ async function fetchHomeData(): Promise<HomeData> {
     map[p.matchId] = p.prediction;
   });
 
-  const [matchesRes, picksRes] = await Promise.all([
+  const [matchesRes, picksRes, leaderboardRes] = await Promise.all([
     fetch("/api/matches"),
     fetch("/api/me/predictions", { credentials: "include" }),
+    fetch("/api/leaderboard"),
   ]);
   const matchesData = await matchesRes.json();
   const picksData = await picksRes.json();
+  const leaderboardData = await leaderboardRes.json();
   if (matchesData.error) throw new Error(matchesData.error);
+  if (leaderboardData.error) throw new Error(leaderboardData.error);
 
   const matches = matchesData.matches ?? [];
+  const leaderboard = leaderboardData.users ?? [];
   const saved: Record<string, SavedPick> = {};
   const merged = { ...map };
   for (const row of picksData.predictions ?? []) {
@@ -58,7 +65,7 @@ async function fetchHomeData(): Promise<HomeData> {
     merged[row.matchId] = row.prediction;
   }
 
-  return { matches, predictions: merged, savedPicks: saved };
+  return { matches, leaderboard, predictions: merged, savedPicks: saved };
 }
 
 export default function HomePage() {
@@ -72,6 +79,7 @@ export default function HomePage() {
   });
 
   const [matches, setMatches] = useState<MatchData[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [predictions, setPredictions] = useState<Record<string, PredictionChoice>>({});
   const [savedPicks, setSavedPicks] = useState<Record<string, SavedPick>>({});
   const [modalOpen, setModalOpen] = useState(false);
@@ -80,6 +88,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!data) return;
     setMatches(data.matches);
+    setLeaderboard(data.leaderboard);
     setPredictions(data.predictions);
     setSavedPicks(data.savedPicks);
   }, [data]);
@@ -161,7 +170,13 @@ export default function HomePage() {
 
         <div className="predictions-content-scrim pb-32">
           <p className="mb-4 px-4 text-center text-sm text-white/65">
-            بازی‌های قابل پیش‌بینی
+            برندگان نهایی ایونت
+          </p>
+
+          {!isInitialLoad && !error && leaderboard.length > 0 && <LeaderboardPodium users={leaderboard} />}
+
+          <p className="mb-4 px-4 text-center text-xs text-white/45">
+            ثبت‌نام ایونت بعدی به‌زودی فعال می‌شود
           </p>
 
           {isInitialLoad && <LoadingState />}
@@ -173,8 +188,8 @@ export default function HomePage() {
           )}
           {!isInitialLoad && !error && matches.length === 0 && (
             <EmptyState
-              title="بازی فعالی وجود ندارد"
-              description="در حال حاضر بازی فعالی برای پیش‌بینی وجود ندارد. لطفاً نزدیک زمان بازی‌های بعدی دوباره مراجعه کنید."
+              title="این ایونت به پایان رسیده است"
+              description="برندگان نهایی بالا نمایش داده شده‌اند. برای ایونت‌های بعدی از همین صفحه ثبت‌نام کنید."
             />
           )}
 
@@ -194,7 +209,7 @@ export default function HomePage() {
             );
           })}
 
-          <SubmitPredictionsBarSpacer visible={newPicksCount > 0 && !modalOpen} />
+          <SubmitPredictionsBarSpacer visible={!modalOpen} />
         </div>
       </div>
 

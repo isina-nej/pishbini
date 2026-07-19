@@ -42,7 +42,7 @@ export default function LeaderboardPage() {
           </div>
           <h1 className="text-2xl font-bold">جدول امتیازات</h1>
           <p className="mt-2 text-xs text-white/50">
-            رقابت زنده — امتیاز، پیش‌بینی درست و دعوت‌های موفق
+            برترین‌های نهایی ایونت — امتیاز، پیش‌بینی درست و دعوت‌های موفق
           </p>
           <button
             type="button"
@@ -51,7 +51,7 @@ export default function LeaderboardPage() {
             className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs text-primary"
           >
             <Gift className="size-3.5" />
-            جوایز و قوانین امتیازدهی
+            جوایز و قوانین پایان ایونت
           </button>
         </div>
       </motion.header>
