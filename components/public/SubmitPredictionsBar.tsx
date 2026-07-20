@@ -21,13 +21,13 @@ export function SubmitPredictionsBar({ count, onSubmit }: Props) {
       <motion.button
         type="button"
         data-tour="submit-predictions"
-        onClick={() => router.push("/login?from=/")}
+        onClick={() => router.push("/login?from=/profile")}
         whileTap={{ scale: 0.97 }}
         animate={{ scale: [1, 1.02, 1] }}
         transition={{ duration: 2, repeat: Infinity }}
         className="pointer-events-auto w-full rounded-2xl bg-gradient-to-r from-primary to-secondary py-4 font-bold text-[#10111f] shadow-lg shadow-primary/20"
       >
-        ثبت‌نام برای ایونت‌های بعدی
+        ورود / ثبت‌نام برای ایونت‌های بعدی
       </motion.button>
     </div>
   );
