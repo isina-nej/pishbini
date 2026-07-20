@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { getUserRankByUserId } from "@/lib/leaderboard-service";
+import { isCampaignFrozen } from "@/lib/campaign";
 import { isMatchLocked } from "@/lib/matches";
 import { maskPhone } from "@/lib/masking";
 import { PredictionChoice, PointRuleKey } from "@/generated/prisma";
@@ -115,6 +116,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 
   const selfReferrerClaimPoints = rules.get(PointRuleKey.SELF_REFERRER_CLAIM) ?? 0;
   const canClaimReferrer = !user.referredByCode && !referredRecord;
+  const frozen = await isCampaignFrozen();
 
   const now = new Date();
 
@@ -170,7 +172,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
           : null,
       pointsAwarded: p.pointsAwarded,
       createdAtLabel: formatPersianDateTime(p.createdAt),
-      canEdit: p.isCorrect === null && !isMatchLocked(p.match, now),
+      canEdit: !frozen && p.isCorrect === null && !isMatchLocked(p.match, now),
     })),
   };
 }

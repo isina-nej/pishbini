@@ -186,28 +186,14 @@ export default function HomePage() {
               {patchError}
             </p>
           )}
-          {!isInitialLoad && !error && matches.length === 0 && (
-            <EmptyState
-              title="این ایونت به پایان رسیده است"
-              description="برندگان نهایی بالا نمایش داده شده‌اند. برای ایونت‌های بعدی از همین صفحه ثبت‌نام کنید."
-            />
+          {!isInitialLoad && !error && (
+            <div className="mx-4 rounded-3xl border border-white/10 bg-white/[0.03] px-4 py-5 text-center shadow-[0_10px_40px_rgba(0,0,0,0.18)]">
+              <p className="text-sm font-semibold text-white/85">این ایونت به پایان رسیده است</p>
+              <p className="mt-2 text-xs leading-6 text-white/50">
+                فقط برندگان نهایی نمایش داده می‌شوند. ثبت‌نام ایونت‌های بعدی از همین صفحه انجام می‌شود.
+              </p>
+            </div>
           )}
-
-          {matches.map((match, i) => {
-            const saved = savedPicks[match.id];
-            return (
-              <MatchCard
-                key={match.id}
-                match={match}
-                selected={predictions[match.id]}
-                onSelect={(choice) => handleSelect(match.id, choice)}
-                index={i}
-                submitted={Boolean(saved)}
-                locked={saved ? !saved.canEdit : false}
-                tourTargets={i === 0}
-              />
-            );
-          })}
 
           <SubmitPredictionsBarSpacer visible={!modalOpen} />
         </div>

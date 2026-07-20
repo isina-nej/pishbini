@@ -1,5 +1,6 @@
 import { PredictionChoice } from "@/generated/prisma";
 import { prisma } from "@/lib/db";
+import { isCampaignFrozen } from "@/lib/campaign";
 import { availableMatchWhere, isMatchLocked } from "@/lib/matches";
 
 export type UserPredictionRow = {
@@ -11,6 +12,7 @@ export type UserPredictionRow = {
 export async function getUserOpenPredictions(
   userId: string
 ): Promise<UserPredictionRow[]> {
+  const frozen = await isCampaignFrozen();
   const predictions = await prisma.prediction.findMany({
     where: {
       userId,
@@ -34,7 +36,7 @@ export async function getUserOpenPredictions(
   return predictions.map((p) => ({
     matchId: p.matchId,
     prediction: p.prediction,
-    canEdit: p.isCorrect === null && !isMatchLocked(p.match, now),
+    canEdit: !frozen && p.isCorrect === null && !isMatchLocked(p.match, now),
   }));
 }
 
@@ -43,6 +45,10 @@ export async function updateUserPrediction(
   matchId: string,
   prediction: PredictionChoice
 ): Promise<{ success: true } | { success: false; error: string; status: number }> {
+  if (await isCampaignFrozen()) {
+    return { success: false, error: "ویرایش پیش‌بینی پس از پایان ایونت غیرفعال است.", status: 403 };
+  }
+
   const existing = await prisma.prediction.findUnique({
     where: { userId_matchId: { userId, matchId } },
     include: {

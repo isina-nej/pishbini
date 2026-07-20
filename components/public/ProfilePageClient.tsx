@@ -461,15 +461,14 @@ export function ProfilePageClient() {
                       <p className="mt-1 text-[10px] text-white/35">
                         بازی: {p.startTimeLabel} · ثبت: {p.createdAtLabel}
                       </p>
-                      {p.canEdit && (
-                        <button
-                          type="button"
-                          onClick={() => setEditing(p)}
-                          className="mt-2 text-xs font-medium text-primary hover:underline"
-                        >
-                          ویرایش پیش‌بینی
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        disabled={!p.canEdit}
+                        onClick={() => p.canEdit && setEditing(p)}
+                        className="mt-2 text-xs font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:text-white/30 disabled:no-underline"
+                      >
+                        {p.canEdit ? "ویرایش پیش‌بینی" : "ویرایش پیش‌بینی غیرفعال است"}
+                      </button>
                     </motion.div>
                   ))}
                 </div>
