@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import confetti from "canvas-confetti";
 import { motion, useReducedMotion } from "framer-motion";
 import type { LeaderboardUser } from "./LeaderboardCard";
 import { Crown, Medal, Sparkles } from "lucide-react";
@@ -225,8 +227,55 @@ function PodiumSlot({
 
 export function LeaderboardPodium({ users }: { users: LeaderboardUser[] }) {
   const reduceMotion = useReducedMotion() ?? false;
+  const introPlayedRef = useRef(false);
   const top3 = users.filter((u) => u.rank <= 3).sort((a, b) => a.rank - b.rank);
   if (top3.length === 0) return null;
+
+  useEffect(() => {
+    if (reduceMotion || introPlayedRef.current) return;
+    introPlayedRef.current = true;
+
+    const palette = ["#c8102e", "#f7d774", "#f3b73f", "#fffaf2"];
+    const launch = () => {
+      const x = 0.22 + Math.random() * 0.56;
+
+      confetti({
+        particleCount: 18,
+        spread: 24,
+        startVelocity: 68,
+        angle: 90,
+        gravity: 1.18,
+        origin: { x, y: 1.04 },
+        colors: palette,
+        scalar: 0.95,
+        ticks: 150,
+        zIndex: 220,
+      });
+
+      window.setTimeout(() => {
+        confetti({
+          particleCount: 44,
+          spread: 132,
+          startVelocity: 38,
+          angle: 90,
+          gravity: 1.02,
+          origin: { x, y: 0.44 },
+          colors: palette,
+          scalar: 1.08,
+          ticks: 220,
+          zIndex: 220,
+        });
+      }, 260);
+    };
+
+    launch();
+    const timer = window.setInterval(launch, 420);
+    const stop = window.setTimeout(() => window.clearInterval(timer), 3000);
+    return () => {
+      window.clearInterval(timer);
+      window.clearTimeout(stop);
+    };
+  }, [reduceMotion]);
 
   const first = top3.find((u) => u.rank === 1);
   const second = top3.find((u) => u.rank === 2);

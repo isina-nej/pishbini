@@ -1,22 +1,29 @@
 .bracket-root {
-  --bracket-bg: #090d1a;
-  --bracket-surface: #12182a;
-  --bracket-surface-elevated: #182139;
+  --bracket-bg: #08101f;
+  --bracket-surface: #11182a;
+  --bracket-surface-elevated: #17213a;
   --bracket-border: rgba(255, 255, 255, 0.1);
-  --bracket-border-active: #24d8b4;
-  --bracket-primary: #24d8b4;
-  --bracket-secondary: #596cff;
-  --bracket-accent: #9b7cff;
-  --bracket-text: #ffffff;
-  --bracket-text-muted: rgba(255, 255, 255, 0.58);
+  --bracket-border-active: #f7d774;
+  --bracket-primary: #c8102e;
+  --bracket-secondary: #f7d774;
+  --bracket-accent: #f3b73f;
+  --bracket-text: #fffaf2;
+  --bracket-text-muted: rgba(255, 248, 235, 0.62);
   --bracket-loser: rgba(255, 255, 255, 0.32);
-  --bracket-champion: #f4c95d;
+  --bracket-champion: #f7d774;
 
   background: var(--bracket-bg);
   color: var(--bracket-text);
   min-height: 100dvh;
   width: 100%;
   max-width: 100%;
+}
+
+.bracket-root {
+  background-image:
+    radial-gradient(ellipse 55% 42% at 15% 16%, rgba(200, 16, 46, 0.16), transparent 60%),
+    radial-gradient(ellipse 45% 36% at 85% 20%, rgba(247, 215, 116, 0.16), transparent 60%),
+    linear-gradient(180deg, rgba(200, 16, 46, 0.08), rgba(247, 215, 116, 0.05) 45%, rgba(200, 16, 46, 0.08));
 }
 
 .bracket-scroll {

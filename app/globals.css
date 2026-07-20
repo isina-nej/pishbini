@@ -3,22 +3,21 @@
 @import "@fontsource/estedad/arabic.css";
 
 :root {
-  --bg: #07080f;
-  --card-bg: rgba(255, 255, 255, 0.06);
+  --bg: #08101f;
+  --card-bg: rgba(255, 255, 255, 0.075);
   --card-border: rgba(255, 255, 255, 0.12);
-  --glass-bg: rgba(255, 255, 255, 0.045);
-  --glass-bg-elevated: rgba(255, 255, 255, 0.075);
-  --glass-border: rgba(255, 255, 255, 0.14);
-  --glass-blur: 14px;
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.085);
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.38);
   --predictions-hero-height: min(42vh, 300px);
   --glass-top-nav-height: 4.25rem;
-  --primary: #14e0bd;
-  --secondary: #4365ff;
-  --text-main: #ffffff;
-  --text-muted: rgba(255, 255, 255, 0.65);
+  --primary: #c8102e;
+  --secondary: #f7d774;
+  --text-main: #fffaf2;
+  --text-muted: rgba(255, 248, 235, 0.7);
   --danger: #ff4d6d;
-  --warning: #ffd166;
+  --warning: #f3b73f;
   --success: #12d6a3;
 }
 
@@ -56,17 +55,17 @@ body {
   background-image:
     radial-gradient(
       ellipse 55% 40% at 12% 18%,
-      color-mix(in srgb, var(--primary) 14%, transparent),
+      color-mix(in srgb, var(--primary) 22%, transparent),
       transparent 58%
     ),
     radial-gradient(
       ellipse 50% 38% at 88% 22%,
-      color-mix(in srgb, var(--secondary) 12%, transparent),
+      color-mix(in srgb, var(--secondary) 16%, transparent),
       transparent 55%
     ),
     radial-gradient(
       ellipse 45% 35% at 50% 95%,
-      color-mix(in srgb, #ff6b2c 8%, transparent),
+      color-mix(in srgb, #f3b73f 10%, transparent),
       transparent 50%
     ),
     radial-gradient(

@@ -33,7 +33,7 @@ export default function SuccessPage() {
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ["#14e0bd", "#4365ff", "#ffffff"],
+        colors: ["#c8102e", "#f7d774", "#f3b73f", "#fffaf2"],
       });
     } catch {
       router.replace("/");

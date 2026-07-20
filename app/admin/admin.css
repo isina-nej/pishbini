@@ -1,23 +1,23 @@
 .admin-root {
-  --admin-bg: #08090f;
-  --admin-sidebar: #05060c;
-  --admin-surface: #11121c;
-  --admin-surface-hover: #161824;
-  --admin-surface-elevated: #1a1c2b;
+  --admin-bg: #08101f;
+  --admin-sidebar: #050814;
+  --admin-surface: #11182a;
+  --admin-surface-hover: #17213a;
+  --admin-surface-elevated: #1b2742;
   --admin-border: rgba(255, 255, 255, 0.07);
   --admin-border-strong: rgba(255, 255, 255, 0.12);
-  --admin-text: #eef0f6;
-  --admin-text-muted: #8b93a8;
-  --admin-text-subtle: #5c6478;
-  --admin-primary: #14e0bd;
-  --admin-primary-fg: #041510;
-  --admin-primary-soft: rgba(20, 224, 189, 0.12);
-  --admin-secondary: #4365ff;
-  --admin-secondary-soft: rgba(67, 101, 255, 0.12);
+  --admin-text: #fffaf2;
+  --admin-text-muted: #a7afc3;
+  --admin-text-subtle: #727b94;
+  --admin-primary: #c8102e;
+  --admin-primary-fg: #fff7ec;
+  --admin-primary-soft: rgba(200, 16, 46, 0.14);
+  --admin-secondary: #f7d774;
+  --admin-secondary-soft: rgba(247, 215, 116, 0.14);
   --admin-danger: #ff4d6d;
   --admin-danger-soft: rgba(255, 77, 109, 0.12);
-  --admin-warning: #f5b942;
-  --admin-warning-soft: rgba(245, 185, 66, 0.12);
+  --admin-warning: #f3b73f;
+  --admin-warning-soft: rgba(243, 183, 63, 0.12);
   --admin-success: #12d6a3;
   --admin-success-soft: rgba(18, 214, 163, 0.12);
   --admin-radius: 12px;
@@ -159,8 +159,8 @@
 
 .admin-login-bg {
   background:
-    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(20, 224, 189, 0.08), transparent),
-    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(67, 101, 255, 0.1), transparent),
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(200, 16, 46, 0.1), transparent),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(247, 215, 116, 0.12), transparent),
     var(--admin-bg);
 }
 
